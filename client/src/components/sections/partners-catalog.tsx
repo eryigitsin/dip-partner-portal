@@ -149,7 +149,7 @@ export function PartnersCatalog({
                 <Button
                   variant="ghost"
                   onClick={handleClearFilters}
-                  className="text-sm text-gray-500 hover:text-dip-blue"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent h-10 px-4 py-2 text-sm hover:text-dip-blue bg-[#deffff] text-[#484d54]"
                 >
                   {t('clearFilters', language)}
                 </Button>
