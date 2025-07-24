@@ -3,37 +3,31 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { t } from '@/lib/i18n';
 import { MapPin, Mail, Phone } from 'lucide-react';
+import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 
 export function Footer() {
   const { language, setLanguage } = useLanguage();
 
-  const quickLinks = [
-    { name: t('home', language), href: '/' },
-    { name: t('about', language), href: '/about' },
-    { name: t('activities', language), href: '/activities' },
-    { name: t('partnerships', language), href: '/partnerships' },
-    { name: t('contact', language), href: '/contact' },
-  ];
-
-  const services = [
-    { name: "İş Ortağı Başvurusu", href: "/partner-application" },
-    { name: "Hizmet Talebi", href: "/service-request" },
-    { name: "Partner Kataloğu", href: "/#partnerships-section" },
-    { name: "Üyelik", href: "/membership" },
+  const dipAboutLinks = [
+    { name: "DİP Ana Sayfa", href: "https://dip.tc", external: true },
+    { name: "DEX Platform", href: "https://dex.tc", external: true },
+    { name: "dipTALKS", href: "https://diptalks.dip.tc", external: true },
+    { name: "İletişim", href: "https://dip.tc/iletisim", external: true },
   ];
 
   return (
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Company Info */}
-          <div className="md:col-span-2">
-            <div className="flex items-center mb-4">
-              <div className="h-8 w-8 bg-dip-blue rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">D</span>
-              </div>
-              <span className="ml-3 text-xl font-bold">DİP</span>
-            </div>
+          <div>
+            <Link href="/" className="flex items-center mb-4">
+              <img 
+                src={dipLightLogo} 
+                alt="DİP - Dijital İhracat Platformu" 
+                className="h-12 w-auto"
+              />
+            </Link>
             <p className="text-gray-300 mb-4 leading-relaxed">
               {t('footerDescription', language)}
             </p>
@@ -53,36 +47,48 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* DİP Hakkında */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">{t('quickLinks', language)}</h4>
+            <h4 className="text-lg font-semibold mb-4">DİP Hakkında</h4>
             <ul className="space-y-2">
-              {quickLinks.map((link) => (
+              {dipAboutLinks.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href}>
-                    <span className="text-gray-300 hover:text-dip-blue transition-colors cursor-pointer">
+                  {link.external ? (
+                    <a 
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-300 hover:text-dip-blue transition-colors"
+                    >
                       {link.name}
-                    </span>
-                  </Link>
+                    </a>
+                  ) : (
+                    <Link href={link.href}>
+                      <span className="text-gray-300 hover:text-dip-blue transition-colors cursor-pointer">
+                        {link.name}
+                      </span>
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Services */}
+          {/* Map */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">{t('services', language)}</h4>
-            <ul className="space-y-2">
-              {services.map((service) => (
-                <li key={service.name}>
-                  <Link href={service.href}>
-                    <span className="text-gray-300 hover:text-dip-blue transition-colors cursor-pointer">
-                      {service.name}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <h4 className="text-lg font-semibold mb-4">Konum</h4>
+            <div className="w-full h-48 rounded-lg overflow-hidden">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3009.6084742924813!2d28.975912876042317!3d41.04748747134457!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab9c5a7f2e2f7%3A0x7c4f8e2f8e2f8e2f!2sEcza%20Sk.%20No%3A4%2C%20%C5%9Ei%C5%9Fli%2F%C4%B0stanbul!5e0!3m2!1str!2str!4v1697899999999!5m2!1str!2str"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen={false}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="DİP Ofis Konumu - Ecza Sok. No:4-1 Şişli, İstanbul"
+              ></iframe>
+            </div>
           </div>
         </div>
 

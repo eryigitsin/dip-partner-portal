@@ -5,6 +5,8 @@ import { useLanguage } from '@/contexts/language-context';
 import { useAuth } from '@/hooks/use-auth';
 import { t } from '@/lib/i18n';
 import { Menu, X } from 'lucide-react';
+import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
+import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -13,70 +15,108 @@ export function Header() {
   const [location] = useLocation();
 
   const navigation = [
-    { name: t('home', language), href: '/' },
-    { name: t('about', language), href: '/about' },
-    { name: t('activities', language), href: '/activities' },
-    { name: t('partnerships', language), href: '/partnerships' },
-    { name: t('contact', language), href: '/contact' },
+    { name: t('about', language), href: 'https://dip.tc/hakkimizda/', external: true },
+    { name: t('activities', language), href: 'https://dip.tc/faaliyetler/', external: true },
+    { name: 'Haberler', href: 'https://dip.tc/haber-ve-makaleler/', external: true },
+    { name: t('contact', language), href: 'https://dip.tc/iletisim/', external: true },
   ];
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="h-8 w-8 bg-dip-blue rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">D</span>
-                </div>
-              </div>
-              <span className="ml-3 text-xl font-bold text-gray-900">DİP</span>
+      {/* Top contact bar */}
+      <div className="bg-gray-50 border-b">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-10 text-sm">
+            <div className="flex items-center space-x-4 text-gray-600">
+              <span>Ecza Sok. No:4-1 Şişli, İstanbul</span>
+              <span>info@dip.tc</span>
+              <span>08503071245</span>
             </div>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-gray-700 hover:text-dip-blue font-medium transition-colors"
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Language Switcher & Auth Buttons */}
-          <div className="flex items-center space-x-4">
-            {/* Language Switcher */}
-            <div className="hidden sm:flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <Button
                 variant={language === 'tr' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setLanguage('tr')}
-                className="text-sm"
+                className="text-xs h-6 px-2"
               >
                 TR
               </Button>
+              <span className="text-gray-400">|</span>
               <Button
                 variant={language === 'en' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setLanguage('en')}
-                className="text-sm"
+                className="text-xs h-6 px-2"
               >
                 EN
               </Button>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Auth Buttons */}
-            <div className="flex items-center space-x-3">
-              {user ? (
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600">
-                    {user.firstName} {user.lastName}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center">
+            <img 
+              src={dipDarkLogo} 
+              alt="DİP - Dijital İhracat Platformu" 
+              className="h-12 w-auto"
+            />
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex space-x-8">
+            {navigation.map((item) => (
+              item.external ? (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors"
+                >
+                  {item.name}
+                </a>
+              ) : (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors"
+                >
+                  {item.name}
+                </Link>
+              )
+            ))}
+          </nav>
+
+          {/* Auth Buttons */}
+          <div className="flex items-center space-x-3">
+            <Button
+              asChild
+              variant="outline"
+              className="hidden sm:inline-flex border-dip-blue text-dip-blue hover:bg-dip-blue hover:text-white"
+            >
+              <a href="https://dip.tc/uye-ol" target="_blank" rel="noopener noreferrer">
+                ÜYE OL
+              </a>
+            </Button>
+            
+            <Button
+              asChild
+              variant="default"
+              className="hidden sm:inline-flex bg-red-800 hover:bg-red-900 text-white"
+            >
+              <a href="https://dip.tc" target="_blank" rel="noopener noreferrer">
+                DİP'e DÖN
+              </a>
+            </Button>
+
+            {user ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-600">
+                  {user.firstName} {user.lastName}
                   </span>
                   {user.userType === 'partner' && (
                     <Link href="/partner-dashboard">
@@ -92,36 +132,35 @@ export function Header() {
                       </Button>
                     </Link>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => logoutMutation.mutate()}
-                    disabled={logoutMutation.isPending}
-                  >
-                    Çıkış
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
+                >
+                  Çıkış
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link href="/auth">
+                  <Button variant="ghost" size="sm">
+                    {t('login', language)}
                   </Button>
-                </div>
-              ) : (
-                <>
-                  <Link href="/auth">
-                    <Button variant="ghost" size="sm">
-                      {t('login', language)}
-                    </Button>
-                  </Link>
-                  <Link href="/auth">
-                    <Button size="sm" className="bg-dip-blue hover:bg-dip-dark-blue">
-                      {t('register', language)}
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
+                </Link>
+                <Link href="/auth">
+                  <Button size="sm" className="bg-dip-blue hover:bg-dip-dark-blue">
+                    {t('register', language)}
+                  </Button>
+                </Link>
+              </>
+            )}
 
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className="lg:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? (
@@ -136,17 +175,30 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100">
+        <div className="lg:hidden bg-white border-t border-gray-100">
           <div className="px-4 py-3 space-y-2">
             {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="block text-gray-700 hover:text-dip-blue font-medium py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {item.name}
-              </Link>
+              item.external ? (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-gray-700 hover:text-dip-blue font-medium py-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </a>
+              ) : (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="block text-gray-700 hover:text-dip-blue font-medium py-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              )
             ))}
             <div className="pt-2 border-t border-gray-100">
               <div className="flex space-x-2 mb-3">
