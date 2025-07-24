@@ -95,16 +95,6 @@ export function Header() {
           <div className="flex items-center space-x-3">
             <Button
               asChild
-              variant="outline"
-              className="hidden sm:inline-flex border-dip-blue text-dip-blue hover:bg-dip-blue hover:text-white"
-            >
-              <a href="https://dip.tc/uye-ol" target="_blank" rel="noopener noreferrer">
-                ÜYE OL
-              </a>
-            </Button>
-            
-            <Button
-              asChild
               variant="default"
               className="hidden sm:inline-flex bg-red-800 hover:bg-red-900 text-white"
             >
