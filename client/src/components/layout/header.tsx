@@ -96,7 +96,7 @@ export function Header() {
             <Button
               asChild
               variant="default"
-              className="hidden sm:inline-flex bg-red-800 hover:bg-red-900 text-white"
+              className="hidden sm:inline-flex hover:bg-red-900 text-white bg-[#1c1545]"
             >
               <a href="https://dip.tc" target="_blank" rel="noopener noreferrer">
                 DİP'e DÖN
