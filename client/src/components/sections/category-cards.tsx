@@ -15,26 +15,8 @@ export function CategoryCards({ onCategorySelect }: CategoryCardsProps) {
   });
 
   const getCategoryIcon = (icon: string) => {
-    // Map FontAwesome classes to Lucide icons or return appropriate icon
-    const iconMap: Record<string, string> = {
-      'fas fa-chart-line': '📊',
-      'fas fa-clipboard-check': '📋',
-      'fas fa-truck': '🚛',
-      'fas fa-bullhorn': '📢',
-      'fas fa-camera': '📷',
-      'fas fa-user-tie': '👔',
-      'fas fa-gavel': '⚖️',
-      'fas fa-calculator': '🧮',
-      'fas fa-shield-alt': '🛡️',
-      'fas fa-calendar-alt': '📅',
-      'fas fa-industry': '🏭',
-      'fas fa-box': '📦',
-      'fas fa-credit-card': '💳',
-      'fas fa-store': '🏪',
-      'fas fa-shopping-cart': '🛒',
-      'fas fa-code': '💻',
-    };
-    return iconMap[icon] || '📋';
+    // Return Font Awesome icon classes
+    return icon || 'fas fa-clipboard-check';
   };
 
   return (
@@ -58,7 +40,7 @@ export function CategoryCards({ onCategorySelect }: CategoryCardsProps) {
             >
               <div className="text-center">
                 <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-dip-blue transition-all duration-300">
-                  <span className="text-2xl">{getCategoryIcon(category.icon)}</span>
+                  <i className={`${getCategoryIcon(category.icon)} text-2xl text-dip-blue group-hover:text-white transition-all duration-300`}></i>
                 </div>
                 <h3 className="font-semibold text-gray-900 text-sm">
                   {language === 'en' ? category.nameEn : category.name}

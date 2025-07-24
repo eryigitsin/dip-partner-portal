@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { t } from '@/lib/i18n';
 import { MapPin, Mail, Phone } from 'lucide-react';
+import { FaLinkedin, FaInstagram, FaYoutube, FaTwitter } from 'react-icons/fa';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 
 export function Footer() {
@@ -72,6 +73,42 @@ export function Footer() {
                 </li>
               ))}
             </ul>
+            
+            {/* Social Media Icons */}
+            <div className="flex items-center space-x-4 mt-4">
+              <a 
+                href="https://www.linkedin.com/company/dip-tc/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-dip-blue transition-colors"
+              >
+                <FaLinkedin className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://www.instagram.com/dip_tc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-dip-blue transition-colors"
+              >
+                <FaInstagram className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://www.youtube.com/@dip_tc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-dip-blue transition-colors"
+              >
+                <FaYoutube className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://x.com/dip_tc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-dip-blue transition-colors"
+              >
+                <FaTwitter className="h-5 w-5" />
+              </a>
+            </div>
           </div>
 
           {/* Map */}
@@ -95,7 +132,7 @@ export function Footer() {
         {/* Bottom Footer */}
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm">
-            © 2024 DİP - Dijital İhracat Platformu. Tüm hakları saklıdır.
+            © 2025 DİP - Dijital İhracat Platformu. Tüm hakları saklıdır.
           </p>
           
           {/* Language Switcher */}
