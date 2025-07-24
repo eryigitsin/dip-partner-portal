@@ -1,0 +1,432 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAuth } from "@/hooks/use-auth";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
+import { QuoteRequest, Partner } from "@shared/schema";
+import { 
+  BarChart3, 
+  Users, 
+  MessageSquare, 
+  FileText, 
+  Eye, 
+  Calendar,
+  TrendingUp,
+  DollarSign,
+  Phone,
+  Mail,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle
+} from "lucide-react";
+
+export default function PartnerDashboard() {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const { data: partner } = useQuery<Partner>({
+    queryKey: ["/api/partners", "me"],
+    queryFn: async () => {
+      const response = await fetch("/api/partners/me");
+      if (!response.ok) throw new Error("Failed to fetch partner data");
+      return response.json();
+    },
+    enabled: !!user && user.userType === "partner",
+  });
+
+  const { data: quoteRequests = [] } = useQuery<QuoteRequest[]>({
+    queryKey: ["/api/quote-requests"],
+    enabled: !!user && user.userType === "partner",
+  });
+
+  if (!user || user.userType !== "partner") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-16 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Bu sayfaya erişim yetkiniz bulunmamaktadır
+          </h1>
+          <p className="text-gray-600">
+            Partner paneline erişebilmek için partner hesabınızla giriş yapmanız gerekmektedir.
+          </p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "responded":
+        return "bg-blue-100 text-blue-800";
+      case "accepted":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "completed":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="h-4 w-4" />;
+      case "responded":
+        return <MessageSquare className="h-4 w-4" />;
+      case "accepted":
+        return <CheckCircle className="h-4 w-4" />;
+      case "rejected":
+        return <XCircle className="h-4 w-4" />;
+      case "completed":
+        return <CheckCircle className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "Beklemede";
+      case "responded":
+        return "Yanıtlandı";
+      case "accepted":
+        return "Kabul Edildi";
+      case "rejected":
+        return "Reddedildi";
+      case "completed":
+        return "Tamamlandı";
+      default:
+        return status;
+    }
+  };
+
+  const pendingQuotes = quoteRequests.filter(q => q.status === "pending").length;
+  const acceptedQuotes = quoteRequests.filter(q => q.status === "accepted").length;
+  const completedQuotes = quoteRequests.filter(q => q.status === "completed").length;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Partner Paneli</h1>
+              <p className="text-gray-600 mt-2">
+                Hoş geldiniz, {user.firstName} {user.lastName}
+              </p>
+            </div>
+            {partner && (
+              <div className="text-right">
+                <h2 className="text-xl font-semibold text-gray-900">{partner.companyName}</h2>
+                <Badge variant={partner.isApproved ? "default" : "secondary"}>
+                  {partner.isApproved ? "Onaylanmış Partner" : "Onay Bekliyor"}
+                </Badge>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
+            <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
+            <TabsTrigger value="profile">Profil</TabsTrigger>
+            <TabsTrigger value="services">Hizmetler</TabsTrigger>
+            <TabsTrigger value="analytics">İstatistikler</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Bekleyen Talepler</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{pendingQuotes}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Yanıt bekleyen teklif talepleri
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Kabul Edilen</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{acceptedQuotes}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Aktif projeler
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Tamamlanan</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{completedQuotes}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Başarıyla tamamlanan projeler
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Takipçiler</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{partner?.followersCount || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Profilinizi takip eden kullanıcılar
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Quotes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Son Teklif Talepleri</CardTitle>
+                <CardDescription>
+                  En son gelen teklif talepleri ve durumları
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {quoteRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Henüz teklif talebi yok
+                    </h3>
+                    <p className="text-gray-600">
+                      Müşteriler sizden teklif talep ettiğinde burada görünecekler.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {quoteRequests.slice(0, 5).map((quote) => (
+                      <div key={quote.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-medium">
+                              {quote.firstName || ''} {quote.lastName || ''}
+                            </h4>
+                            <Badge className={getStatusColor(quote.status || 'pending')}>
+                              <div className="flex items-center space-x-1">
+                                {getStatusIcon(quote.status || 'pending')}
+                                <span>{getStatusText(quote.status || 'pending')}</span>
+                              </div>
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{quote.company || ''}</p>
+                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                            {quote.serviceNeeded || ''}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">
+                            {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('tr-TR') : 'Tarih belirtilmemiş'}
+                          </p>
+                          <div className="flex space-x-2 mt-2">
+                            <Button size="sm" variant="outline">
+                              <Eye className="h-4 w-4 mr-1" />
+                              Görüntüle
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="quotes" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Teklif Talepleri</CardTitle>
+                <CardDescription>
+                  Size gelen tüm teklif talepleri ve CRM yönetimi
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {quoteRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Teklif talebi bulunmuyor
+                    </h3>
+                    <p className="text-gray-600">
+                      Müşteriler sizden teklif talep ettiğinde burada görünecekler.
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Müşteri</TableHead>
+                        <TableHead>Şirket</TableHead>
+                        <TableHead>Hizmet</TableHead>
+                        <TableHead>Bütçe</TableHead>
+                        <TableHead>Durum</TableHead>
+                        <TableHead>Tarih</TableHead>
+                        <TableHead>İşlemler</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {quoteRequests.map((quote) => (
+                        <TableRow key={quote.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">
+                                {quote.firstName || ''} {quote.lastName || ''}
+                              </div>
+                              <div className="text-sm text-gray-500 flex items-center space-x-2">
+                                <Mail className="h-3 w-3" />
+                                <span>{quote.email || ''}</span>
+                              </div>
+                              <div className="text-sm text-gray-500 flex items-center space-x-2">
+                                <Phone className="h-3 w-3" />
+                                <span>{quote.phone || ''}</span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{quote.company || ''}</TableCell>
+                          <TableCell>
+                            <div className="max-w-xs">
+                              <p className="text-sm line-clamp-2">{quote.serviceNeeded || ''}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{quote.budget || "Belirtilmemiş"}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(quote.status || 'pending')}>
+                              <div className="flex items-center space-x-1">
+                                {getStatusIcon(quote.status || 'pending')}
+                                <span>{getStatusText(quote.status || 'pending')}</span>
+                              </div>
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('tr-TR') : 'Tarih belirtilmemiş'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button size="sm" variant="outline">
+                                Görüntüle
+                              </Button>
+                              {quote.status === "pending" && (
+                                <Button size="sm" className="bg-dip-blue hover:bg-dip-dark-blue">
+                                  Yanıtla
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="profile" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profil Bilgileri</CardTitle>
+                <CardDescription>
+                  Şirket profilinizi güncelleyin ve yönetin
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Profil Yönetimi
+                  </h3>
+                  <p className="text-gray-600">
+                    Profil yönetimi özelliği yakında eklenecektir.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="services" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Hizmet Yönetimi</CardTitle>
+                <CardDescription>
+                  Sunduğunuz hizmetleri ve paketlerinizi yönetin
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Hizmet Yönetimi
+                  </h3>
+                  <p className="text-gray-600">
+                    Hizmet yönetimi özelliği yakında eklenecektir.
+                  </p>
+                  <Button className="mt-4 bg-dip-blue hover:bg-dip-dark-blue">
+                    Hizmet Ekle
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>İstatistikler</CardTitle>
+                <CardDescription>
+                  Profil performansınızı ve iş analizlerini görüntüleyin
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Detaylı İstatistikler
+                  </h3>
+                  <p className="text-gray-600">
+                    İstatistik özellikleri yakında eklenecektir.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      <Footer />
+    </div>
+  );
+}
