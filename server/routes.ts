@@ -538,7 +538,10 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Partner application endpoint with file upload
-  app.post('/api/partner-applications', upload.array('documents', 10), async (req, res) => {
+  app.post('/api/partner-applications', upload.fields([
+    { name: 'documents', maxCount: 10 },
+    { name: 'logo', maxCount: 1 }
+  ]), async (req, res) => {
     try {
       const {
         firstName,
@@ -591,14 +594,23 @@ export function registerRoutes(app: Express): Server {
         twitterProfile,
         instagramProfile,
         facebookProfile,
+        logoPath: null as string | null,
         status: 'pending' as const,
       };
       
       const application = await storage.createPartnerApplication(applicationData);
 
-      // Handle file uploads if any
-      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-        for (const file of req.files) {
+      // Handle logo upload
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      if (files?.logo && files.logo[0]) {
+        const logoFile = files.logo[0];
+        // Update application with logo path
+        await storage.updatePartnerApplicationLogo(application.id, logoFile.path);
+      }
+
+      // Handle document uploads if any
+      if (files?.documents && files.documents.length > 0) {
+        for (const file of files.documents) {
           const documentData = {
             applicationId: application.id,
             fileName: file.filename,

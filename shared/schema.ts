@@ -139,6 +139,7 @@ export const partnerApplications = pgTable("partner_applications", {
   twitterProfile: text("twitter_profile"),
   instagramProfile: text("instagram_profile"),
   facebookProfile: text("facebook_profile"),
+  logoPath: text("logo_path"),
   documents: text("documents"), // JSON array of document URLs
   status: text("status").default("pending"), // pending, approved, rejected
   reviewedBy: integer("reviewed_by").references(() => users.id),
@@ -236,6 +237,33 @@ export const applicationDocuments = pgTable("application_documents", {
   mimeType: text("mime_type").notNull(),
   filePath: text("file_path").notNull(),
   uploadedAt: timestamp("uploaded_at").defaultNow(),
+});
+
+// Partner posts/news feed
+export const partnerPosts = pgTable("partner_posts", {
+  id: serial("id").primaryKey(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  imageUrl: text("image_url"),
+  isVisible: boolean("is_visible").default(true),
+  likesCount: integer("likes_count").default(0),
+  commentsCount: integer("comments_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Partner profile edit requests (requires admin approval)
+export const partnerProfileEditRequests = pgTable("partner_profile_edit_requests", {
+  id: serial("id").primaryKey(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  requestedChanges: jsonb("requested_changes").notNull(), // JSON of field changes
+  status: text("status").default("pending"), // pending, approved, rejected
+  reviewedBy: integer("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Relations

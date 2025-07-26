@@ -65,6 +65,7 @@ export interface IStorage {
   getPartnerApplication(id: number): Promise<PartnerApplication | undefined>;
   createPartnerApplication(application: InsertPartnerApplication): Promise<PartnerApplication>;
   updatePartnerApplication(id: number, application: Partial<PartnerApplication>): Promise<PartnerApplication | undefined>;
+  updatePartnerApplicationLogo(id: number, logoPath: string): Promise<void>;
   
   // Application document methods
   getApplicationDocuments(applicationId: number): Promise<ApplicationDocument[]>;
@@ -97,6 +98,13 @@ export interface IStorage {
   createTempUserRegistration(tempUserData: InsertTempUserRegistration): Promise<TempUserRegistration>;
   getTempUserRegistration(phone: string): Promise<TempUserRegistration | undefined>;
   deleteTempUserRegistration(phone: string): Promise<void>;
+  
+  // Partner posts methods
+  getPartnerPosts(partnerId: number): Promise<any[]>;
+  
+  // Other methods
+  getUserConversations(userId: number): Promise<any[]>;
+  createMessage(messageData: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -264,6 +272,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(partnerApplications.id, id))
       .returning();
     return application || undefined;
+  }
+
+  async updatePartnerApplicationLogo(id: number, logoPath: string): Promise<void> {
+    await db
+      .update(partnerApplications)
+      .set({ logoPath, updatedAt: new Date() })
+      .where(eq(partnerApplications.id, id));
   }
 
   async getApplicationDocuments(applicationId: number): Promise<ApplicationDocument[]> {
@@ -524,6 +539,11 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(or(eq(users.userType, 'master_admin'), eq(users.userType, 'editor_admin')));
+  }
+
+  async getPartnerPosts(partnerId: number): Promise<any[]> {
+    // For now return empty array, will implement posts later
+    return [];
   }
 }
 

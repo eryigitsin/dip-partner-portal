@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
@@ -62,11 +63,67 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Fetch service categories
   const { data: categories = [] } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ["/api/categories"],
   });
+
+  // Logo file handler
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if file is image
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Hata",
+          description: "Lütfen sadece resim dosyası seçiniz.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLogoFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Crop image to square
+  const cropImageToSquare = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      
+      img.onload = () => {
+        const size = Math.min(img.width, img.height);
+        canvas.width = size;
+        canvas.height = size;
+        
+        const x = (img.width - size) / 2;
+        const y = (img.height - size) / 2;
+        
+        ctx.drawImage(img, x, y, size, size, 0, 0, size, size);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const croppedFile = new File([blob], file.name, { type: file.type });
+            resolve(croppedFile);
+          }
+        }, file.type, 0.9);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
 
   const form = useForm<PartnerApplicationFormData>({
     resolver: zodResolver(partnerApplicationSchema),
@@ -138,6 +195,12 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
         }
       });
 
+      // Add logo file if selected
+      if (logoFile) {
+        const croppedLogo = await cropImageToSquare(logoFile);
+        formData.append('logo', croppedLogo);
+      }
+
       // Add files
       selectedFiles.forEach((file, index) => {
         formData.append(`documents`, file);
@@ -161,6 +224,8 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
 
       form.reset();
       setSelectedFiles([]);
+      setLogoFile(null);
+      setLogoPreview(null);
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
@@ -318,6 +383,31 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
                   </FormItem>
                 )}
               />
+
+              {/* Logo Upload */}
+              <div className="space-y-2">
+                <Label>Şirket Logosu (Kare Format)</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="flex-1"
+                  />
+                  {logoPreview && (
+                    <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
+                      <img
+                        src={logoPreview}
+                        alt="Logo preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">
+                  Logo otomatik olarak kare formata dönüştürülecektir. JPG, PNG formatları desteklenir.
+                </p>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
