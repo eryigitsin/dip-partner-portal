@@ -553,7 +553,7 @@ export default function PartnerProfile() {
           }}
         >
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
           
           {/* Edit Profile Button - Visible to owner and admins */}
           {canEdit && (
