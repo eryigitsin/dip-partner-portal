@@ -1277,33 +1277,36 @@ export default function PartnerProfile() {
                   )}
                 </div>
                 
-                <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Mesaj Gönder
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Mesaj Gönder</DialogTitle>
-                      <DialogDescription>
-                        {partner.companyName} firmasına mesaj gönderin.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Textarea
-                        placeholder="Mesajınızı yazın..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        rows={4}
-                      />
-                      <Button onClick={handleSendMessage} disabled={messageMutation.isPending} className="w-full">
-                        Mesajı Gönder
+                {/* Message Button - Only visible to regular users, not admins */}
+                {user && user.role !== 'masterAdmin' && user.role !== 'editorAdmin' && (
+                  <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Mesaj Gönder
                       </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Mesaj Gönder</DialogTitle>
+                        <DialogDescription>
+                          {partner.companyName} firmasına mesaj gönderin.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Textarea
+                          placeholder="Mesajınızı yazın..."
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          rows={4}
+                        />
+                        <Button onClick={handleSendMessage} disabled={messageMutation.isPending} className="w-full">
+                          Mesajı Gönder
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </CardContent>
             </Card>
           </div>

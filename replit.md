@@ -149,3 +149,4 @@ Preferred communication style: Simple, everyday language.
 - **Admin Partner Management**: Implemented comprehensive partner editing system with role-based permissions
 - **Master Admin Features**: Full partner data editing including email and password management
 - **Editor Admin Features**: Partner data editing excluding password and membership email restrictions
+- **Message System Restrictions**: Admin users (master/editor) cannot see message buttons on partner profiles - messaging only between regular users and partners
