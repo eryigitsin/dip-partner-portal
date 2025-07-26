@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/contexts/language-context";
 import { t } from "@/lib/i18n";
@@ -41,6 +42,7 @@ export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState("login");
+  const [kvkkDialogOpen, setKvkkDialogOpen] = useState(false);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -323,13 +325,35 @@ export default function AuthPage() {
 
                     <div className="text-center text-sm text-gray-600">
                       Kayıt olarak{" "}
-                      <Button variant="link" className="p-0 h-auto text-dip-blue">
-                        Kullanım Şartlarını
-                      </Button>{" "}
+                      <Dialog open={kvkkDialogOpen} onOpenChange={setKvkkDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="link" className="p-0 h-auto text-dip-blue">
+                            Kullanım Şartlarını
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>KVKK Kullanım Şartları</DialogTitle>
+                            <DialogDescription className="text-left">
+                              6698 Sayılı KVKK uyarınca, bilgilerimin ticari bilgi kapsamında Dijital İhracat Platformu ve paydaşları ile paylaşılmasına razı olduğumu kabul ederim.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <Button onClick={() => setKvkkDialogOpen(false)}>
+                              Anladım
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>{" "}
                       ve{" "}
-                      <Button variant="link" className="p-0 h-auto text-dip-blue">
+                      <a 
+                        href="https://dip.tc/gizlilik-ilkesi/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-dip-blue hover:underline"
+                      >
                         Gizlilik Politikasını
-                      </Button>{" "}
+                      </a>{" "}
                       kabul etmiş olursunuz.
                     </div>
                   </TabsContent>
@@ -355,7 +379,7 @@ export default function AuthPage() {
                 <Building className="w-12 h-12 text-white" />
               </div>
               <h3 className="text-2xl font-bold mb-4 drop-shadow-lg">
-                Dijital İhracat Platformu
+                İş Ortakları Kataloğu
               </h3>
               <p className="text-blue-100 leading-relaxed drop-shadow-md">
                 İş ortaklarımızla birlikte dijital ihracat yolculuğunuzda size en iyi hizmeti sunuyoruz. 
