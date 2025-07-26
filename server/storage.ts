@@ -326,6 +326,77 @@ export class DatabaseStorage implements IStorage {
       ));
     return !!result;
   }
+
+  // Additional user methods for dropdown menu functionality
+  async getUserBillingInfo(userId: number): Promise<any> {
+    // Return empty object for now - can be expanded later
+    return {};
+  }
+
+  async updateUserBillingInfo(userId: number, data: any): Promise<any> {
+    // Return the data for now - can be expanded later  
+    return data;
+  }
+
+  async getUserFollowedPartners(userId: number): Promise<Partner[]> {
+    const followedPartners = await db
+      .select()
+      .from(partners)
+      .innerJoin(partnerFollowers, eq(partners.id, partnerFollowers.partnerId))
+      .where(eq(partnerFollowers.userId, userId));
+    
+    return followedPartners.map(result => result.partners);
+  }
+
+  async updateUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
+    // Password update logic would go here - for now just return
+    throw new Error('Password update not implemented');
+  }
+
+  async deleteUserAccount(userId: number): Promise<void> {
+    // Account deletion logic would go here - for now just return
+    throw new Error('Account deletion not implemented');
+  }
+
+  async getUserQuoteRequests(userId: number): Promise<any[]> {
+    const requests = await db
+      .select()
+      .from(quoteRequests)
+      .where(eq(quoteRequests.userId, userId))
+      .orderBy(desc(quoteRequests.createdAt));
+    
+    return requests;
+  }
+
+  async getSuggestedPartners(userId: number): Promise<Partner[]> {
+    const allPartners = await db
+      .select()
+      .from(partners)
+      .where(eq(partners.isActive, true))
+      .limit(6);
+    
+    return allPartners;
+  }
+
+  async acceptQuoteResponse(responseId: number, userId: number): Promise<any> {
+    // Quote response accept logic would go here
+    return { success: true };
+  }
+
+  async rejectQuoteResponse(responseId: number, userId: number): Promise<any> {
+    // Quote response reject logic would go here
+    return { success: true };
+  }
+
+  async getUserConversations(userId: number): Promise<any[]> {
+    // Message conversations logic would go here
+    return [];
+  }
+
+  async createMessage(data: any): Promise<any> {
+    // Message creation logic would go here
+    return data;
+  }
 }
 
 export const storage = new DatabaseStorage();

@@ -10,6 +10,9 @@ import HomePage from "@/pages/home";
 import AuthPage from "@/pages/auth";
 import PartnerDashboard from "@/pages/partner-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import UserPanel from "@/pages/user-panel";
+import ServiceRequests from "@/pages/service-requests";
+import Messages from "@/pages/messages";
 import { ProtectedRoute } from "./lib/protected-route";
 import { useQuery } from "@tanstack/react-query";
 
@@ -30,6 +33,9 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/partner-dashboard" component={PartnerDashboard} />
       <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} />
+      <ProtectedRoute path="/user-panel" component={UserPanel} />
+      <ProtectedRoute path="/service-requests" component={ServiceRequests} />
+      <ProtectedRoute path="/messages" component={Messages} />
       <Route component={NotFound} />
     </Switch>
   );

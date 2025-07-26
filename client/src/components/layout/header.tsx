@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/contexts/language-context';
 import { useAuth } from '@/hooks/use-auth';
 import { t } from '@/lib/i18n';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 
@@ -105,31 +112,94 @@ export function Header() {
 
             {user ? (
               <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-600">
-                  {user.firstName} {user.lastName}
-                  </span>
-                  {user.userType === 'partner' && (
+                {/* Dropdown menu for regular users */}
+                {user.userType === 'user' && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                      >
+                        <span>{user.firstName} {user.lastName}</span>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem asChild>
+                        <Link href="/user-panel" className="flex items-center">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Kişisel Panelim</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/service-requests" className="flex items-center">
+                          <FileText className="mr-2 h-4 w-4" />
+                          <span>Hizmet Taleplerim</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/messages" className="flex items-center">
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          <span>Sohbet</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => logoutMutation.mutate()}
+                        disabled={logoutMutation.isPending}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Çıkış Yap</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+
+                {/* Partner users */}
+                {user.userType === 'partner' && (
+                  <div className="flex items-center space-x-3">
+                    <span className="text-sm text-gray-600">
+                      {user.firstName} {user.lastName}
+                    </span>
                     <Link href="/partner-dashboard">
                       <Button variant="outline" size="sm">
                         Partner Paneli
                       </Button>
                     </Link>
-                  )}
-                  {['master_admin', 'editor_admin'].includes(user.userType) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => logoutMutation.mutate()}
+                      disabled={logoutMutation.isPending}
+                    >
+                      Çıkış
+                    </Button>
+                  </div>
+                )}
+
+                {/* Admin users */}
+                {['master_admin', 'editor_admin'].includes(user.userType) && (
+                  <div className="flex items-center space-x-3">
+                    <span className="text-sm text-gray-600">
+                      {user.firstName} {user.lastName}
+                    </span>
                     <Link href="/admin-dashboard">
                       <Button variant="outline" size="sm">
                         Admin Paneli
                       </Button>
                     </Link>
-                  )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => logoutMutation.mutate()}
-                  disabled={logoutMutation.isPending}
-                >
-                  Çıkış
-                </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => logoutMutation.mutate()}
+                      disabled={logoutMutation.isPending}
+                    >
+                      Çıkış
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <>

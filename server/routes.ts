@@ -218,6 +218,114 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // User profile management routes  
+  app.get("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const profile = await storage.getUserProfile(req.user.id);
+      res.json(profile || {});
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      res.json({});
+    }
+  });
+
+  app.put("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const profile = await storage.updateUserProfile(req.user.id, req.body);
+      res.json(profile);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
+  });
+
+  app.get("/api/user/billing", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const billing = await storage.getUserBillingInfo(req.user.id);
+      res.json(billing || {});
+    } catch (error) {
+      console.error('Error fetching billing info:', error);
+      res.json({});
+    }
+  });
+
+  app.put("/api/user/billing", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const billing = await storage.updateUserBillingInfo(req.user.id, req.body);
+      res.json(billing);
+    } catch (error) {
+      console.error('Error updating billing info:', error);
+      res.status(500).json({ error: 'Failed to update billing info' });
+    }
+  });
+
+  app.get("/api/user/followed-partners", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const partners = await storage.getUserFollowedPartners(req.user.id);
+      res.json(partners || []);
+    } catch (error) {
+      console.error('Error fetching followed partners:', error);
+      res.json([]);
+    }
+  });
+
+  // Service requests routes
+  app.get("/api/user/quote-requests", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const requests = await storage.getUserQuoteRequests(req.user.id);
+      res.json(requests || []);
+    } catch (error) {
+      console.error('Error fetching quote requests:', error);
+      res.json([]);
+    }
+  });
+
+  app.get("/api/user/suggested-partners", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const partners = await storage.getSuggestedPartners(req.user.id);
+      res.json(partners || []);
+    } catch (error) {
+      console.error('Error fetching suggested partners:', error);
+      res.json([]);
+    }
+  });
+
+  // Messages routes
+  app.get("/api/user/conversations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const conversations = await storage.getUserConversations(req.user.id);
+      res.json(conversations || []);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      res.json([]);
+    }
+  });
+
+  app.post("/api/messages", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { conversationId, receiverId, message } = req.body;
+      const newMessage = await storage.createMessage({
+        conversationId,
+        senderId: req.user.id,
+        receiverId,
+        message,
+      });
+      res.json(newMessage);
+    } catch (error) {
+      console.error('Error creating message:', error);
+      res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

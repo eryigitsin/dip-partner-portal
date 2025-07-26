@@ -127,6 +127,40 @@ export const partnerApplications = pgTable("partner_applications", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Company billing information
+export const companyBillingInfo = pgTable("company_billing_info", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  companyName: text("company_name").notNull(),
+  taxNumber: text("tax_number"),
+  taxOffice: text("tax_office"),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  country: text("country").default("Turkey"),
+  postalCode: text("postal_code"),
+  phone: text("phone"),
+  email: text("email"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Quote responses from partners
+export const quoteResponses = pgTable("quote_responses", {
+  id: serial("id").primaryKey(),
+  quoteRequestId: integer("quote_request_id").references(() => quoteRequests.id).notNull(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  price: text("price").notNull(),
+  currency: text("currency").default("TRY"),
+  deliveryTime: text("delivery_time"),
+  terms: text("terms"),
+  status: text("status").default("sent"), // sent, accepted, rejected
+  validUntil: timestamp("valid_until"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Partner followers
 export const partnerFollowers = pgTable("partner_followers", {
   id: serial("id").primaryKey(),
@@ -138,11 +172,10 @@ export const partnerFollowers = pgTable("partner_followers", {
 // Messages between users and partners
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
+  conversationId: text("conversation_id").notNull(),
   senderId: integer("sender_id").references(() => users.id).notNull(),
   receiverId: integer("receiver_id").references(() => users.id).notNull(),
-  subject: text("subject"),
   message: text("message").notNull(),
-  attachments: jsonb("attachments"),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -156,6 +189,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   partner: one(partners, {
     fields: [users.id],
     references: [partners.userId],
+  }),
+  billingInfo: one(companyBillingInfo, {
+    fields: [users.id],
+    references: [companyBillingInfo.userId],
   }),
   quoteRequests: many(quoteRequests),
   sentMessages: many(messages, { relationName: "sender" }),
@@ -253,6 +290,23 @@ export const insertServiceCategorySchema = createInsertSchema(serviceCategories)
   id: true,
 });
 
+export const insertCompanyBillingInfoSchema = createInsertSchema(companyBillingInfo).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertQuoteResponseSchema = createInsertSchema(quoteResponses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -269,3 +323,8 @@ export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
 export type PartnerService = typeof partnerServices.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type PartnerFollower = typeof partnerFollowers.$inferSelect;
+export type CompanyBillingInfo = typeof companyBillingInfo.$inferSelect;
+export type InsertCompanyBillingInfo = z.infer<typeof insertCompanyBillingInfoSchema>;
+export type QuoteResponse = typeof quoteResponses.$inferSelect;
+export type InsertQuoteResponse = z.infer<typeof insertQuoteResponseSchema>;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
