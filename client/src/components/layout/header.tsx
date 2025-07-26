@@ -11,7 +11,7 @@ import {
 import { useLanguage } from '@/contexts/language-context';
 import { useAuth } from '@/hooks/use-auth';
 import { t } from '@/lib/i18n';
-import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 
@@ -35,9 +35,18 @@ export function Header() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-10 text-xs sm:text-sm">
             <div className="flex items-center space-x-2 sm:space-x-4 text-gray-600 overflow-hidden">
-              <span className="hidden md:inline">Ecza Sok. No:4-1 Şişli, İstanbul</span>
-              <span className="hidden sm:inline md:inline">info@dip.tc</span>
-              <span className="whitespace-nowrap">08503071245</span>
+              <div className="hidden md:flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                <span>Ecza Sok. No:4-1 Şişli, İstanbul</span>
+              </div>
+              <div className="hidden sm:flex md:flex items-center gap-1">
+                <Mail className="h-3 w-3" />
+                <span>info@dip.tc</span>
+              </div>
+              <a href="tel:+908503071245" className="flex items-center gap-1 whitespace-nowrap hover:text-blue-600 transition-colors">
+                <Phone className="h-3 w-3" />
+                <span>08503071245</span>
+              </a>
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               <Button
