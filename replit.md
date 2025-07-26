@@ -143,3 +143,9 @@ Preferred communication style: Simple, everyday language.
 - **Contact Integration**: Added clickable mailto:info@dip.tc and tel:+908503071245 functionality
 - **Email Templates**: Designed HTML email templates with branded styling and action buttons
 - **API Endpoints**: Added quote request/response, payment completion, and approval notification endpoints
+- **Partner Profile Enhancements**: Added "İletişim Kişisi" display in company information section
+- **Experience Icon**: Updated sector experience display with custom icon and "yıl" suffix
+- **Partner Panel Authentication**: Created login credentials for Markaşef partner (mutfak@markasef.com, password: dip2025ms)
+- **Admin Partner Management**: Implemented comprehensive partner editing system with role-based permissions
+- **Master Admin Features**: Full partner data editing including email and password management
+- **Editor Admin Features**: Partner data editing excluding password and membership email restrictions

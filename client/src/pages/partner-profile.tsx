@@ -16,7 +16,7 @@ import {
   MapPin, 
   Users, 
   Calendar, 
-  TrendingUp, 
+  TrendingUp,
   Edit, 
   MessageCircle, 
   Quote,
@@ -30,8 +30,10 @@ import {
   Linkedin,
   Twitter,
   Instagram,
-  Facebook
+  Facebook,
+  User
 } from 'lucide-react';
+// import experienceIcon from "@assets/Tecrübe İkonu_1753558515148.png";
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 
@@ -448,18 +450,30 @@ export default function PartnerProfile() {
                     <CardTitle>Şirket Bilgileri</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-700">Kuruluş: {partner.foundingYear}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Building className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-700">Şirket Büyüklüğü: {partner.companySize}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <TrendingUp className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-700">Sektör Deneyimi: {partner.sectorExperience}</span>
-                    </div>
+                    {partner.contactPerson && (
+                      <div className="flex items-center gap-3">
+                        <User className="h-5 w-5 text-gray-500" />
+                        <span className="text-gray-700">İletişim Kişisi: {partner.contactPerson}</span>
+                      </div>
+                    )}
+                    {partner.foundingYear && (
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-gray-500" />
+                        <span className="text-gray-700">Kuruluş: {partner.foundingYear}</span>
+                      </div>
+                    )}
+                    {partner.companySize && (
+                      <div className="flex items-center gap-3">
+                        <Building className="h-5 w-5 text-gray-500" />
+                        <span className="text-gray-700">Şirket Büyüklüğü: {partner.companySize}</span>
+                      </div>
+                    )}
+                    {partner.sectorExperience && (
+                      <div className="flex items-center gap-3">
+                        <TrendingUp className="h-5 w-5 text-gray-500" />
+                        <span className="text-gray-700">Sektör Deneyimi: {partner.sectorExperience} yıl</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

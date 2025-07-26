@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/header";
@@ -35,6 +41,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null);
+  const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [partnerFormData, setPartnerFormData] = useState<Partial<Partner & { email?: string; password?: string }>>({});
 
   const { data: applications = [] } = useQuery<PartnerApplication[]>({
     queryKey: ["/api/partner-applications"],
@@ -73,14 +81,39 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/partner-applications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
       toast({
-        title: "Başvuru güncellendi",
-        description: "Partner başvurusu başarıyla güncellendi.",
+        title: "Başarılı",
+        description: "Başvuru durumu güncellendi",
+      });
+      setDetailDialogOpen(false);
+      setSelectedApplicationId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Başvuru güncellenirken hata oluştu",
+        variant: "destructive",
       });
     },
-    onError: (error: Error) => {
+  });
+
+  const updatePartnerMutation = useMutation({
+    mutationFn: async (updatedPartner: Partial<Partner & { email?: string; password?: string }> & { id: number }) => {
+      const response = await apiRequest("PATCH", `/api/partners/${updatedPartner.id}`, updatedPartner);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
       toast({
-        title: "Güncelleme başarısız",
-        description: error.message,
+        title: "Başarılı",
+        description: "Partner bilgileri güncellendi",
+      });
+      setEditingPartner(null);
+      setPartnerFormData({});
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Partner güncellenirken hata oluştu",
         variant: "destructive",
       });
     },
@@ -122,6 +155,20 @@ export default function AdminDashboard() {
   const handleViewApplicationDetail = (id: number) => {
     setSelectedApplicationId(id);
     setDetailDialogOpen(true);
+  };
+
+  const handleEditPartner = (partner: Partner) => {
+    setEditingPartner(partner);
+    setPartnerFormData(partner);
+  };
+
+  const handleSavePartner = () => {
+    if (!editingPartner) return;
+    updatePartnerMutation.mutate({ ...partnerFormData, id: editingPartner.id });
+  };
+
+  const togglePartnerStatus = (partnerId: number, isActive: boolean) => {
+    updatePartnerMutation.mutate({ id: partnerId, isActive });
   };
 
   const getStatusColor = (status: string) => {
@@ -517,7 +564,11 @@ export default function AdminDashboard() {
                                 <Eye className="h-4 w-4 mr-1" />
                                 Görüntüle
                               </Button>
-                              <Button size="sm" variant="outline">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleEditPartner(partner)}
+                              >
                                 <Edit className="h-4 w-4 mr-1" />
                                 Düzenle
                               </Button>
@@ -570,8 +621,6 @@ export default function AdminDashboard() {
         </Tabs>
       </div>
 
-      <Footer />
-
       {/* Application Detail Dialog */}
       <ApplicationDetailDialog
         open={detailDialogOpen}
@@ -580,6 +629,147 @@ export default function AdminDashboard() {
         onApprove={handleApproveApplication}
         onReject={handleRejectApplication}
       />
+      
+      {/* Partner Edit Dialog */}
+      <Dialog open={!!editingPartner} onOpenChange={() => {
+        setEditingPartner(null);
+        setPartnerFormData({});
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Partner Bilgilerini Düzenle</DialogTitle>
+            <DialogDescription>
+              {editingPartner?.companyName} partner bilgilerini güncelleyin
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingPartner && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">Şirket Adı</Label>
+                  <Input
+                    id="companyName"
+                    value={partnerFormData.companyName || ''}
+                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactPerson">İletişim Kişisi</Label>
+                  <Input
+                    id="contactPerson"
+                    value={partnerFormData.contactPerson || ''}
+                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="website">Website</Label>
+                  <Input
+                    id="website"
+                    value={partnerFormData.website || ''}
+                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, website: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="serviceCategory">Hizmet Kategorisi</Label>
+                  <Input
+                    id="serviceCategory"
+                    value={partnerFormData.serviceCategory || ''}
+                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, serviceCategory: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="companySize">Şirket Büyüklüğü</Label>
+                  <Input
+                    id="companySize"
+                    value={partnerFormData.companySize || ''}
+                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, companySize: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sectorExperience">Sektör Deneyimi (yıl)</Label>
+                  <Input
+                    id="sectorExperience"
+                    value={partnerFormData.sectorExperience || ''}
+                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, sectorExperience: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Açıklama</Label>
+                <Textarea
+                  id="description"
+                  value={partnerFormData.description || ''}
+                  onChange={(e) => setPartnerFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="services">Hizmetler</Label>
+                <Textarea
+                  id="services"
+                  value={partnerFormData.services || ''}
+                  onChange={(e) => setPartnerFormData(prev => ({ ...prev, services: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              {user?.userType === "master_admin" && (
+                <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-yellow-50">
+                  <div className="space-y-2">
+                    <Label htmlFor="partnerEmail">Partner E-posta</Label>
+                    <Input
+                      id="partnerEmail"
+                      type="email"
+                      value={partnerFormData.email || ''}
+                      onChange={(e) => setPartnerFormData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="partner@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="partnerPassword">Partner Şifresi</Label>
+                    <Input
+                      id="partnerPassword"
+                      type="password"
+                      value={partnerFormData.password || ''}
+                      onChange={(e) => setPartnerFormData(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="Yeni şifre"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditingPartner(null);
+                    setPartnerFormData({});
+                  }}
+                >
+                  İptal
+                </Button>
+                <Button 
+                  onClick={handleSavePartner}
+                  disabled={updatePartnerMutation.isPending}
+                >
+                  {updatePartnerMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      <Footer />
     </div>
   );
 }
