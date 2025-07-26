@@ -32,6 +32,10 @@ const partnerApplicationSchema = z.object({
   phone: z.string().min(10, "Geçerli bir telefon numarası giriniz"),
   company: z.string().min(2, "Şirket adı en az 2 karakter olmalıdır"),
   contactPerson: z.string().min(2, "İletişim kişisi en az 2 karakter olmalıdır"),
+  username: z.string()
+    .min(3, "Kullanıcı adı en az 3 karakter olmalıdır")
+    .max(20, "Kullanıcı adı en fazla 20 karakter olabilir")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Kullanıcı adı sadece İngilizce harfler, rakamlar, alt çizgi ve tire içerebilir"),
   website: z.string().url("Geçerli bir web sitesi adresi giriniz").optional().or(z.literal("")),
   serviceCategory: z.string().min(1, "Hizmet kategorisi seçiniz"),
   businessDescription: z.string().min(10, "İş tanımı en az 10 karakter olmalıdır"),
@@ -134,6 +138,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
       phone: prefilledData?.phone || "",
       company: prefilledData?.company || "",
       contactPerson: prefilledData?.contactPerson || "",
+      username: prefilledData?.username || "",
       website: prefilledData?.website || "",
       serviceCategory: prefilledData?.serviceCategory || "",
       businessDescription: prefilledData?.businessDescription || "",
@@ -163,6 +168,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
         phone: prefilledData?.phone || "",
         company: prefilledData?.company || "",
         contactPerson: prefilledData?.contactPerson || "",
+        username: prefilledData?.username || "",
         website: prefilledData?.website || "",
         serviceCategory: prefilledData?.serviceCategory || "",
         businessDescription: prefilledData?.businessDescription || "",
@@ -370,19 +376,36 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Web Sitesi</FormLabel>
-                    <FormControl>
-                      <Input type="url" placeholder="https://example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Web Sitesi</FormLabel>
+                      <FormControl>
+                        <Input type="url" placeholder="https://example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kullanıcı Adı *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="partner-kullanici-adi" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-sm text-gray-500">Profil linkiniz: /partner/{field.value || 'kullanici-adi'}</p>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Logo Upload */}
               <div className="space-y-2">

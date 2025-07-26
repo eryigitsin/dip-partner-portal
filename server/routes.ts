@@ -165,6 +165,7 @@ export function registerRoutes(app: Express): Server {
         phone: req.body.phone,
         company: req.body.company,
         contactPerson: req.body.contactPerson,
+        username: req.body.username,
         website: req.body.website,
         serviceCategory: req.body.serviceCategory,
         businessDescription: req.body.businessDescription,
@@ -358,6 +359,7 @@ export function registerRoutes(app: Express): Server {
           twitterProfile: application.twitterProfile,
           instagramProfile: application.instagramProfile,
           facebookProfile: application.facebookProfile,
+          username: application.username,
           isApproved: true,
           isActive: true,
         };
@@ -684,8 +686,14 @@ export function registerRoutes(app: Express): Server {
       } = req.body;
 
       // Validate required fields
-      if (!firstName || !lastName || !email || !phone || !company || !contactPerson || !serviceCategory || !businessDescription || !companySize || !foundingYear || !services || !dipAdvantages || !whyPartner) {
+      if (!firstName || !lastName || !email || !phone || !company || !contactPerson || !username || !serviceCategory || !businessDescription || !companySize || !foundingYear || !services || !dipAdvantages || !whyPartner) {
         return res.status(400).json({ message: 'Zorunlu alanlar eksik' });
+      }
+      
+      // Check if username is already taken
+      const existingPartner = await storage.getPartnerByUsername(username);
+      if (existingPartner) {
+        return res.status(400).json({ message: 'Bu kullanıcı adı zaten kullanılıyor' });
       }
 
       const applicationData = {
@@ -711,6 +719,7 @@ export function registerRoutes(app: Express): Server {
         instagramProfile,
         facebookProfile,
         logoPath: null as string | null,
+        username,
         status: 'pending' as const,
       };
       

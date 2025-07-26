@@ -231,6 +231,11 @@ export class DatabaseStorage implements IStorage {
     return partner || undefined;
   }
 
+  async getPartnerByUsername(username: string): Promise<Partner | undefined> {
+    const [partner] = await db.select().from(partners).where(eq(partners.username, username));
+    return partner || undefined;
+  }
+
   async createPartner(partner: InsertPartner): Promise<Partner> {
     const [newPartner] = await db
       .insert(partners)

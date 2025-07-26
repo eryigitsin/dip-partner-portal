@@ -40,7 +40,7 @@ function Router() {
       <ProtectedRoute path="/service-requests" component={ServiceRequests} />
       <ProtectedRoute path="/messages" component={Messages} />
       <Route path="/application-status/:id" component={ApplicationStatus} />
-      <Route path="/partner/:id" component={PartnerProfile} />
+      <Route path="/partner/:username" component={PartnerProfile} />
       <Route path="/test-upload" component={TestUpload} />
       <Route component={NotFound} />
     </Switch>

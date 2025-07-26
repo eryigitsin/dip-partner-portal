@@ -92,7 +92,7 @@ interface QuoteRequest {
 }
 
 export default function PartnerProfile() {
-  const { id } = useParams<{ id: string }>();
+  const { username } = useParams<{ username: string }>();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -127,7 +127,7 @@ export default function PartnerProfile() {
     message: ''
   });
 
-  const identifier = id || '';
+  const identifier = username || '';
 
   // Fetch partner data using identifier (can be ID or username)
   const { data: partner, isLoading: partnerLoading } = useQuery<Partner>({
