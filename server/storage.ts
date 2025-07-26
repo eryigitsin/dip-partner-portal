@@ -7,6 +7,7 @@ import {
   quoteRequests,
   serviceCategories,
   partnerServices,
+  partnerPosts,
   partnerFollowers,
   messages,
   smsOtpCodes,
@@ -29,6 +30,8 @@ import {
   type InsertSmsOtpCode,
   type TempUserRegistration,
   type InsertTempUserRegistration,
+  type PartnerPost,
+  type InsertPartnerPost,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql } from "drizzle-orm";
@@ -101,7 +104,8 @@ export interface IStorage {
   deleteTempUserRegistration(phone: string): Promise<void>;
   
   // Partner posts methods
-  getPartnerPosts(partnerId: number): Promise<any[]>;
+  getPartnerPosts(partnerId: number): Promise<PartnerPost[]>;
+  createPartnerPost(post: InsertPartnerPost): Promise<PartnerPost>;
   
   // Other methods
   getUserConversations(userId: number): Promise<any[]>;
@@ -559,9 +563,18 @@ export class DatabaseStorage implements IStorage {
       .where(or(eq(users.userType, 'master_admin'), eq(users.userType, 'editor_admin')));
   }
 
-  async getPartnerPosts(partnerId: number): Promise<any[]> {
-    // For now return empty array, will implement posts later
-    return [];
+  async getPartnerPosts(partnerId: number): Promise<PartnerPost[]> {
+    return await db.select().from(partnerPosts)
+      .where(eq(partnerPosts.partnerId, partnerId))
+      .orderBy(desc(partnerPosts.createdAt));
+  }
+
+  async createPartnerPost(post: InsertPartnerPost): Promise<PartnerPost> {
+    const [newPost] = await db
+      .insert(partnerPosts)
+      .values(post)
+      .returning();
+    return newPost;
   }
 }
 

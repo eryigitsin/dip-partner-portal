@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +21,10 @@ import {
   Edit, 
   MessageCircle, 
   Quote,
+  Camera,
+  Image,
+  Video,
+  Plus,
   Heart,
   HeartOff,
   ExternalLink,
@@ -90,7 +95,15 @@ export default function PartnerProfile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [postContent, setPostContent] = useState('');
+  const [editData, setEditData] = useState({
+    logo: '',
+    coverImage: '',
+    description: ''
+  });
   const [quoteRequest, setQuoteRequest] = useState<QuoteRequest>({
     serviceNeeded: '',
     budget: '',
@@ -209,6 +222,53 @@ export default function PartnerProfile() {
     },
   });
 
+  // Update partner profile mutation
+  const updatePartnerMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      const res = await apiRequest('PATCH', `/api/partners/${partner?.id}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Başarılı',
+        description: 'Profil güncellendi',
+      });
+      setIsEditDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/partners', partner?.id] });
+    },
+    onError: () => {
+      toast({
+        title: 'Hata',
+        description: 'Profil güncellenemedi',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Create post mutation
+  const createPostMutation = useMutation({
+    mutationFn: async (postData: any) => {
+      const res = await apiRequest('POST', `/api/partners/${partner?.id}/posts`, postData);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Başarılı',
+        description: 'Paylaşım oluşturuldu',
+      });
+      setIsPostDialogOpen(false);
+      setPostContent('');
+      queryClient.invalidateQueries({ queryKey: [`/api/partners/${partner?.id}/posts`] });
+    },
+    onError: () => {
+      toast({
+        title: 'Hata',
+        description: 'Paylaşım oluşturulamadı',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleFollow = () => {
     if (!user) {
       toast({
@@ -247,6 +307,22 @@ export default function PartnerProfile() {
     }
     messageMutation.mutate();
   };
+
+  const handleUpdateProfile = () => {
+    updatePartnerMutation.mutate(editData);
+  };
+
+  const handleCreatePost = () => {
+    if (postContent.trim()) {
+      createPostMutation.mutate({
+        content: postContent,
+        type: 'text'
+      });
+    }
+  };
+
+  // Check if current user is the partner owner
+  const isOwner = user && partner && user.id === partner.userId;
 
   if (partnerLoading) {
     return (
@@ -289,6 +365,61 @@ export default function PartnerProfile() {
         >
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          
+          {/* Edit Profile Button - Only visible to owner */}
+          {isOwner && (
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute top-4 left-4 bg-white/90 hover:bg-white text-gray-900"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Profili Düzenle
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Profili Düzenle</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="logo">Logo URL</Label>
+                    <Input
+                      id="logo"
+                      value={editData.logo}
+                      onChange={(e) => setEditData({ ...editData, logo: e.target.value })}
+                      placeholder="Logo URL'si"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="coverImage">Kapak Fotoğrafı URL</Label>
+                    <Input
+                      id="coverImage"
+                      value={editData.coverImage}
+                      onChange={(e) => setEditData({ ...editData, coverImage: e.target.value })}
+                      placeholder="Kapak fotoğrafı URL'si"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Açıklama</Label>
+                    <Textarea
+                      id="description"
+                      value={editData.description}
+                      onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                      placeholder="Şirket açıklaması"
+                      rows={4}
+                    />
+                  </div>
+                  <Button onClick={handleUpdateProfile} className="w-full">
+                    <Camera className="h-4 w-4 mr-2" />
+                    Profili Güncelle
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           
           {/* Service Category Badge */}
           <div className="absolute top-6 right-6">
@@ -482,6 +613,89 @@ export default function PartnerProfile() {
               </TabsContent>
               
               <TabsContent value="posts" className="space-y-6">
+                {/* Create Post Section - Only visible to owner */}
+                {isOwner && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={partner.logo} alt={partner.companyName} />
+                          <AvatarFallback>{partner.companyName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start text-left bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 h-auto"
+                              >
+                                Ne düşünüyorsun, {partner.companyName}?
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-lg">
+                              <DialogHeader>
+                                <DialogTitle>Paylaşım Oluştur</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="w-10 h-10">
+                                    <AvatarImage src={partner.logo} alt={partner.companyName} />
+                                    <AvatarFallback>{partner.companyName.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-semibold">{partner.companyName}</p>
+                                    <p className="text-sm text-gray-500">Herkese açık</p>
+                                  </div>
+                                </div>
+                                <Textarea
+                                  value={postContent}
+                                  onChange={(e) => setPostContent(e.target.value)}
+                                  placeholder="Ne paylaşmak istiyorsun?"
+                                  className="min-h-[120px] border-none resize-none text-lg"
+                                />
+                                <div className="flex items-center justify-between border-t pt-3">
+                                  <div className="flex items-center gap-4">
+                                    <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700">
+                                      <Image className="h-5 w-5 mr-2" />
+                                      Fotoğraf
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                                      <Video className="h-5 w-5 mr-2" />
+                                      Video
+                                    </Button>
+                                  </div>
+                                  <Button
+                                    onClick={handleCreatePost}
+                                    disabled={!postContent.trim() || createPostMutation.isPending}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                  >
+                                    {createPostMutation.isPending ? 'Paylaşılıyor...' : 'Paylaş'}
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t">
+                        <Button variant="ghost" size="sm" className="flex-1 justify-center">
+                          <Image className="h-5 w-5 mr-2" />
+                          Fotoğraf/Video
+                        </Button>
+                        <Button variant="ghost" size="sm" className="flex-1 justify-center">
+                          <MessageCircle className="h-5 w-5 mr-2" />
+                          Etkinlik
+                        </Button>
+                        <Button variant="ghost" size="sm" className="flex-1 justify-center">
+                          <Plus className="h-5 w-5 mr-2" />
+                          Daha fazla
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Posts Feed */}
                 {postsLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
@@ -489,7 +703,9 @@ export default function PartnerProfile() {
                 ) : posts.length === 0 ? (
                   <Card>
                     <CardContent className="text-center py-8">
-                      <p className="text-gray-500">Henüz paylaşım bulunmuyor.</p>
+                      <p className="text-gray-500">
+                        {isOwner ? 'İlk paylaşımınızı yapın!' : 'Henüz paylaşım bulunmuyor.'}
+                      </p>
                     </CardContent>
                   </Card>
                 ) : (
@@ -497,26 +713,50 @@ export default function PartnerProfile() {
                     <Card key={post.id}>
                       <CardHeader>
                         <div className="flex items-start justify-between">
-                          <div>
-                            <CardTitle className="text-lg">{post.title}</CardTitle>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {new Date(post.createdAt).toLocaleDateString('tr-TR')}
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-10 h-10">
+                              <AvatarImage src={partner.logo} alt={partner.companyName} />
+                              <AvatarFallback>{partner.companyName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold">{partner.companyName}</p>
+                              <p className="text-sm text-gray-500">
+                                {new Date(post.createdAt).toLocaleDateString('tr-TR', {
+                                  day: 'numeric',
+                                  month: 'long',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-gray-700 mb-4">{post.content}</p>
+                        <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
                         {post.imageUrl && (
                           <img 
                             src={post.imageUrl} 
-                            alt={post.title}
-                            className="w-full h-48 object-cover rounded-lg"
+                            alt="Paylaşım görseli"
+                            className="w-full h-auto rounded-lg mb-4"
                           />
                         )}
-                        <div className="flex items-center gap-4 mt-4 pt-4 border-t">
-                          <span className="text-sm text-gray-500">{post.likesCount} beğeni</span>
-                          <span className="text-sm text-gray-500">{post.commentsCount} yorum</span>
+                        <div className="flex items-center justify-between pt-4 border-t">
+                          <div className="flex items-center gap-6">
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
+                              <Heart className="h-5 w-5 mr-2" />
+                              {post.likesCount || 0}
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600">
+                              <MessageCircle className="h-5 w-5 mr-2" />
+                              {post.commentsCount || 0}
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-green-600">
+                              <Share2 className="h-5 w-5 mr-2" />
+                              Paylaş
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

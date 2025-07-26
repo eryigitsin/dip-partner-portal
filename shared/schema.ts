@@ -88,6 +88,23 @@ export const partnerServices = pgTable("partner_services", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Partner posts
+export const partnerPosts = pgTable("partner_posts", {
+  id: serial("id").primaryKey(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  authorId: integer("author_id").references(() => users.id).notNull(),
+  title: text("title"),
+  content: text("content").notNull(),
+  type: text("type").default("text"), // text, image, video
+  imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  isPublished: boolean("is_published").default(true),
+  likesCount: integer("likes_count").default(0),
+  commentsCount: integer("comments_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Service categories
 export const serviceCategories = pgTable("service_categories", {
   id: serial("id").primaryKey(),
@@ -242,19 +259,7 @@ export const applicationDocuments = pgTable("application_documents", {
   uploadedAt: timestamp("uploaded_at").defaultNow(),
 });
 
-// Partner posts/news feed
-export const partnerPosts = pgTable("partner_posts", {
-  id: serial("id").primaryKey(),
-  partnerId: integer("partner_id").references(() => partners.id).notNull(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  imageUrl: text("image_url"),
-  isVisible: boolean("is_visible").default(true),
-  likesCount: integer("likes_count").default(0),
-  commentsCount: integer("comments_count").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+
 
 // Partner profile edit requests (requires admin approval)
 export const partnerProfileEditRequests = pgTable("partner_profile_edit_requests", {
@@ -411,6 +416,12 @@ export const insertApplicationDocumentSchema = createInsertSchema(applicationDoc
   uploadedAt: true,
 });
 
+export const insertPartnerPostSchema = createInsertSchema(partnerPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -438,3 +449,5 @@ export type TempUserRegistration = typeof tempUserRegistrations.$inferSelect;
 export type InsertTempUserRegistration = z.infer<typeof insertTempUserRegistrationSchema>;
 export type ApplicationDocument = typeof applicationDocuments.$inferSelect;
 export type InsertApplicationDocument = z.infer<typeof insertApplicationDocumentSchema>;
+export type PartnerPost = typeof partnerPosts.$inferSelect;
+export type InsertPartnerPost = z.infer<typeof insertPartnerPostSchema>;

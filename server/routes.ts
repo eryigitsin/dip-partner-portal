@@ -528,6 +528,8 @@ export function registerRoutes(app: Express): Server {
       }
 
       console.log('User updating profile:', req.user);
+      console.log('Request body:', req.body);
+      
       const partner = await storage.getPartnerByUserId(req.user!.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner profile not found" });
@@ -1193,6 +1195,67 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Test email failed:', error);
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Partner posts endpoints
+  app.get("/api/partners/:id/posts", async (req, res) => {
+    try {
+      const partnerId = parseInt(req.params.id);
+      const posts = await storage.getPartnerPosts(partnerId);
+      res.json(posts);
+    } catch (error) {
+      console.error('Error fetching partner posts:', error);
+      res.status(500).json({ message: "Failed to fetch partner posts" });
+    }
+  });
+
+  app.post("/api/partners/:id/posts", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const partnerId = parseInt(req.params.id);
+      const partner = await storage.getPartner(partnerId);
+      
+      if (!partner || partner.userId !== req.user!.id) {
+        return res.status(403).json({ message: "You can only create posts for your own partner profile" });
+      }
+
+      const postData = {
+        partnerId,
+        ...req.body,
+        authorId: req.user!.id
+      };
+
+      const newPost = await storage.createPartnerPost(postData);
+      res.json(newPost);
+    } catch (error) {
+      console.error('Error creating partner post:', error);
+      res.status(500).json({ message: "Failed to create partner post" });
+    }
+  });
+
+  // Partner profile update endpoint
+  app.patch("/api/partners/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const partnerId = parseInt(req.params.id);
+      const partner = await storage.getPartner(partnerId);
+      
+      if (!partner || partner.userId !== req.user!.id) {
+        return res.status(403).json({ message: "You can only update your own partner profile" });
+      }
+
+      const updatedPartner = await storage.updatePartner(partnerId, req.body);
+      res.json(updatedPartner);
+    } catch (error) {
+      console.error('Error updating partner:', error);
+      res.status(500).json({ message: "Failed to update partner" });
     }
   });
 
