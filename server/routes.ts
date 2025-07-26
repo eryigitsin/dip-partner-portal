@@ -11,6 +11,7 @@ import { promisify } from "util";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import express from "express";
 
 const scryptAsync = promisify(scrypt);
 
@@ -45,6 +46,17 @@ const uploadDocuments = multer({
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
+  
+  // Create upload directories and serve static files
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  const logosDir = path.join(uploadsDir, 'logos');
+  const coversDir = path.join(uploadsDir, 'covers');
+  
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  if (!fs.existsSync(logosDir)) fs.mkdirSync(logosDir, { recursive: true });
+  if (!fs.existsSync(coversDir)) fs.mkdirSync(coversDir, { recursive: true });
+  
+  app.use('/uploads', express.static(uploadsDir));
 
   // Initialize service categories
   app.get("/api/init", async (req, res) => {

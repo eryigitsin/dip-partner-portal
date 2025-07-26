@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import ReactCrop, { type Crop, centerCrop, makeAspectCrop, convertToPercentCrop, convertToPixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { useParams, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -110,6 +112,14 @@ export default function PartnerProfile() {
     logo: false,
     coverImage: false
   });
+  
+  // Cropping states
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
+  const [cropField, setCropField] = useState<'logo' | 'coverImage'>('logo');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [crop, setCrop] = useState<Crop>({ x: 0, y: 0, width: 100, height: 100, unit: '%' });
+  const [imageSrc, setImageSrc] = useState<string>('');
+  const imgRef = useRef<HTMLImageElement>(null);
   const [quoteRequest, setQuoteRequest] = useState<QuoteRequest>({
     serviceNeeded: '',
     budget: '',
@@ -346,30 +356,95 @@ export default function PartnerProfile() {
     }
   };
 
-  // Handle file upload
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'coverImage') => {
+  // Image loading for crop
+  const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    if (!imgRef.current) return;
+    
+    const { width, height } = imgRef.current;
+    const aspect = cropField === 'logo' ? 1 : 3; // 1:1 for logo, 3:1 for cover
+    
+    const initialCrop = centerCrop(
+      makeAspectCrop({ unit: '%', width: 90 }, aspect, width, height),
+      width,
+      height
+    );
+    setCrop(initialCrop);
+  }, [cropField]);
+
+  // Handle file selection and open crop dialog
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'coverImage') => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploadingFiles(prev => ({ ...prev, [field]: true }));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageSrc(e.target?.result as string);
+      setSelectedFile(file);
+      setCropField(field);
+      setIsCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Create cropped image and upload
+  const handleCropComplete = useCallback(async () => {
+    if (!selectedFile || !imgRef.current) return;
+
+    setUploadingFiles(prev => ({ ...prev, [cropField]: true }));
 
     try {
-      const formData = new FormData();
-      formData.append(field, file);
-      formData.append('description', editData.description);
+      // Create canvas to draw cropped image
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas context not available');
 
-      const res = await fetch(`/api/partners/${partner?.id}`, {
-        method: 'PATCH',
-        body: formData,
-      });
+      const image = imgRef.current;
+      const pixelCrop = convertToPixelCrop(crop, image.width, image.height);
+
+      // Set canvas size based on field type
+      const targetWidth = cropField === 'logo' ? 400 : 1200;
+      const targetHeight = cropField === 'logo' ? 400 : 400;
       
-      if (!res.ok) throw new Error('Upload failed');
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/partners', identifier] });
-      toast({
-        title: 'Başarılı',
-        description: `${field === 'logo' ? 'Logo' : 'Kapak fotoğrafı'} başarıyla güncellendi`,
-      });
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        targetWidth,
+        targetHeight
+      );
+
+      // Convert to blob and upload
+      canvas.toBlob(async (blob) => {
+        if (!blob) throw new Error('Canvas to blob conversion failed');
+
+        const formData = new FormData();
+        formData.append(cropField, blob, selectedFile.name);
+        formData.append('description', editData.description);
+
+        const res = await fetch(`/api/partners/${partner?.id}`, {
+          method: 'PATCH',
+          body: formData,
+        });
+        
+        if (!res.ok) throw new Error('Upload failed');
+        
+        queryClient.invalidateQueries({ queryKey: ['/api/partners', identifier] });
+        toast({
+          title: 'Başarılı',
+          description: `${cropField === 'logo' ? 'Logo' : 'Kapak fotoğrafı'} başarıyla güncellendi`,
+        });
+        
+        setIsCropDialogOpen(false);
+        setSelectedFile(null);
+        setImageSrc('');
+      }, 'image/jpeg', 0.95);
     } catch (error) {
       toast({
         title: 'Hata',
@@ -377,9 +452,9 @@ export default function PartnerProfile() {
         variant: 'destructive',
       });
     } finally {
-      setUploadingFiles(prev => ({ ...prev, [field]: false }));
+      setUploadingFiles(prev => ({ ...prev, [cropField]: false }));
     }
-  };
+  }, [selectedFile, crop, cropField, editData.description, partner?.id, identifier, queryClient, toast]);
 
   const handleUpdateProfile = () => {
     updatePartnerMutation.mutate(editData);
@@ -461,7 +536,7 @@ export default function PartnerProfile() {
                       id="logo"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileUpload(e, 'logo')}
+                      onChange={(e) => handleFileSelect(e, 'logo')}
                       className="cursor-pointer"
                     />
                     <p className="text-xs text-gray-500 mt-1">En iyi sonuç için 400x400px boyutunda yükleyin</p>
@@ -472,7 +547,7 @@ export default function PartnerProfile() {
                       id="coverImage"
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileUpload(e, 'coverImage')}
+                      onChange={(e) => handleFileSelect(e, 'coverImage')}
                       className="cursor-pointer"
                     />
                     <p className="text-xs text-gray-500 mt-1">En iyi sonuç için 1200x400px boyutunda yükleyin</p>
@@ -499,6 +574,55 @@ export default function PartnerProfile() {
               </DialogContent>
             </Dialog>
           )}
+          
+          {/* Image Crop Dialog */}
+          <Dialog open={isCropDialogOpen} onOpenChange={setIsCropDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {cropField === 'logo' ? 'Logo' : 'Kapak Fotoğrafı'} Kırpma
+                </DialogTitle>
+                <DialogDescription>
+                  {cropField === 'logo' 
+                    ? 'Kare format için görseli kırpın (400x400px)'
+                    : 'Geniş format için görseli kırpın (1200x400px)'
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              {imageSrc && (
+                <div className="space-y-4">
+                  <ReactCrop
+                    crop={crop}
+                    onChange={(c) => setCrop(c)}
+                    aspect={cropField === 'logo' ? 1 : 3}
+                    className="max-h-96"
+                  >
+                    <img
+                      ref={imgRef}
+                      src={imageSrc}
+                      alt="Crop preview"
+                      onLoad={onImageLoad}
+                      className="max-w-full max-h-96 object-contain"
+                    />
+                  </ReactCrop>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCropDialogOpen(false)}
+                    >
+                      İptal
+                    </Button>
+                    <Button
+                      onClick={handleCropComplete}
+                      disabled={uploadingFiles[cropField]}
+                    >
+                      {uploadingFiles[cropField] ? 'Yükleniyor...' : 'Kırp ve Kaydet'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
           
           {/* Service Category Badge */}
           <div className="absolute top-6 right-6">
