@@ -127,9 +127,13 @@ export default function PartnerProfile() {
   // Follow/Unfollow mutation
   const followMutation = useMutation({
     mutationFn: async () => {
-      const endpoint = isFollowing ? 'unfollow' : 'follow';
-      const res = await apiRequest('POST', `/api/partners/${partnerId}/${endpoint}`);
-      return res.json();
+      if (isFollowing) {
+        const res = await apiRequest('DELETE', `/api/partners/${partnerId}/follow`);
+        return res.json();
+      } else {
+        const res = await apiRequest('POST', `/api/partners/${partnerId}/follow`);
+        return res.json();
+      }
     },
     onSuccess: () => {
       setIsFollowing(!isFollowing);
@@ -343,34 +347,21 @@ export default function PartnerProfile() {
                     'bg-blue-600 border-blue-600 text-white hover:bg-red-600 hover:border-red-600 hover:text-white' : 
                     'bg-white text-gray-900 hover:bg-gray-100'
                   }`}
-                  onMouseEnter={(e) => {
-                    if (isFollowing) {
-                      e.currentTarget.innerHTML = '<svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>TAKİPTEN ÇIK';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (isFollowing) {
-                      e.currentTarget.innerHTML = '<svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>TAKİP EDİLİYOR';
-                    }
-                  }}
                 >
-                  {isFollowing ? (
-                    <>
-                      <Heart className="h-4 w-4 mr-2 fill-current" />
-                      TAKİP EDİLİYOR
-                    </>
+                  {followMutation.isPending ? (
+                    <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                  ) : isFollowing ? (
+                    <Heart className="h-4 w-4 mr-2 fill-current" />
                   ) : (
-                    <>
-                      <Heart className="h-4 w-4 mr-2" />
-                      TAKİP ET
-                    </>
+                    <Heart className="h-4 w-4 mr-2" />
                   )}
+                  {followMutation.isPending ? "İŞLENİYOR..." : 
+                   isFollowing ? "TAKİP EDİLİYOR" : "TAKİP ET"}
                 </Button>
                 
                 <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
-                      <Quote className="h-4 w-4 mr-2" />
                       TEKLİF AL
                     </Button>
                   </DialogTrigger>
