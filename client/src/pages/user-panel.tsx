@@ -290,13 +290,13 @@ export default function UserPanel() {
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Kişisel Panelim</h1>
-            <p className="text-gray-600 mt-2">Hesap bilgilerinizi yönetin ve takip ettiğiniz partnerleri görün</p>
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Kişisel Panelim</h1>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">Hesap bilgilerinizi yönetin ve takip ettiğiniz partnerleri görün</p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Profil
@@ -330,7 +330,7 @@ export default function UserPanel() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleProfileSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="firstName">Ad</Label>
                       <Input
@@ -416,9 +416,9 @@ export default function UserPanel() {
             </Card>
 
             {/* Partner Application Call-to-Action */}
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 mt-6">
               <CardContent className="p-6">
-                <div className="flex items-start gap-4">
+                <div className="flex flex-col sm:flex-row items-start gap-4">
                   <div className="flex-shrink-0">
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                       <Handshake className="h-6 w-6 text-blue-600" />
@@ -436,7 +436,7 @@ export default function UserPanel() {
                           İş Ortağı Ol
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto mx-4">
                         <DialogHeader>
                           <DialogTitle>İş Ortağı Başvuru Formu</DialogTitle>
                           <DialogDescription>

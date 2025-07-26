@@ -130,13 +130,13 @@ export default function ServiceRequests() {
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Hizmet Taleplerim</h1>
-            <p className="text-gray-600 mt-2">Hizmet taleplerinizi yönetin ve teklifleri değerlendirin</p>
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Hizmet Taleplerim</h1>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">Hizmet taleplerinizi yönetin ve teklifleri değerlendirin</p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 gap-2">
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Mevcut Talepler
@@ -164,22 +164,22 @@ export default function ServiceRequests() {
               ) : (
                 quoteRequests.map((request) => (
                   <Card key={request.id} className="overflow-hidden">
-                    <CardHeader className="bg-gray-50">
-                      <div className="flex items-start justify-between">
+                    <CardHeader className="bg-gray-50 p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0">
                         <div>
                           <CardTitle className="flex items-center gap-2">
                             <Building className="h-5 w-5" />
                             {request.partner?.companyName}
                           </CardTitle>
                           <CardDescription className="mt-1">
-                            {request.serviceNeeded}
+                            {request.serviceNeeded || 'Hizmet belirtilmemiş'}
                           </CardDescription>
                         </div>
-                        {getStatusBadge(request.status)}
+                        {getStatusBadge(request.status || 'pending')}
                       </div>
                     </CardHeader>
-                    <CardContent className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-500" />
                           <span className="text-sm">Talep Tarihi: {request.createdAt ? formatDate(request.createdAt) : 'Bilinmiyor'}</span>

@@ -149,11 +149,11 @@ export default function Messages() {
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Sohbet</h1>
-                <p className="text-gray-600 mt-2">Partnerlerle mesajlaşın</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Sohbet</h1>
+                <p className="text-gray-600 mt-2 text-sm sm:text-base">Partnerlerle mesajlaşın</p>
               </div>
               
               <Dialog open={newChatOpen} onOpenChange={setNewChatOpen}>
@@ -163,7 +163,7 @@ export default function Messages() {
                   Yeni Sohbet
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl mx-4">
                 <DialogHeader>
                   <DialogTitle>Yeni Sohbet Başlat</DialogTitle>
                   <DialogDescription>
@@ -179,7 +179,7 @@ export default function Messages() {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <ScrollArea className="h-[400px]">
+                  <ScrollArea className="h-[300px] sm:h-[400px]">
                     {partnersLoading ? (
                       <div className="text-center py-8">Yükleniyor...</div>
                     ) : filteredPartners?.length === 0 ? (
@@ -228,7 +228,7 @@ export default function Messages() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8" style={{ minHeight: '600px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 pb-8" style={{ minHeight: '600px' }}>
           {/* Conversations List */}
           <Card className="lg:col-span-1">
             <CardHeader>
@@ -238,7 +238,7 @@ export default function Messages() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[500px]">
+              <ScrollArea className="h-[400px] sm:h-[500px]">
                 {conversationsLoading ? (
                   <div className="text-center py-8">Yükleniyor...</div>
                 ) : !conversations || conversations.length === 0 ? (
