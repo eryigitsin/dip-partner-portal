@@ -221,7 +221,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPartnerByUserId(userId: number): Promise<Partner | undefined> {
+    console.log('Looking for partner with userId:', userId);
     const [partner] = await db.select().from(partners).where(eq(partners.userId, userId));
+    console.log('Found partner:', partner);
     return partner || undefined;
   }
 

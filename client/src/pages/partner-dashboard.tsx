@@ -28,7 +28,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Save
+  Save,
+  Copy
 } from "lucide-react";
 
 export default function PartnerDashboard() {
@@ -404,7 +405,7 @@ export default function PartnerDashboard() {
                         id="username"
                         value={usernameInput || partner?.username || ''}
                         onChange={(e) => setUsernameInput(e.target.value)}
-                        placeholder={partner?.username || `partner${partner?.id}` || "kullaniciadi"}
+                        placeholder="Kullanıcı adınızı yazın..."
                         className="flex-1"
                       />
                       <Button 
@@ -428,15 +429,32 @@ export default function PartnerDashboard() {
                   {/* Current URL Display */}
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <Label className="text-sm font-medium text-gray-700">Mevcut Profil URL'niz:</Label>
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-center justify-between">
                       <a 
                         href={`/partner/${partner?.username || partner?.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-dip-blue hover:text-dip-dark-blue underline"
+                        className="text-dip-blue hover:text-dip-dark-blue underline flex-1 mr-4"
                       >
                         {window.location.origin}/partner/{partner?.username || partner?.id}
                       </a>
+                      <Button 
+                        onClick={() => {
+                          const url = `${window.location.origin}/partner/${partner?.username || partner?.id}`;
+                          navigator.clipboard.writeText(url).then(() => {
+                            toast({
+                              title: "Başarılı",
+                              description: "URL kopyalandı",
+                            });
+                          });
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="ml-2"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Profili Paylaş
+                      </Button>
                     </div>
                   </div>
 
