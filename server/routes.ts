@@ -1315,8 +1315,16 @@ export function registerRoutes(app: Express): Server {
     try {
       console.log('Partner update request - User:', req.user?.id, 'Partner ID:', req.params.id);
       console.log('Request authenticated:', req.isAuthenticated());
-      console.log('Files:', req.files);
+      console.log('Files received:', req.files);
       console.log('Body:', req.body);
+      
+      // Log each file details
+      if (req.files) {
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+        Object.keys(files).forEach(key => {
+          console.log(`File ${key}:`, files[key][0]);
+        });
+      }
 
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Authentication required" });

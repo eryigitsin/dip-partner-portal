@@ -424,14 +424,26 @@ export default function PartnerProfile() {
       canvas.toBlob(async (blob) => {
         if (!blob) throw new Error('Canvas to blob conversion failed');
 
+        console.log('Blob created:', blob.size, 'bytes for', cropField);
+        
         const formData = new FormData();
         formData.append(cropField, blob, selectedFile.name);
         formData.append('description', editData.description);
+
+        console.log('Uploading to:', `/api/partners/${partner?.id}`);
+        console.log('FormData entries:');
+        for (let [key, value] of formData.entries()) {
+          console.log(key, value);
+        }
 
         const res = await fetch(`/api/partners/${partner?.id}`, {
           method: 'PATCH',
           body: formData,
         });
+        
+        console.log('Upload response status:', res.status);
+        const responseData = await res.json();
+        console.log('Upload response data:', responseData);
         
         if (!res.ok) throw new Error('Upload failed');
         
