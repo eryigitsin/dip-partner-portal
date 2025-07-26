@@ -444,6 +444,7 @@ export default function PartnerProfile() {
         const res = await fetch(`/api/partners/${partner?.id}`, {
           method: 'PATCH',
           body: formData,
+          credentials: 'include' // Ensure cookies are sent
         });
         
         console.log('Upload response status:', res.status);

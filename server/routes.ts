@@ -57,6 +57,11 @@ export function registerRoutes(app: Express): Server {
   if (!fs.existsSync(coversDir)) fs.mkdirSync(coversDir, { recursive: true });
   
   app.use('/uploads', express.static(uploadsDir));
+  
+  // Serve test page
+  app.get('/test-upload', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'test-upload.html'));
+  });
 
   // Initialize service categories
   app.get("/api/init", async (req, res) => {
@@ -1363,15 +1368,22 @@ export function registerRoutes(app: Express): Server {
       // Handle file uploads
       if (files && files.logo && files.logo[0]) {
         updates.logo = `/uploads/logos/${files.logo[0].filename}`;
+        console.log('Logo file path:', updates.logo);
       }
       
       if (files && files.coverImage && files.coverImage[0]) {
         updates.coverImage = `/uploads/covers/${files.coverImage[0].filename}`;
+        console.log('Cover file path:', updates.coverImage);
       }
 
       console.log('Updates to apply:', updates);
+      console.log('Updates keys:', Object.keys(updates));
+      
       const updatedPartner = await storage.updatePartner(partnerId, updates);
       console.log('Partner updated successfully:', updatedPartner);
+      console.log('Updated logo:', updatedPartner?.logo);
+      console.log('Updated coverImage:', updatedPartner?.coverImage);
+      
       res.json(updatedPartner);
     } catch (error) {
       console.error('Error updating partner:', error);

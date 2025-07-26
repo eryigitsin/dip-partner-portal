@@ -240,11 +240,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePartner(id: number, partnerUpdate: Partial<InsertPartner>): Promise<Partner | undefined> {
+    console.log('Storage updatePartner called with:', { id, partnerUpdate });
     const [partner] = await db
       .update(partners)
       .set({ ...partnerUpdate, updatedAt: new Date() })
       .where(eq(partners.id, id))
       .returning();
+    console.log('Storage updatePartner result:', partner);
     return partner || undefined;
   }
 
