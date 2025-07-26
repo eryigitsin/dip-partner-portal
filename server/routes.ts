@@ -1317,13 +1317,22 @@ export function registerRoutes(app: Express): Server {
       console.log('Request authenticated:', req.isAuthenticated());
       console.log('Files received:', req.files);
       console.log('Body:', req.body);
+      console.log('Content-Type:', req.headers['content-type']);
       
       // Log each file details
       if (req.files) {
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
         Object.keys(files).forEach(key => {
-          console.log(`File ${key}:`, files[key][0]);
+          console.log(`File ${key}:`, {
+            filename: files[key][0].filename,
+            originalname: files[key][0].originalname,
+            mimetype: files[key][0].mimetype,
+            size: files[key][0].size,
+            path: files[key][0].path
+          });
         });
+      } else {
+        console.log('No files received in req.files');
       }
 
       if (!req.isAuthenticated()) {

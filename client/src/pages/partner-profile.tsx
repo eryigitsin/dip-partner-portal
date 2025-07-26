@@ -427,7 +427,12 @@ export default function PartnerProfile() {
         console.log('Blob created:', blob.size, 'bytes for', cropField);
         
         const formData = new FormData();
-        formData.append(cropField, blob, selectedFile.name);
+        // Create a File object from blob with proper name and type
+        const croppedFile = new File([blob], selectedFile.name, { 
+          type: 'image/jpeg',
+          lastModified: Date.now()
+        });
+        formData.append(cropField, croppedFile);
         formData.append('description', editData.description);
 
         console.log('Uploading to:', `/api/partners/${partner?.id}`);
