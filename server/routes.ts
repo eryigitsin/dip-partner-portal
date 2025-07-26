@@ -326,6 +326,25 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Partner application endpoint
+  app.post('/api/partner-applications', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const applicationData = {
+        ...req.body,
+        userId: req.user!.id,
+        status: 'pending',
+        appliedAt: new Date()
+      };
+      
+      const application = await storage.createPartnerApplication(applicationData);
+      res.status(201).json(application);
+    } catch (error: any) {
+      console.error('Error creating partner application:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

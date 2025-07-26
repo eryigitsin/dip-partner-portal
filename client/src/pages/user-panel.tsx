@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save } from 'lucide-react';
+import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save, Handshake, Briefcase } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserProfile, CompanyBillingInfo, Partner } from '@shared/schema';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Header } from '@/components/layout/header';
@@ -20,6 +22,19 @@ export default function UserPanel() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
+  const [partnerApplicationOpen, setPartnerApplicationOpen] = useState(false);
+  const [partnerForm, setPartnerForm] = useState({
+    companyName: '',
+    contactPerson: '',
+    email: '',
+    phone: '',
+    website: '',
+    serviceCategory: '',
+    description: '',
+    experience: '',
+    certifications: '',
+    address: ''
+  });
 
   // Fetch user profile data
   const { data: userProfile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -37,6 +52,11 @@ export default function UserPanel() {
   const { data: followedPartners, isLoading: followersLoading } = useQuery<Partner[]>({
     queryKey: ['/api/user/followed-partners'],
     enabled: !!user,
+  });
+
+  // Fetch service categories for partner application
+  const { data: categories } = useQuery<any[]>({
+    queryKey: ['/api/categories'],
   });
 
   // Update profile mutation
@@ -149,6 +169,64 @@ export default function UserPanel() {
       });
     },
   });
+
+  // Partner application mutation
+  const partnerApplicationMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest('POST', '/api/partner-applications', data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Başarılı',
+        description: 'İş ortağı başvurunuz alındı. İncelendikten sonra bilgilendirileceksiniz.',
+      });
+      setPartnerApplicationOpen(false);
+      setPartnerForm({
+        companyName: '',
+        contactPerson: '',
+        email: '',
+        phone: '',
+        website: '',
+        serviceCategory: '',
+        description: '',
+        experience: '',
+        certifications: '',
+        address: ''
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Hata',
+        description: error.message || 'Başvuru gönderilirken bir hata oluştu.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Auto-fill form with user data when dialog opens
+  const handlePartnerDialogOpen = (open: boolean) => {
+    if (open && userProfile) {
+      setPartnerForm({
+        companyName: userProfile.company || '',
+        contactPerson: `${user?.firstName} ${user?.lastName}` || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        website: userProfile.website || '',
+        serviceCategory: '',
+        description: userProfile.sector || '',
+        experience: '',
+        certifications: '',
+        address: ''
+      });
+    }
+    setPartnerApplicationOpen(open);
+  };
+
+  const handlePartnerFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    partnerApplicationMutation.mutate(partnerForm);
+  };
 
   const handleProfileSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -334,6 +412,162 @@ export default function UserPanel() {
                     {updateProfileMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
                   </Button>
                 </form>
+              </CardContent>
+            </Card>
+
+            {/* Partner Application Call-to-Action */}
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Handshake className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">İş Ortağı Ol</h3>
+                    <p className="text-gray-600 mb-4">
+                      Eğer DİP üyelerine sunabileceğiniz hizmetleriniz varsa iş ortaklığı başvurusu yapabilirsiniz.
+                    </p>
+                    <Dialog open={partnerApplicationOpen} onOpenChange={handlePartnerDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-blue-600 hover:bg-blue-700">
+                          <Briefcase className="h-4 w-4 mr-2" />
+                          İş Ortağı Ol
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>İş Ortağı Başvuru Formu</DialogTitle>
+                          <DialogDescription>
+                            DİP platformunda iş ortağı olmak için gerekli bilgileri doldurun.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handlePartnerFormSubmit} className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="partnerCompanyName">Şirket Adı *</Label>
+                              <Input
+                                id="partnerCompanyName"
+                                value={partnerForm.companyName}
+                                onChange={(e) => setPartnerForm({...partnerForm, companyName: e.target.value})}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="partnerContactPerson">İletişim Kişisi *</Label>
+                              <Input
+                                id="partnerContactPerson"
+                                value={partnerForm.contactPerson}
+                                onChange={(e) => setPartnerForm({...partnerForm, contactPerson: e.target.value})}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="partnerEmail">E-posta *</Label>
+                              <Input
+                                id="partnerEmail"
+                                type="email"
+                                value={partnerForm.email}
+                                onChange={(e) => setPartnerForm({...partnerForm, email: e.target.value})}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="partnerPhone">Telefon *</Label>
+                              <Input
+                                id="partnerPhone"
+                                value={partnerForm.phone}
+                                onChange={(e) => setPartnerForm({...partnerForm, phone: e.target.value})}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="partnerWebsite">Web Sitesi</Label>
+                              <Input
+                                id="partnerWebsite"
+                                type="url"
+                                value={partnerForm.website}
+                                onChange={(e) => setPartnerForm({...partnerForm, website: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="partnerServiceCategory">Hizmet Kategorisi *</Label>
+                              <Select 
+                                value={partnerForm.serviceCategory} 
+                                onValueChange={(value) => setPartnerForm({...partnerForm, serviceCategory: value})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Kategori seçin" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categories?.map((category) => (
+                                    <SelectItem key={category.id} value={category.name}>
+                                      {category.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div>
+                            <Label htmlFor="partnerDescription">Şirket Açıklaması *</Label>
+                            <Textarea
+                              id="partnerDescription"
+                              value={partnerForm.description}
+                              onChange={(e) => setPartnerForm({...partnerForm, description: e.target.value})}
+                              rows={3}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="partnerExperience">Deneyim ve Uzmanlık Alanları</Label>
+                            <Textarea
+                              id="partnerExperience"
+                              value={partnerForm.experience}
+                              onChange={(e) => setPartnerForm({...partnerForm, experience: e.target.value})}
+                              rows={3}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="partnerCertifications">Sertifikalar ve Akreditasyonlar</Label>
+                            <Textarea
+                              id="partnerCertifications"
+                              value={partnerForm.certifications}
+                              onChange={(e) => setPartnerForm({...partnerForm, certifications: e.target.value})}
+                              rows={2}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="partnerAddress">Adres</Label>
+                            <Textarea
+                              id="partnerAddress"
+                              value={partnerForm.address}
+                              onChange={(e) => setPartnerForm({...partnerForm, address: e.target.value})}
+                              rows={2}
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2 pt-4">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setPartnerApplicationOpen(false)}
+                            >
+                              İptal
+                            </Button>
+                            <Button
+                              type="submit"
+                              disabled={partnerApplicationMutation.isPending}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              {partnerApplicationMutation.isPending ? 'Gönderiliyor...' : 'Başvuru Gönder'}
+                            </Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
