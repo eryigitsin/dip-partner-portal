@@ -211,11 +211,17 @@ export function PartnersCatalog({
                 <CardContent className="p-6">
                   <div className="flex items-center mb-4">
                     <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                      {partner.logo ? (
+                      {partner.logo && partner.logo.trim() !== '' ? (
                         <img 
                           src={partner.logo} 
                           alt={`${partner.companyName} Logo`}
                           className="w-10 h-10 rounded-lg object-cover"
+                          onError={(e) => {
+                            console.error('Logo failed to load:', partner.logo);
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).parentElement!.innerHTML = 
+                              `<span class="text-lg font-bold text-gray-600">${partner.companyName.charAt(0)}</span>`;
+                          }}
                         />
                       ) : (
                         <span className="text-lg font-bold text-gray-600">

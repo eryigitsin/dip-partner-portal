@@ -364,14 +364,17 @@ export default function PartnerProfile() {
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     if (!imgRef.current) return;
     
-    const { width, height } = imgRef.current;
+    const { naturalWidth, naturalHeight } = imgRef.current;
     const aspect = cropField === 'logo' ? 1 : 3; // 1:1 for logo, 3:1 for cover
     
+    // Create initial crop based on image dimensions
     const initialCrop = centerCrop(
-      makeAspectCrop({ unit: '%', width: 90 }, aspect, width, height),
-      width,
-      height
+      makeAspectCrop({ unit: '%', width: 80 }, aspect, naturalWidth, naturalHeight),
+      naturalWidth,
+      naturalHeight
     );
+    
+    console.log('Image loaded:', { naturalWidth, naturalHeight, aspect, initialCrop });
     setCrop(initialCrop);
   }, [cropField]);
 
@@ -403,7 +406,7 @@ export default function PartnerProfile() {
       if (!ctx) throw new Error('Canvas context not available');
 
       const image = imgRef.current;
-      const pixelCrop = convertToPixelCrop(crop, image.width, image.height);
+      const pixelCrop = convertToPixelCrop(crop, image.naturalWidth, image.naturalHeight);
 
       // Set canvas size based on field type
       const targetWidth = cropField === 'logo' ? 400 : 1200;
@@ -412,12 +415,30 @@ export default function PartnerProfile() {
       canvas.width = targetWidth;
       canvas.height = targetHeight;
 
+      // Clear canvas with white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+      // Ensure crop coordinates are valid
+      const validCrop = {
+        x: Math.max(0, Math.min(pixelCrop.x, image.naturalWidth - pixelCrop.width)),
+        y: Math.max(0, Math.min(pixelCrop.y, image.naturalHeight - pixelCrop.height)),
+        width: Math.min(pixelCrop.width, image.naturalWidth - pixelCrop.x),
+        height: Math.min(pixelCrop.height, image.naturalHeight - pixelCrop.y)
+      };
+
+      console.log('Drawing image with crop:', {
+        source: validCrop,
+        destination: { width: targetWidth, height: targetHeight },
+        imageSize: { width: image.naturalWidth, height: image.naturalHeight }
+      });
+
       ctx.drawImage(
         image,
-        pixelCrop.x,
-        pixelCrop.y,
-        pixelCrop.width,
-        pixelCrop.height,
+        validCrop.x,
+        validCrop.y,
+        validCrop.width,
+        validCrop.height,
         0,
         0,
         targetWidth,
