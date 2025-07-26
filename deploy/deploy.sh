@@ -5,8 +5,18 @@
 
 set -e
 
-APP_DIR="/var/www/partner-management"
-BACKUP_DIR="/var/backups/partner-management"
+# Load configuration
+SCRIPT_DIR="$(dirname "$0")"
+if [ -f "$SCRIPT_DIR/config.sh" ]; then
+    source "$SCRIPT_DIR/config.sh"
+else
+    # Fallback configuration
+    APP_DIR="/var/www/partner-management"
+    BACKUP_DIR="/var/backups/partner-management"
+    APP_USER="partnerapp"
+    APP_NAME="partner-app"
+fi
+
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 echo "🚀 Starting deployment process..."
@@ -43,20 +53,20 @@ fi
 
 # Pull latest changes
 echo "📥 Pulling latest changes from repository..."
-sudo -u partnerapp git fetch origin
-sudo -u partnerapp git reset --hard origin/main
+sudo -u $APP_USER git fetch origin
+sudo -u $APP_USER git reset --hard origin/${REPO_BRANCH:-main}
 
 # Install/update dependencies
 echo "📦 Installing dependencies..."
-sudo -u partnerapp npm ci --production
+sudo -u $APP_USER npm ci --production
 
 # Build the application
 echo "🏗️ Building application..."
-sudo -u partnerapp npm run build
+sudo -u $APP_USER npm run build
 
 # Run database migrations
 echo "🗄️ Running database migrations..."
-sudo -u partnerapp npm run db:push
+sudo -u $APP_USER npm run db:push
 
 # Test the build
 if [ ! -f "dist/index.js" ]; then
@@ -66,7 +76,7 @@ fi
 
 # Restart the application with PM2
 echo "⚡ Restarting application..."
-sudo -u partnerapp pm2 reload partner-app --update-env || sudo -u partnerapp pm2 start dist/index.js --name "partner-app" --env production
+sudo -u $APP_USER pm2 reload $APP_NAME --update-env || sudo -u $APP_USER pm2 start dist/index.js --name "$APP_NAME" --env production
 
 # Wait for application to start
 echo "⏳ Waiting for application to start..."
@@ -95,4 +105,4 @@ echo "🌍 Your application is now live!"
 # Display application status
 echo ""
 echo "📊 Application Status:"
-sudo -u partnerapp pm2 list
+sudo -u $APP_USER pm2 list

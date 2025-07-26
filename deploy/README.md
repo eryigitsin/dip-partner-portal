@@ -23,24 +23,31 @@ chmod +x setup-droplet.sh
 ./setup-droplet.sh
 ```
 
-### 2. Repository URL'ini Güncelleyin
+### 2. Repository URL'ini ve Environment Variables'ları Ayarlayın
+
+Tek bir script ile tüm konfigürasyonu yapabilirsiniz:
 
 ```bash
-# Deployment script'indeki GitHub URL'ini güncelleyin
-sudo nano /var/www/partner-management/deploy.sh
+# Environment setup script'ini indirin
+wget -O env-setup.sh https://raw.githubusercontent.com/yourusername/partner-management-system/main/deploy/env-setup.sh
+chmod +x env-setup.sh
 
-# REPO_URL'yi kendi repository'nizle değiştirin
-REPO_URL="https://github.com/yourusername/partner-management-system.git"
+# Konfigürasyon script'ini çalıştırın
+sudo ./env-setup.sh
 ```
 
-### 3. Environment Variables'ları Ayarlayın
+Bu script sizden şunları soracak:
+- GitHub repository URL'iniz
+- Domain adınız (opsiyonel)
+- Database bilgileri
+- SendGrid API key
+- Slack/Discord webhook URL'leri (opsiyonel)
+
+**Alternatif olarak, manuel güncelleme:**
 
 ```bash
-# SendGrid API key'inizi ekleyin
-sudo nano /var/www/partner-management/.env.production
-
-# SENDGRID_API_KEY değerini güncelleyin
-SENDGRID_API_KEY=your_actual_sendgrid_api_key
+# Repository URL'ini hızlıca güncellemek için
+./update-repo.sh https://github.com/yourusername/partner-management-system.git
 ```
 
 ### 4. İlk Deployment'ı Yapın

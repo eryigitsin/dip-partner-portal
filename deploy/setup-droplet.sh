@@ -90,15 +90,8 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl restart nginx
 
-# Create environment file
-echo "⚙️ Creating environment configuration..."
-sudo -u partnerapp tee /var/www/partner-management/.env.production << EOF
-NODE_ENV=production
-PORT=3000
-DATABASE_URL=postgresql://partner_user:SecurePassword123!@localhost:5432/partner_db
-SESSION_SECRET=$(openssl rand -base64 32)
-SENDGRID_API_KEY=your_sendgrid_api_key_here
-EOF
+# Environment configuration will be done separately
+echo "⚙️ Environment configuration will be set up using env-setup.sh..."
 
 # Create deployment script
 echo "📝 Creating deployment script..."
@@ -155,9 +148,11 @@ sudo apt install -y certbot python3-certbot-nginx
 echo "✅ Droplet setup completed!"
 echo ""
 echo "Next steps:"
-echo "1. Update the REPO_URL in /var/www/partner-management/deploy.sh"
-echo "2. Add your SendGrid API key to /var/www/partner-management/.env.production"
-echo "3. Run the deployment: sudo -u partnerapp /var/www/partner-management/deploy.sh"
-echo "4. Setup SSL: sudo certbot --nginx -d yourdomain.com"
-echo "5. Setup PM2 startup: sudo -u partnerapp pm2 startup && sudo -u partnerapp pm2 save"
+echo "1. Download and run the environment setup script:"
+echo "   wget -O env-setup.sh https://raw.githubusercontent.com/yourusername/partner-management-system/main/deploy/env-setup.sh"
+echo "   chmod +x env-setup.sh"
+echo "   sudo ./env-setup.sh"
+echo "2. Run the deployment: sudo -u partnerapp /var/www/partner-management/deploy.sh"
+echo "3. Setup SSL: sudo ./ssl-setup.sh yourdomain.com admin@yourdomain.com"
+echo "4. Setup PM2 startup: sudo -u partnerapp pm2 startup && sudo -u partnerapp pm2 save"
 EOF
