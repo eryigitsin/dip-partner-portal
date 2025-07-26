@@ -340,7 +340,7 @@ export default function PartnerProfile() {
                   onClick={handleFollow}
                   disabled={followMutation.isPending}
                   className={`group ${isFollowing ? 
-                    'border-white text-white hover:bg-red-600 hover:border-red-600 hover:text-white' : 
+                    'bg-blue-600 border-blue-600 text-white hover:bg-red-600 hover:border-red-600 hover:text-white' : 
                     'bg-white text-gray-900 hover:bg-gray-100'
                   }`}
                   onMouseEnter={(e) => {
@@ -361,7 +361,7 @@ export default function PartnerProfile() {
                     </>
                   ) : (
                     <>
-                      <HeartOff className="h-4 w-4 mr-2" />
+                      <Heart className="h-4 w-4 mr-2" />
                       TAKİP ET
                     </>
                   )}
@@ -456,6 +456,12 @@ export default function PartnerProfile() {
                       <div className="flex items-center gap-3">
                         <User className="h-5 w-5 text-gray-500" />
                         <span className="text-gray-700">İletişim Kişisi: {partner.contactPerson}</span>
+                      </div>
+                    )}
+                    {partner.companyAddress && (
+                      <div className="flex items-start gap-3">
+                        <MapPin className="h-5 w-5 text-gray-500 mt-1" />
+                        <span className="text-gray-700">Adres: {partner.companyAddress}</span>
                       </div>
                     )}
                     {partner.foundingYear && (

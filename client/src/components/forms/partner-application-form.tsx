@@ -42,6 +42,7 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
       company: '',
       title: '',
       website: '',
+      companyAddress: '',
       serviceCategory: '',
       services: '',
       dipAdvantages: '',
@@ -171,6 +172,25 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
               <FormLabel>Website</FormLabel>
               <FormControl>
                 <Input type="url" {...field} value={field.value || ''} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="companyAddress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Şirket Adresi</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Tam şirket adresinizi yazın..."
+                  rows={3}
+                  {...field} 
+                  value={field.value || ''}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

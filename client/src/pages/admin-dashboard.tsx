@@ -722,6 +722,16 @@ export default function AdminDashboard() {
                 />
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="companyAddress">Şirket Adresi</Label>
+                <Textarea
+                  id="companyAddress"
+                  value={partnerFormData.companyAddress || ''}
+                  onChange={(e) => setPartnerFormData(prev => ({ ...prev, companyAddress: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
               {user?.userType === "master_admin" && (
                 <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-yellow-50">
                   <div className="space-y-2">
