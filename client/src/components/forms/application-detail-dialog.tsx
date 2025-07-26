@@ -44,7 +44,7 @@ export function ApplicationDetailDialog({
 
   const { data: application, isLoading } = useQuery({
     queryKey: [`/api/partner-applications/${applicationId}/details`],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!applicationId && open,
   });
 
@@ -87,14 +87,14 @@ export function ApplicationDetailDialog({
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-2xl font-bold">
-                {application.company} - Partner Başvurusu
+                {application?.company || 'Partner Başvurusu'}
               </DialogTitle>
               <DialogDescription>
-                Başvuru ID: #{application.id} | {new Date(application.createdAt).toLocaleDateString('tr-TR')}
+                Başvuru ID: #{application?.id} | {application?.createdAt ? new Date(application.createdAt).toLocaleDateString('tr-TR') : ''}
               </DialogDescription>
             </div>
-            <Badge className={getStatusColor(application.status)}>
-              {getStatusText(application.status)}
+            <Badge className={getStatusColor(application?.status || 'pending')}>
+              {getStatusText(application?.status || 'pending')}
             </Badge>
           </div>
         </DialogHeader>
@@ -111,21 +111,21 @@ export function ApplicationDetailDialog({
             <CardContent className="space-y-3">
               <div>
                 <p className="text-sm font-medium text-gray-500">Ad Soyad</p>
-                <p className="text-sm">{application.firstName} {application.lastName}</p>
+                <p className="text-sm">{application?.firstName || ''} {application?.lastName || ''}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">İletişim Kişisi</p>
-                <p className="text-sm">{application.contactPerson}</p>
+                <p className="text-sm">{application?.contactPerson || ''}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-gray-400" />
-                <span className="text-sm">{application.email}</span>
+                <span className="text-sm">{application?.email || ''}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-gray-400" />
-                <span className="text-sm">{application.phone}</span>
+                <span className="text-sm">{application?.phone || ''}</span>
               </div>
-              {application.website && (
+              {application?.website && (
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-gray-400" />
                   <a 
@@ -153,23 +153,23 @@ export function ApplicationDetailDialog({
             <CardContent className="space-y-3">
               <div>
                 <p className="text-sm font-medium text-gray-500">Şirket Adı</p>
-                <p className="text-sm font-semibold">{application.company}</p>
+                <p className="text-sm font-semibold">{application?.company || ''}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">İş Türü</p>
-                <p className="text-sm">{application.businessType}</p>
+                <p className="text-sm">{application?.businessType || ''}</p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm">{application.companySize}</span>
+                  <span className="text-sm">{application?.companySize || ''}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm">Kuruluş: {application.foundingYear}</span>
+                  <span className="text-sm">Kuruluş: {application?.foundingYear || ''}</span>
                 </div>
               </div>
-              {application.sectorExperience && (
+              {application?.sectorExperience && (
                 <div>
                   <p className="text-sm font-medium text-gray-500">Sektör Deneyimi</p>
                   <p className="text-sm">{application.sectorExperience} yıl</p>
@@ -185,13 +185,13 @@ export function ApplicationDetailDialog({
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                {application.businessDescription}
+                {application?.businessDescription || ''}
               </p>
             </CardContent>
           </Card>
 
           {/* Hedef Pazarlar */}
-          {application.targetMarkets && (
+          {application?.targetMarkets && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -214,7 +214,7 @@ export function ApplicationDetailDialog({
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                {application.services}
+                {application?.services || ''}
               </p>
             </CardContent>
           </Card>
@@ -226,7 +226,7 @@ export function ApplicationDetailDialog({
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                {application.dipAdvantages}
+                {application?.dipAdvantages || ''}
               </p>
             </CardContent>
           </Card>
@@ -238,13 +238,13 @@ export function ApplicationDetailDialog({
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                {application.whyPartner}
+                {application?.whyPartner || ''}
               </p>
             </CardContent>
           </Card>
 
           {/* Referanslar */}
-          {application.references && (
+          {application?.references && (
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Referanslar</CardTitle>
@@ -263,7 +263,7 @@ export function ApplicationDetailDialog({
               <CardTitle>Sosyal Medya Profilleri</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {application.linkedinProfile && (
+              {application?.linkedinProfile && (
                 <div className="flex items-center gap-2">
                   <Linkedin className="h-4 w-4 text-blue-600" />
                   <a 
@@ -276,7 +276,7 @@ export function ApplicationDetailDialog({
                   </a>
                 </div>
               )}
-              {application.twitterProfile && (
+              {application?.twitterProfile && (
                 <div className="flex items-center gap-2">
                   <Twitter className="h-4 w-4 text-blue-400" />
                   <a 
@@ -289,7 +289,7 @@ export function ApplicationDetailDialog({
                   </a>
                 </div>
               )}
-              {application.instagramProfile && (
+              {application?.instagramProfile && (
                 <div className="flex items-center gap-2">
                   <Instagram className="h-4 w-4 text-pink-600" />
                   <a 
@@ -302,7 +302,7 @@ export function ApplicationDetailDialog({
                   </a>
                 </div>
               )}
-              {application.facebookProfile && (
+              {application?.facebookProfile && (
                 <div className="flex items-center gap-2">
                   <Facebook className="h-4 w-4 text-blue-600" />
                   <a 
@@ -315,7 +315,7 @@ export function ApplicationDetailDialog({
                   </a>
                 </div>
               )}
-              {!application.linkedinProfile && !application.twitterProfile && !application.instagramProfile && !application.facebookProfile && (
+              {!application?.linkedinProfile && !application?.twitterProfile && !application?.instagramProfile && !application?.facebookProfile && (
                 <p className="text-sm text-gray-500">Sosyal medya profili belirtilmemiş</p>
               )}
             </CardContent>
@@ -326,11 +326,11 @@ export function ApplicationDetailDialog({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Yüklenen Belgeler ({application.documents?.length || 0})
+                Yüklenen Belgeler ({application?.documents?.length || 0})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {application.documents && application.documents.length > 0 ? (
+              {application?.documents && application.documents.length > 0 ? (
                 <div className="space-y-2">
                   {application.documents.map((document: any, index: number) => (
                     <div key={document.id} className="flex items-center justify-between p-2 border rounded">
@@ -362,7 +362,7 @@ export function ApplicationDetailDialog({
         </div>
 
         {/* Admin Notları ve İşlemler */}
-        {application.status === 'pending' && (onApprove || onReject) && (
+        {application?.status === 'pending' && (onApprove || onReject) && (
           <>
             <Separator />
             <div className="space-y-4">
@@ -385,7 +385,7 @@ export function ApplicationDetailDialog({
                 >
                   Kapat
                 </Button>
-                {onReject && (
+                {onReject && application && (
                   <Button
                     variant="destructive"
                     onClick={() => {
@@ -396,7 +396,7 @@ export function ApplicationDetailDialog({
                     Reddet
                   </Button>
                 )}
-                {onApprove && (
+                {onApprove && application && (
                   <Button
                     className="bg-green-600 hover:bg-green-700"
                     onClick={() => {
@@ -413,7 +413,7 @@ export function ApplicationDetailDialog({
         )}
 
         {/* Onaylanmış/Reddedilmiş başvurular için sadece kapat butonu */}
-        {application.status !== 'pending' && (
+        {application?.status !== 'pending' && (
           <>
             <Separator />
             <div className="flex justify-end">
