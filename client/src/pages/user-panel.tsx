@@ -560,21 +560,30 @@ export default function UserPanel() {
                     {followedPartners?.map((partner: any) => (
                       <div key={partner.id} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between">
-                          <div>
+                          <div className="flex-1">
                             <h3 className="font-semibold">{partner.companyName}</h3>
                             <p className="text-sm text-gray-600">{partner.serviceCategory}</p>
                             <Badge variant="secondary" className="mt-2">
                               {partner.isActive ? 'Aktif' : 'Pasif'}
                             </Badge>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => unfollowMutation.mutate(partner.id)}
-                            disabled={unfollowMutation.isPending}
-                          >
-                            Takipten Çıkar
-                          </Button>
+                          <div className="flex flex-col gap-2 ml-4">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => window.location.href = `/partners/${partner.id}`}
+                            >
+                              Profili Gör
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => unfollowMutation.mutate(partner.id)}
+                              disabled={unfollowMutation.isPending}
+                            >
+                              Takipten Çıkar
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}

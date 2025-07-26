@@ -470,6 +470,20 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // User unfollow partner endpoint (different from partner endpoint)
+  app.delete("/api/user/follow/:partnerId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      await storage.unfollowPartner(req.user!.id, parseInt(req.params.partnerId));
+      res.json({ message: "Partner unfollowed successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unfollow partner" });
+    }
+  });
+
   // User profile management routes  
   app.get("/api/user/profile", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
