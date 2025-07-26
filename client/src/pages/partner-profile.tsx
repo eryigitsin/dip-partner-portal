@@ -320,8 +320,10 @@ export default function PartnerProfile() {
                       <span>{partner.companySize}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <TrendingUp className="h-4 w-4" />
-                      <span>{partner.sectorExperience}</span>
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
+                      </svg>
+                      <span>{partner.sectorExperience} yıl</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4" />
@@ -470,7 +472,9 @@ export default function PartnerProfile() {
                     )}
                     {partner.sectorExperience && (
                       <div className="flex items-center gap-3">
-                        <TrendingUp className="h-5 w-5 text-gray-500" />
+                        <svg className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
+                        </svg>
                         <span className="text-gray-700">Sektör Deneyimi: {partner.sectorExperience} yıl</span>
                       </div>
                     )}
