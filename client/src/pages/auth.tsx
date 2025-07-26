@@ -12,6 +12,10 @@ import { useLanguage } from "@/contexts/language-context";
 import { t } from "@/lib/i18n";
 import { z } from "zod";
 import { Loader2, Mail, Lock, User, Phone, Building } from "lucide-react";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
+import dipLogo from '@assets/dip ince_1753540745210.png';
+import workshopBg from '@assets/dip-workshop_1753540666527.png';
 
 const loginSchema = z.object({
   email: z.string().email("Geçerli bir e-posta adresi giriniz"),
@@ -82,18 +86,20 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="grid lg:grid-cols-2 min-h-screen">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <div className="flex-1 grid lg:grid-cols-2 min-h-0">
         {/* Left Column - Forms */}
         <div className="flex items-center justify-center p-8">
           <div className="w-full max-w-md space-y-8">
             {/* Logo */}
             <div className="text-center">
               <div className="flex items-center justify-center mb-4">
-                <div className="h-12 w-12 bg-dip-blue rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-2xl">D</span>
-                </div>
-                <span className="ml-3 text-2xl font-bold text-gray-900">DİP</span>
+                <img 
+                  src={dipLogo} 
+                  alt="DİP - Dijital İhracat Platformu" 
+                  className="h-16 w-auto"
+                />
               </div>
               <h2 className="text-3xl font-bold text-gray-900">
                 {activeTab === "login" ? "Giriş Yapın" : "Hesap Oluşturun"}
@@ -333,23 +339,31 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* Right Column - Hero Section */}
-        <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-dip-blue to-dip-green p-8">
-          <div className="max-w-md text-center text-white">
+        {/* Right Column - Hero Section with Background */}
+        <div 
+          className="hidden lg:flex items-center justify-center relative overflow-hidden"
+          style={{
+            backgroundImage: `linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(16, 185, 129, 0.85)), url(${workshopBg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
+          <div className="max-w-md text-center text-white z-10 p-8">
             <div className="mb-8">
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
                 <Building className="w-12 h-12 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">
+              <h3 className="text-2xl font-bold mb-4 drop-shadow-lg">
                 Dijital İhracat Platformu
               </h3>
-              <p className="text-blue-100 leading-relaxed">
+              <p className="text-blue-100 leading-relaxed drop-shadow-md">
                 İş ortaklarımızla birlikte dijital ihracat yolculuğunuzda size en iyi hizmeti sunuyoruz. 
                 Güvenilir partnerlerimizden faydalanın ve işinizi büyütün.
               </p>
             </div>
 
-            <div className="space-y-4 text-sm">
+            <div className="space-y-4 text-sm backdrop-blur-sm bg-white/10 rounded-lg p-4">
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-2 h-2 bg-white rounded-full"></div>
                 <span>16 farklı hizmet kategorisi</span>
@@ -370,6 +384,7 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
