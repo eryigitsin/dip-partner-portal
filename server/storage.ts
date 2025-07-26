@@ -31,7 +31,7 @@ import {
   type InsertTempUserRegistration,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, ilike, and, or, count } from "drizzle-orm";
+import { eq, desc, asc, ilike, and, or, count, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -239,6 +239,16 @@ export class DatabaseStorage implements IStorage {
       .where(eq(partners.id, id))
       .returning();
     return partner || undefined;
+  }
+
+  async incrementPartnerViews(id: number): Promise<void> {
+    await db
+      .update(partners)
+      .set({ 
+        profileViews: sql`${partners.profileViews} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(partners.id, id));
   }
 
   async getPartnerApplications(status?: string): Promise<PartnerApplication[]> {

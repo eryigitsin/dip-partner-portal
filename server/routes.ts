@@ -110,11 +110,18 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/partners/:id", async (req, res) => {
     try {
-      const partner = await storage.getPartner(parseInt(req.params.id));
+      const partnerId = parseInt(req.params.id);
+      const partner = await storage.getPartner(partnerId);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
-      res.json(partner);
+      
+      // Increment profile view count for every visit
+      await storage.incrementPartnerViews(partnerId);
+      
+      // Return updated partner data with incremented view count
+      const updatedPartner = await storage.getPartner(partnerId);
+      res.json(updatedPartner);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch partner" });
     }
