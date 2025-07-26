@@ -15,6 +15,7 @@ import ServiceRequests from "@/pages/service-requests";
 import Messages from "@/pages/messages";
 import ApplicationStatus from "@/pages/application-status";
 import PartnerProfile from "@/pages/partner-profile";
+import TestUpload from "@/pages/test-upload";
 import { ProtectedRoute } from "./lib/protected-route";
 import { useQuery } from "@tanstack/react-query";
 
@@ -40,6 +41,7 @@ function Router() {
       <ProtectedRoute path="/messages" component={Messages} />
       <Route path="/application-status/:id" component={ApplicationStatus} />
       <Route path="/partner/:id" component={PartnerProfile} />
+      <Route path="/test-upload" component={TestUpload} />
       <Route component={NotFound} />
     </Switch>
   );
