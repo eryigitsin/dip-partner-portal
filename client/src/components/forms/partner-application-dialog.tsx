@@ -170,9 +170,7 @@ export function PartnerApplicationDialog({ open, onOpenChange }: PartnerApplicat
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-dip-blue">İş Ortağı Başvurusu</DialogTitle>
-          <DialogDescription>
-            DIP ile birlikte dijital ihracat ekosisteminin bir parçası olun
-          </DialogDescription>
+          <DialogDescription>DİP ile birlikte dijital ihracat ekosisteminin bir parçası olun.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
