@@ -17,24 +17,13 @@ import { UserProfile, CompanyBillingInfo, Partner } from '@shared/schema';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { PartnerApplicationDialog } from '@/components/forms/partner-application-dialog';
 
 export default function UserPanel() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
   const [partnerApplicationOpen, setPartnerApplicationOpen] = useState(false);
-  const [partnerForm, setPartnerForm] = useState({
-    companyName: '',
-    contactPerson: '',
-    email: '',
-    phone: '',
-    website: '',
-    serviceCategory: '',
-    description: '',
-    experience: '',
-    certifications: '',
-    address: ''
-  });
 
   // Fetch user profile data
   const { data: userProfile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -170,62 +159,31 @@ export default function UserPanel() {
     },
   });
 
-  // Partner application mutation
-  const partnerApplicationMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await apiRequest('POST', '/api/partner-applications', data);
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Başarılı',
-        description: 'İş ortağı başvurunuz alındı. İncelendikten sonra bilgilendirileceksiniz.',
-      });
-      setPartnerApplicationOpen(false);
-      setPartnerForm({
-        companyName: '',
-        contactPerson: '',
-        email: '',
-        phone: '',
-        website: '',
-        serviceCategory: '',
-        description: '',
-        experience: '',
-        certifications: '',
-        address: ''
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Hata',
-        description: error.message || 'Başvuru gönderilirken bir hata oluştu.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Auto-fill form with user data when dialog opens
-  const handlePartnerDialogOpen = (open: boolean) => {
-    if (open && userProfile) {
-      setPartnerForm({
-        companyName: userProfile.company || '',
-        contactPerson: `${user?.firstName} ${user?.lastName}` || '',
-        email: user?.email || '',
-        phone: user?.phone || '',
-        website: userProfile.website || '',
-        serviceCategory: '',
-        description: userProfile.sector || '',
-        experience: '',
-        certifications: '',
-        address: ''
-      });
-    }
-    setPartnerApplicationOpen(open);
+  // Partner application success handler
+  const handlePartnerApplicationSuccess = () => {
+    setPartnerApplicationOpen(false);
+    toast({
+      title: 'Başarılı',
+      description: 'İş ortağı başvurunuz alındı. İncelendikten sonra bilgilendirileceksiniz.',
+    });
   };
 
-  const handlePartnerFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    partnerApplicationMutation.mutate(partnerForm);
+  // Partner application pre-filled data
+  const getPrefilledData = () => {
+    if (user && userProfile) {
+      return {
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        company: userProfile.company || '',
+        contactPerson: `${user.firstName} ${user.lastName}` || '',
+        website: userProfile.website || '',
+        linkedinProfile: userProfile.linkedinProfile || '',
+        businessDescription: userProfile.sector || '',
+      };
+    }
+    return {};
   };
 
   const handleProfileSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -429,143 +387,13 @@ export default function UserPanel() {
                     <p className="text-gray-600 mb-4">
                       Eğer DİP üyelerine sunabileceğiniz hizmetleriniz varsa iş ortaklığı başvurusu yapabilirsiniz.
                     </p>
-                    <Dialog open={partnerApplicationOpen} onOpenChange={handlePartnerDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-700">
-                          <Briefcase className="h-4 w-4 mr-2" />
-                          İş Ortağı Ol
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto mx-4">
-                        <DialogHeader>
-                          <DialogTitle>İş Ortağı Başvuru Formu</DialogTitle>
-                          <DialogDescription>
-                            DİP platformunda iş ortağı olmak için gerekli bilgileri doldurun.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handlePartnerFormSubmit} className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="partnerCompanyName">Şirket Adı *</Label>
-                              <Input
-                                id="partnerCompanyName"
-                                value={partnerForm.companyName}
-                                onChange={(e) => setPartnerForm({...partnerForm, companyName: e.target.value})}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="partnerContactPerson">İletişim Kişisi *</Label>
-                              <Input
-                                id="partnerContactPerson"
-                                value={partnerForm.contactPerson}
-                                onChange={(e) => setPartnerForm({...partnerForm, contactPerson: e.target.value})}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="partnerEmail">E-posta *</Label>
-                              <Input
-                                id="partnerEmail"
-                                type="email"
-                                value={partnerForm.email}
-                                onChange={(e) => setPartnerForm({...partnerForm, email: e.target.value})}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="partnerPhone">Telefon *</Label>
-                              <Input
-                                id="partnerPhone"
-                                value={partnerForm.phone}
-                                onChange={(e) => setPartnerForm({...partnerForm, phone: e.target.value})}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="partnerWebsite">Web Sitesi</Label>
-                              <Input
-                                id="partnerWebsite"
-                                type="url"
-                                value={partnerForm.website}
-                                onChange={(e) => setPartnerForm({...partnerForm, website: e.target.value})}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="partnerServiceCategory">Hizmet Kategorisi *</Label>
-                              <Select 
-                                value={partnerForm.serviceCategory} 
-                                onValueChange={(value) => setPartnerForm({...partnerForm, serviceCategory: value})}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Kategori seçin" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {categories?.map((category) => (
-                                    <SelectItem key={category.id} value={category.name}>
-                                      {category.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          <div>
-                            <Label htmlFor="partnerDescription">Şirket Açıklaması *</Label>
-                            <Textarea
-                              id="partnerDescription"
-                              value={partnerForm.description}
-                              onChange={(e) => setPartnerForm({...partnerForm, description: e.target.value})}
-                              rows={3}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="partnerExperience">Deneyim ve Uzmanlık Alanları</Label>
-                            <Textarea
-                              id="partnerExperience"
-                              value={partnerForm.experience}
-                              onChange={(e) => setPartnerForm({...partnerForm, experience: e.target.value})}
-                              rows={3}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="partnerCertifications">Sertifikalar ve Akreditasyonlar</Label>
-                            <Textarea
-                              id="partnerCertifications"
-                              value={partnerForm.certifications}
-                              onChange={(e) => setPartnerForm({...partnerForm, certifications: e.target.value})}
-                              rows={2}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="partnerAddress">Adres</Label>
-                            <Textarea
-                              id="partnerAddress"
-                              value={partnerForm.address}
-                              onChange={(e) => setPartnerForm({...partnerForm, address: e.target.value})}
-                              rows={2}
-                            />
-                          </div>
-                          <div className="flex justify-end gap-2 pt-4">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => setPartnerApplicationOpen(false)}
-                            >
-                              İptal
-                            </Button>
-                            <Button
-                              type="submit"
-                              disabled={partnerApplicationMutation.isPending}
-                              className="bg-blue-600 hover:bg-blue-700"
-                            >
-                              {partnerApplicationMutation.isPending ? 'Gönderiliyor...' : 'Başvuru Gönder'}
-                            </Button>
-                          </div>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
+                    <Button 
+                      onClick={() => setPartnerApplicationOpen(true)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      İş Ortağı Ol
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -856,6 +684,14 @@ export default function UserPanel() {
       </div>
       
       <Footer />
+      
+      {/* Partner Application Dialog */}
+      <PartnerApplicationDialog 
+        open={partnerApplicationOpen}
+        onOpenChange={setPartnerApplicationOpen}
+        prefilledData={getPrefilledData()}
+        onSuccess={handlePartnerApplicationSuccess}
+      />
     </div>
   );
 }

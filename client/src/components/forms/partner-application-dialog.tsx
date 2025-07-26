@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -61,9 +61,11 @@ type PartnerApplicationFormData = z.infer<typeof partnerApplicationSchema>;
 interface PartnerApplicationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  prefilledData?: Partial<PartnerApplicationFormData>;
+  onSuccess?: () => void;
 }
 
-export function PartnerApplicationDialog({ open, onOpenChange }: PartnerApplicationDialogProps) {
+export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, onSuccess }: PartnerApplicationDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -71,30 +73,60 @@ export function PartnerApplicationDialog({ open, onOpenChange }: PartnerApplicat
   const form = useForm<PartnerApplicationFormData>({
     resolver: zodResolver(partnerApplicationSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      company: "",
-      contactPerson: "",
-      website: "",
-      businessType: "",
-      businessDescription: "",
-      companySize: "",
-      foundingYear: "",
-      sectorExperience: "",
-      targetMarkets: "",
-      services: "",
-      dipAdvantages: "",
-      whyPartner: "",
-      references: "",
-      linkedinProfile: "",
-      twitterProfile: "",
-      instagramProfile: "",
-      facebookProfile: "",
+      firstName: prefilledData?.firstName || "",
+      lastName: prefilledData?.lastName || "",
+      email: prefilledData?.email || "",
+      phone: prefilledData?.phone || "",
+      company: prefilledData?.company || "",
+      contactPerson: prefilledData?.contactPerson || "",
+      website: prefilledData?.website || "",
+      businessType: prefilledData?.businessType || "",
+      businessDescription: prefilledData?.businessDescription || "",
+      companySize: prefilledData?.companySize || "",
+      foundingYear: prefilledData?.foundingYear || "",
+      sectorExperience: prefilledData?.sectorExperience || "",
+      targetMarkets: prefilledData?.targetMarkets || "",
+      services: prefilledData?.services || "",
+      dipAdvantages: prefilledData?.dipAdvantages || "",
+      whyPartner: prefilledData?.whyPartner || "",
+      references: prefilledData?.references || "",
+      linkedinProfile: prefilledData?.linkedinProfile || "",
+      twitterProfile: prefilledData?.twitterProfile || "",
+      instagramProfile: prefilledData?.instagramProfile || "",
+      facebookProfile: prefilledData?.facebookProfile || "",
       kvkkAccepted: false,
     },
   });
+
+  // Reset form when dialog opens with prefilled data 
+  useEffect(() => {
+    if (open && prefilledData) {
+      form.reset({
+        firstName: prefilledData?.firstName || "",
+        lastName: prefilledData?.lastName || "",
+        email: prefilledData?.email || "",
+        phone: prefilledData?.phone || "",
+        company: prefilledData?.company || "",
+        contactPerson: prefilledData?.contactPerson || "",
+        website: prefilledData?.website || "",
+        businessType: prefilledData?.businessType || "",
+        businessDescription: prefilledData?.businessDescription || "",
+        companySize: prefilledData?.companySize || "",
+        foundingYear: prefilledData?.foundingYear || "",
+        sectorExperience: prefilledData?.sectorExperience || "",
+        targetMarkets: prefilledData?.targetMarkets || "",
+        services: prefilledData?.services || "",
+        dipAdvantages: prefilledData?.dipAdvantages || "",
+        whyPartner: prefilledData?.whyPartner || "",
+        references: prefilledData?.references || "",
+        linkedinProfile: prefilledData?.linkedinProfile || "",
+        twitterProfile: prefilledData?.twitterProfile || "",
+        instagramProfile: prefilledData?.instagramProfile || "",
+        facebookProfile: prefilledData?.facebookProfile || "",
+        kvkkAccepted: false,
+      });
+    }
+  }, [open, prefilledData, form]);
 
   const onSubmit = async (data: PartnerApplicationFormData) => {
     setIsSubmitting(true);
@@ -132,6 +164,7 @@ export function PartnerApplicationDialog({ open, onOpenChange }: PartnerApplicat
       form.reset();
       setSelectedFiles([]);
       onOpenChange(false);
+      onSuccess?.();
     } catch (error: any) {
       toast({
         title: "Hata",
