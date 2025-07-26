@@ -4,7 +4,7 @@
 # Update these values according to your setup
 
 # Repository Configuration
-export REPO_URL="https://github.com/yourusername/partner-management-system.git"
+export REPO_URL="https://github.com/eryigitsin/dip-partner-portal.git"
 export REPO_BRANCH="main"
 
 # Domain Configuration

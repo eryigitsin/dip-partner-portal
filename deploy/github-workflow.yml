@@ -1,5 +1,5 @@
 # GitHub Actions Workflow for Automatic Deployment
-# Save this as .github/workflows/deploy.yml in your repository
+# Save this as .github/workflows/deploy.yml in https://github.com/eryigitsin/dip-partner-portal
 
 name: Deploy to DigitalOcean
 

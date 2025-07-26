@@ -16,7 +16,7 @@ Droplet'e SSH ile bağlanın ve root olarak çalıştırın:
 
 ```bash
 # Script'leri indirin
-wget -O setup-droplet.sh https://raw.githubusercontent.com/yourusername/partner-management-system/main/deploy/setup-droplet.sh
+wget -O setup-droplet.sh https://raw.githubusercontent.com/eryigitsin/dip-partner-portal/main/deploy/setup-droplet.sh
 chmod +x setup-droplet.sh
 
 # Kurulum script'ini çalıştırın
@@ -29,7 +29,7 @@ Tek bir script ile tüm konfigürasyonu yapabilirsiniz:
 
 ```bash
 # Environment setup script'ini indirin
-wget -O env-setup.sh https://raw.githubusercontent.com/yourusername/partner-management-system/main/deploy/env-setup.sh
+wget -O env-setup.sh https://raw.githubusercontent.com/eryigitsin/dip-partner-portal/main/deploy/env-setup.sh
 chmod +x env-setup.sh
 
 # Konfigürasyon script'ini çalıştırın
@@ -47,7 +47,7 @@ Bu script sizden şunları soracak:
 
 ```bash
 # Repository URL'ini hızlıca güncellemek için
-./update-repo.sh https://github.com/yourusername/partner-management-system.git
+./update-repo.sh https://github.com/eryigitsin/dip-partner-portal.git
 ```
 
 ### 4. İlk Deployment'ı Yapın
@@ -67,7 +67,7 @@ Domain'iniz varsa SSL sertifikası kurabilirsiniz:
 
 ```bash
 # SSL setup script'ini indirin
-wget -O ssl-setup.sh https://raw.githubusercontent.com/yourusername/partner-management-system/main/deploy/ssl-setup.sh
+wget -O ssl-setup.sh https://raw.githubusercontent.com/eryigitsin/dip-partner-portal/main/deploy/ssl-setup.sh
 chmod +x ssl-setup.sh
 
 # SSL'i kurun (domain'inizi ve email'inizi kullanın)
@@ -90,7 +90,7 @@ GitHub webhook ile otomatik deployment için:
 
 ```bash
 # Webhook script'ini indirin
-wget -O /var/www/partner-management/webhook-deploy.sh https://raw.githubusercontent.com/yourusername/partner-management-system/main/deploy/webhook-deploy.sh
+wget -O /var/www/partner-management/webhook-deploy.sh https://raw.githubusercontent.com/eryigitsin/dip-partner-portal/main/deploy/webhook-deploy.sh
 chmod +x /var/www/partner-management/webhook-deploy.sh
 
 # Webhook endpoint'i için basit HTTP server (opsiyonel)
@@ -111,7 +111,7 @@ Sistem health monitoring için:
 
 ```bash
 # Monitoring script'ini indirin
-wget -O monitoring.sh https://raw.githubusercontent.com/yourusername/partner-management-system/main/deploy/monitoring.sh
+wget -O monitoring.sh https://raw.githubusercontent.com/eryigitsin/dip-partner-portal/main/deploy/monitoring.sh
 chmod +x monitoring.sh
 
 # Cron job olarak ayarlayın (her 5 dakikada bir çalışır)

@@ -9,7 +9,7 @@ NEW_REPO_URL="$1"
 
 if [ -z "$NEW_REPO_URL" ]; then
     echo "❌ Please provide your repository URL"
-    echo "Usage: ./update-repo.sh https://github.com/yourusername/partner-management-system.git"
+    echo "Usage: ./update-repo.sh https://github.com/eryigitsin/dip-partner-portal.git"
     exit 1
 fi
 
