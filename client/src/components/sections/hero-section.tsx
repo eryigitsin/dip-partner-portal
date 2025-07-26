@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { t } from '@/lib/i18n';
 import { ChevronDown, Handshake, Search } from 'lucide-react';
+import heroVideo from '@assets/diptalks1-yan-2_1753542464192.mp4';
 
 interface HeroSectionProps {
   onBecomePartner: () => void;
@@ -13,14 +14,20 @@ export function HeroSection({ onBecomePartner, onGetService }: HeroSectionProps)
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ pointerEvents: 'none' }}
+      >
+        <source src={heroVideo} type="video/mp4" />
+      </video>
+      
+      {/* Video Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-blue-700/60 z-10"></div>
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&h=1080')"
-        }}
-      />
       
       <div className="relative z-20 container mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="max-w-4xl mx-auto">
