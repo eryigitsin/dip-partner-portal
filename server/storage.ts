@@ -192,7 +192,17 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (category) {
-      conditions.push(eq(partners.serviceCategory, category));
+      // First try to find a matching category by slug to get the actual service category name
+      const serviceCategories = await this.getServiceCategories();
+      const matchingCategory = serviceCategories.find(cat => cat.slug === category);
+      
+      if (matchingCategory) {
+        // Use the actual category name for filtering
+        conditions.push(eq(partners.serviceCategory, matchingCategory.name));
+      } else {
+        // Fallback to direct match (in case category is already the name)
+        conditions.push(eq(partners.serviceCategory, category));
+      }
     }
     
     if (search) {

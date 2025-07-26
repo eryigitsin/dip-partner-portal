@@ -35,8 +35,12 @@ export function PartnersCatalog({
     queryKey: ['/api/partners', { category: currentCategory, search: currentSearch }],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (currentCategory && currentCategory !== 'all') params.append('category', currentCategory);
-      if (currentSearch) params.append('search', currentSearch);
+      if (currentCategory && currentCategory !== 'all' && currentCategory !== '') {
+        params.append('category', currentCategory);
+      }
+      if (currentSearch && currentSearch.trim() !== '') {
+        params.append('search', currentSearch);
+      }
       
       const response = await fetch(`/api/partners?${params}`);
       if (!response.ok) throw new Error('Failed to fetch partners');
@@ -61,8 +65,9 @@ export function PartnersCatalog({
   }, [selectedCategory]);
 
   const handleSearch = () => {
-    setCurrentSearch(search);
-    setCurrentCategory(category);
+    // If search is empty but category is selected, show all partners in that category
+    setCurrentSearch(search.trim());
+    setCurrentCategory(category === 'all' ? '' : category);
   };
 
   const handleClearFilters = () => {
