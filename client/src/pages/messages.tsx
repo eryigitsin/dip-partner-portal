@@ -228,7 +228,7 @@ export default function Messages() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8" style={{ minHeight: '600px' }}>
           {/* Conversations List */}
           <Card className="lg:col-span-1">
             <CardHeader>
@@ -302,7 +302,7 @@ export default function Messages() {
                     {selectedConversationData.partner.serviceCategory}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-0 flex flex-col h-[500px]">
+                <CardContent className="p-0 flex flex-col" style={{ height: '60vh', minHeight: '400px' }}>
                   {/* Messages */}
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
@@ -354,7 +354,7 @@ export default function Messages() {
                 </CardContent>
               </>
             ) : (
-              <CardContent className="flex items-center justify-center h-[500px]">
+              <CardContent className="flex items-center justify-center" style={{ height: '60vh', minHeight: '400px' }}>
                 <div className="text-center">
                   <MessageCircle className="mx-auto h-16 w-16 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Sohbet seçin</h3>
