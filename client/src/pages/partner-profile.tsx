@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -784,24 +785,63 @@ export default function PartnerProfile() {
                 <div className="text-white mb-2">
                   <h1 className="text-2xl md:text-3xl font-bold">{partner.companyName}</h1>
                   <div className="flex items-center gap-2 md:gap-4 mt-2 text-xs md:text-sm flex-wrap">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3 md:h-4 md:w-4" />
-                      <span>{partner.city}, {partner.country}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Building className="h-3 w-3 md:h-4 md:w-4" />
-                      <span>{partner.companySize}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <svg className="h-3 w-3 md:h-4 md:w-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
-                      </svg>
-                      <span>{partner.sectorExperience} yıl</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-3 w-3 md:h-4 md:w-4" />
-                      <span>{partner.followersCount} takipçi</span>
-                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1 cursor-help">
+                            <MapPin className="h-3 w-3 md:h-4 md:w-4" />
+                            <span>{partner.city}, {partner.country}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Konum</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1 cursor-help">
+                            <Building className="h-3 w-3 md:h-4 md:w-4" />
+                            <span>{partner.companySize}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Şirket Büyüklüğü</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1 cursor-help">
+                            <svg className="h-3 w-3 md:h-4 md:w-4" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
+                            </svg>
+                            <span>{partner.sectorExperience} yıl</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Sektör Deneyimi</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1 cursor-help">
+                            <Users className="h-3 w-3 md:h-4 md:w-4" />
+                            <span>{partner.followersCount} takipçi</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Takipçi Sayısı</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               </div>
@@ -919,10 +959,19 @@ export default function PartnerProfile() {
                       </div>
                     )}
                     {partner.companyAddress && (
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-5 w-5 text-gray-500 mt-1" />
-                        <span className="text-gray-700">Adres: {partner.companyAddress}</span>
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-start gap-3 cursor-help">
+                              <MapPin className="h-5 w-5 text-gray-500 mt-1" />
+                              <span className="text-gray-700">Adres: {partner.companyAddress}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Şirket Adresi</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                     {partner.foundingYear && (
                       <div className="flex items-center gap-3">
@@ -931,18 +980,36 @@ export default function PartnerProfile() {
                       </div>
                     )}
                     {partner.companySize && (
-                      <div className="flex items-center gap-3">
-                        <Building className="h-5 w-5 text-gray-500" />
-                        <span className="text-gray-700">Şirket Büyüklüğü: {partner.companySize}</span>
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-3 cursor-help">
+                              <Building className="h-5 w-5 text-gray-500" />
+                              <span className="text-gray-700">Şirket Büyüklüğü: {partner.companySize}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Şirket Büyüklüğü</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                     {partner.sectorExperience && (
-                      <div className="flex items-center gap-3">
-                        <svg className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
-                        </svg>
-                        <span className="text-gray-700">Sektör Deneyimi: {partner.sectorExperience} yıl</span>
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-3 cursor-help">
+                              <svg className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
+                              </svg>
+                              <span className="text-gray-700">Sektör Deneyimi: {partner.sectorExperience} yıl</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Sektör Deneyimi</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </CardContent>
                 </Card>
