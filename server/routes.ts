@@ -462,46 +462,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Update partner
-  app.patch("/api/partners/:id", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-
-      const partnerId = parseInt(req.params.id);
-      const updates = req.body;
-      
-      // Editor admin cannot update email and password
-      if (req.user!.userType === "editor_admin") {
-        delete updates.email;
-        delete updates.password;
-      }
-      
-      // If updating email or password, update the user record too
-      if ((updates.email || updates.password) && req.user!.userType === "master_admin") {
-        const partner = await storage.getPartner(partnerId);
-        if (partner) {
-          const userUpdates: any = {};
-          if (updates.email) userUpdates.email = updates.email;
-          if (updates.password) userUpdates.password = updates.password;
-          
-          await storage.updateUser(partner.userId, userUpdates);
-        }
-      }
-      
-      const updatedPartner = await storage.updatePartner(partnerId, updates);
-      
-      if (!updatedPartner) {
-        return res.status(404).json({ message: "Partner not found" });
-      }
-      
-      res.json(updatedPartner);
-    } catch (error) {
-      console.error('Error updating partner:', error);
-      res.status(500).json({ message: "Failed to update partner" });
-    }
-  });
+  // This route has been moved to line 1316 with multer support for file uploads
 
   // User unfollow partner endpoint (different from partner endpoint)
   app.delete("/api/user/follow/:partnerId", async (req, res) => {
