@@ -503,10 +503,11 @@ export function registerRoutes(app: Express): Server {
   // Get partner profile for current user
   app.get("/api/partners/me", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user!.userType !== "partner") {
-        return res.status(403).json({ message: "Only partners can access this endpoint" });
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
       }
 
+      console.log('User from session:', req.user);
       const partner = await storage.getPartnerByUserId(req.user!.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner profile not found" });
@@ -514,6 +515,7 @@ export function registerRoutes(app: Express): Server {
       
       res.json(partner);
     } catch (error) {
+      console.error('Error fetching partner profile:', error);
       res.status(500).json({ message: "Failed to fetch partner profile" });
     }
   });
@@ -521,16 +523,18 @@ export function registerRoutes(app: Express): Server {
   // Update partner profile (for partners to update their own profile)
   app.patch("/api/partners/me", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user!.userType !== "partner") {
-        return res.status(403).json({ message: "Only partners can update their profile" });
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
       }
 
+      console.log('User updating profile:', req.user);
       const partner = await storage.getPartnerByUserId(req.user!.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner profile not found" });
       }
 
       const updates = req.body;
+      console.log('Profile updates:', updates);
       
       // If updating username, validate it
       if (updates.username) {
@@ -551,6 +555,9 @@ export function registerRoutes(app: Express): Server {
       }
 
       const updatedPartner = await storage.updatePartner(partner.id, updates);
+      console.log('Updated partner:', updatedPartner);
+      
+      // Invalidate and refresh cache
       res.json(updatedPartner);
     } catch (error) {
       console.error('Error updating partner profile:', error);
