@@ -7,8 +7,40 @@ import { z } from "zod";
 import { createNetGsmService } from "./netgsm";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const scryptAsync = promisify(scrypt);
+
+// Multer configuration for file uploads
+const uploadDir = path.join(process.cwd(), 'uploads', 'partner-applications');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const upload = multer({
+  dest: uploadDir,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png'
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Geçersiz dosya formatı'), false);
+    }
+  }
+});
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -121,10 +153,14 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
+      const { status, notes } = req.body;
+      const applicationId = parseInt(req.params.id);
+
       const application = await storage.updatePartnerApplication(
-        parseInt(req.params.id),
+        applicationId,
         {
-          ...req.body,
+          status,
+          notes,
           reviewedBy: req.user!.id,
           reviewedAt: new Date(),
         }
@@ -134,8 +170,60 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Application not found" });
       }
 
+      // If application is approved, create or update partner profile
+      if (status === 'approved') {
+        // Check if user exists
+        let user = await storage.getUserByEmail(application.email);
+        
+        if (!user) {
+          // Create user account for the partner
+          const tempPassword = Math.random().toString(36).slice(-8);
+          user = await storage.createUser({
+            email: application.email,
+            password: tempPassword, // Partner should reset this
+            firstName: application.firstName,
+            lastName: application.lastName,
+            phone: application.phone,
+            userType: 'partner',
+            isVerified: true,
+          });
+        }
+
+        // Create or update partner profile with all the application data
+        const partnerData = {
+          userId: user.id,
+          companyName: application.company,
+          contactPerson: application.contactPerson,
+          businessType: application.businessType,
+          description: application.businessDescription,
+          serviceCategory: application.businessType,
+          services: application.services,
+          dipAdvantages: application.dipAdvantages,
+          companySize: application.companySize,
+          foundingYear: application.foundingYear,
+          sectorExperience: application.sectorExperience,
+          targetMarkets: application.targetMarkets,
+          website: application.website,
+          linkedinProfile: application.linkedinProfile,
+          twitterProfile: application.twitterProfile,
+          instagramProfile: application.instagramProfile,
+          facebookProfile: application.facebookProfile,
+          isApproved: true,
+          isActive: true,
+        };
+
+        // Check if partner already exists
+        const existingPartner = await storage.getPartnerByUserId(user.id);
+        if (existingPartner) {
+          await storage.updatePartner(existingPartner.id, partnerData);
+        } else {
+          await storage.createPartner(partnerData);
+        }
+      }
+
       res.json(application);
     } catch (error) {
+      console.error('Error updating partner application:', error);
       res.status(500).json({ message: "Failed to update application" });
     }
   });
@@ -332,22 +420,144 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Partner application endpoint
-  app.post('/api/partner-applications', async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+  // Partner application endpoint with file upload
+  app.post('/api/partner-applications', upload.array('documents', 10), async (req, res) => {
     try {
+      const {
+        firstName,
+        lastName,
+        email,
+        phone,
+        company,
+        contactPerson,
+        website,
+        businessType,
+        businessDescription,
+        companySize,
+        foundingYear,
+        sectorExperience,
+        targetMarkets,
+        services,
+        dipAdvantages,
+        whyPartner,
+        references,
+        linkedinProfile,
+        twitterProfile,
+        instagramProfile,
+        facebookProfile,
+      } = req.body;
+
+      // Validate required fields
+      if (!firstName || !lastName || !email || !phone || !company || !contactPerson || !businessType || !businessDescription || !companySize || !foundingYear || !services || !dipAdvantages || !whyPartner) {
+        return res.status(400).json({ message: 'Zorunlu alanlar eksik' });
+      }
+
       const applicationData = {
-        ...req.body,
-        userId: req.user!.id,
-        status: 'pending',
-        appliedAt: new Date()
+        firstName,
+        lastName,
+        email,
+        phone,
+        company,
+        contactPerson,
+        website,
+        businessType,
+        businessDescription,
+        companySize,
+        foundingYear,
+        sectorExperience,
+        targetMarkets,
+        services,
+        dipAdvantages,
+        whyPartner,
+        references,
+        linkedinProfile,
+        twitterProfile,
+        instagramProfile,
+        facebookProfile,
+        status: 'pending' as const,
       };
       
       const application = await storage.createPartnerApplication(applicationData);
-      res.status(201).json(application);
+
+      // Handle file uploads if any
+      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+        for (const file of req.files) {
+          const documentData = {
+            applicationId: application.id,
+            fileName: file.filename,
+            originalName: file.originalname,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            filePath: file.path,
+          };
+          
+          await storage.createApplicationDocument(documentData);
+        }
+      }
+
+      res.status(201).json({ ...application, message: 'Başvurunuz başarıyla alındı' });
     } catch (error: any) {
       console.error('Error creating partner application:', error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error.message || 'Başvuru gönderilemedi' });
+    }
+  });
+
+  // Get application with documents
+  app.get("/api/partner-applications/:id/details", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const applicationId = parseInt(req.params.id);
+      const application = await storage.getPartnerApplication(applicationId);
+      
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      const documents = await storage.getApplicationDocuments(applicationId);
+      
+      res.json({
+        ...application,
+        documents,
+      });
+    } catch (error: any) {
+      console.error('Error fetching application details:', error);
+      res.status(500).json({ message: 'Failed to fetch application details' });
+    }
+  });
+
+  // Download application document
+  app.get('/api/partner-applications/:applicationId/documents/:documentId/download', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    // Check if user is admin
+    if (req.user?.userType !== 'master_admin' && req.user?.userType !== 'editor_admin') {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const { applicationId, documentId } = req.params;
+      const document = await storage.getApplicationDocument(parseInt(documentId));
+      
+      if (!document || document.applicationId !== parseInt(applicationId)) {
+        return res.status(404).json({ message: 'Belge bulunamadı' });
+      }
+
+      // Check if file exists
+      if (!fs.existsSync(document.filePath)) {
+        return res.status(404).json({ message: 'Dosya bulunamadı' });
+      }
+
+      res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+      res.setHeader('Content-Type', document.mimeType);
+      
+      const fileStream = fs.createReadStream(document.filePath);
+      fileStream.pipe(res);
+    } catch (error: any) {
+      console.error('Error downloading document:', error);
+      res.status(500).json({ message: 'Dosya indirilemedi' });
     }
   });
 

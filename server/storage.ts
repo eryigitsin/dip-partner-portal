@@ -3,6 +3,7 @@ import {
   userProfiles,
   partners,
   partnerApplications,
+  applicationDocuments,
   quoteRequests,
   serviceCategories,
   partnerServices,
@@ -18,6 +19,8 @@ import {
   type InsertPartner,
   type PartnerApplication,
   type InsertPartnerApplication,
+  type ApplicationDocument,
+  type InsertApplicationDocument,
   type QuoteRequest,
   type InsertQuoteRequest,
   type ServiceCategory,
@@ -62,6 +65,11 @@ export interface IStorage {
   getPartnerApplication(id: number): Promise<PartnerApplication | undefined>;
   createPartnerApplication(application: InsertPartnerApplication): Promise<PartnerApplication>;
   updatePartnerApplication(id: number, application: Partial<PartnerApplication>): Promise<PartnerApplication | undefined>;
+  
+  // Application document methods
+  getApplicationDocuments(applicationId: number): Promise<ApplicationDocument[]>;
+  getApplicationDocument(id: number): Promise<ApplicationDocument | undefined>;
+  createApplicationDocument(document: InsertApplicationDocument): Promise<ApplicationDocument>;
   
   // Quote request methods
   getQuoteRequests(partnerId?: number, userId?: number): Promise<QuoteRequest[]>;
@@ -253,6 +261,25 @@ export class DatabaseStorage implements IStorage {
       .where(eq(partnerApplications.id, id))
       .returning();
     return application || undefined;
+  }
+
+  async getApplicationDocuments(applicationId: number): Promise<ApplicationDocument[]> {
+    return await db.select().from(applicationDocuments)
+      .where(eq(applicationDocuments.applicationId, applicationId))
+      .orderBy(desc(applicationDocuments.uploadedAt));
+  }
+
+  async getApplicationDocument(id: number): Promise<ApplicationDocument | undefined> {
+    const [document] = await db.select().from(applicationDocuments).where(eq(applicationDocuments.id, id));
+    return document || undefined;
+  }
+
+  async createApplicationDocument(document: InsertApplicationDocument): Promise<ApplicationDocument> {
+    const [newDocument] = await db
+      .insert(applicationDocuments)
+      .values(document)
+      .returning();
+    return newDocument;
   }
 
   async getQuoteRequests(partnerId?: number, userId?: number): Promise<QuoteRequest[]> {

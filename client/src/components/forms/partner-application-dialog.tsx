@@ -1,0 +1,660 @@
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { z } from "zod";
+import { Loader2, Upload, X } from "lucide-react";
+
+const businessTypes = [
+  "Danışmanlık",
+  "Pazarlama", 
+  "Lojistik",
+  "Teknoloji",
+  "Finans",
+  "Hukuk",
+  "Diğer"
+];
+
+const companySizes = [
+  "1-10 çalışan",
+  "11-30 çalışan", 
+  "31-100 çalışan",
+  "100-1000 çalışan",
+  "1000+ çalışan"
+];
+
+const partnerApplicationSchema = z.object({
+  firstName: z.string().min(2, "Ad en az 2 karakter olmalıdır"),
+  lastName: z.string().min(2, "Soyad en az 2 karakter olmalıdır"),
+  email: z.string().email("Geçerli bir e-posta adresi giriniz"),
+  phone: z.string().min(10, "Geçerli bir telefon numarası giriniz"),
+  company: z.string().min(2, "Şirket adı en az 2 karakter olmalıdır"),
+  contactPerson: z.string().min(2, "İletişim kişisi en az 2 karakter olmalıdır"),
+  website: z.string().url("Geçerli bir web sitesi adresi giriniz").optional().or(z.literal("")),
+  businessType: z.string().min(1, "İş türü seçiniz"),
+  businessDescription: z.string().min(10, "İş tanımı en az 10 karakter olmalıdır"),
+  companySize: z.string().min(1, "Şirket büyüklüğü seçiniz"),
+  foundingYear: z.string().min(4, "Kuruluş yılı giriniz"),
+  sectorExperience: z.string().optional(),
+  targetMarkets: z.string().optional(),
+  services: z.string().min(10, "Sunacağınız hizmetler en az 10 karakter olmalıdır"),
+  dipAdvantages: z.string().min(10, "DİP üyelerine özel fırsat teklifiniz en az 10 karakter olmalıdır"),
+  whyPartner: z.string().min(10, "Neden DİP ile iş ortağı olmak istediğiniz en az 10 karakter olmalıdır"),
+  references: z.string().optional(),
+  linkedinProfile: z.string().url("Geçerli bir LinkedIn profil adresi giriniz").optional().or(z.literal("")),
+  twitterProfile: z.string().url("Geçerli bir Twitter profil adresi giriniz").optional().or(z.literal("")),
+  instagramProfile: z.string().url("Geçerli bir Instagram profil adresi giriniz").optional().or(z.literal("")),
+  facebookProfile: z.string().url("Geçerli bir Facebook sayfa adresi giriniz").optional().or(z.literal("")),
+  kvkkAccepted: z.boolean().refine(val => val === true, "KVKK onayı zorunludur"),
+});
+
+type PartnerApplicationFormData = z.infer<typeof partnerApplicationSchema>;
+
+interface PartnerApplicationDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function PartnerApplicationDialog({ open, onOpenChange }: PartnerApplicationDialogProps) {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const form = useForm<PartnerApplicationFormData>({
+    resolver: zodResolver(partnerApplicationSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      company: "",
+      contactPerson: "",
+      website: "",
+      businessType: "",
+      businessDescription: "",
+      companySize: "",
+      foundingYear: "",
+      sectorExperience: "",
+      targetMarkets: "",
+      services: "",
+      dipAdvantages: "",
+      whyPartner: "",
+      references: "",
+      linkedinProfile: "",
+      twitterProfile: "",
+      instagramProfile: "",
+      facebookProfile: "",
+      kvkkAccepted: false,
+    },
+  });
+
+  const onSubmit = async (data: PartnerApplicationFormData) => {
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      
+      // Add form data
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== 'kvkkAccepted' && value !== undefined && value !== '') {
+          formData.append(key, value.toString());
+        }
+      });
+
+      // Add files
+      selectedFiles.forEach((file, index) => {
+        formData.append(`documents`, file);
+      });
+
+      const response = await fetch('/api/partner-applications', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Başvuru gönderilemedi');
+      }
+
+      toast({
+        title: "Başarılı",
+        description: "İş ortağı başvurunuz başarıyla gönderildi. İnceleme süreci sonrasında size dönüş yapılacaktır.",
+      });
+
+      form.reset();
+      setSelectedFiles([]);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Başvuru gönderilirken bir hata oluştu",
+        variant: "destructive",
+      });
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const validFiles = files.filter(file => {
+      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/jpg', 'image/png'];
+      return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024; // 10MB
+    });
+
+    if (validFiles.length !== files.length) {
+      toast({
+        title: "Dosya Hatası",
+        description: "Sadece PDF, DOC, DOCX, JPG, JPEG, PNG formatları kabul ediliyor ve dosya boyutu 10MB'dan küçük olmalıdır.",
+        variant: "destructive",
+      });
+    }
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    event.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-dip-blue">İş Ortağı Başvurusu</DialogTitle>
+          <DialogDescription>
+            DIP ile birlikte dijital ihracat ekosisteminin bir parçası olun
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Kişisel Bilgiler */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Kişisel Bilgiler</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ad *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Adınız" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Soyad *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Soyadınız" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>E-posta *</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="ornek@email.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefon</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="0532 123 45 67" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Şirket Bilgileri */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Şirket Bilgileri</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Şirket Adı *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Şirket adınız" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="contactPerson"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>İletişim Kişisi *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="İletişim kişisi adı" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Web Sitesi</FormLabel>
+                    <FormControl>
+                      <Input type="url" placeholder="https://example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="businessType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>İş Türü *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seçiniz..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {businessTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="companySize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Şirket Büyüklüğü *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seçiniz..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {companySizes.map((size) => (
+                            <SelectItem key={size} value={size}>
+                              {size}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="foundingYear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kuruluş Yılı *</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="2020" min="1900" max={new Date().getFullYear()} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="sectorExperience"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sektör Deneyimi (Yıl)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="10" min="0" max="50" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="businessDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>İş Tanımı *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Şirketinizin faaliyet alanını ve sunduğu hizmetleri detaylıca açıklayınız..."
+                        className="min-h-[100px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="targetMarkets"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hedef Pazarlar</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Hangi pazarlarda faaliyet gösteriyorsunuz veya göstermeyi planlıyorsunuz..."
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Hizmet Bilgileri */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Hizmet Bilgileri</h3>
+              
+              <FormField
+                control={form.control}
+                name="services"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sunacağınız Hizmetler *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="DİP üyelerine sunacağınız hizmetleri detaylıca açıklayınız..."
+                        className="min-h-[100px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="dipAdvantages"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>DİP Üyelerine Özel Fırsat Teklifiniz Nedir? *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="DİP üyelerine özel sunacağınız avantajları, indirimleri veya özel hizmetleri açıklayınız..."
+                        className="min-h-[100px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="whyPartner"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Neden DİP ile İş Ortağı Olmak İstiyorsunuz? *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="DİP ile iş ortaklığı yapmak isteme nedenlerinizi açıklayınız..."
+                        className="min-h-[100px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="references"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Referanslar</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Referans olarak gösterebileceğiniz şirketler, projeler veya kişiler..."
+                        className="min-h-[80px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Sosyal Medya */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">Sosyal Medya Profilleri</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="linkedinProfile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LinkedIn Profili</FormLabel>
+                      <FormControl>
+                        <Input type="url" placeholder="https://linkedin.com/in/..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="twitterProfile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Twitter (X) Profili</FormLabel>
+                      <FormControl>
+                        <Input type="url" placeholder="https://twitter.com/..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="instagramProfile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Instagram Profili</FormLabel>
+                      <FormControl>
+                        <Input type="url" placeholder="https://instagram.com/..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="facebookProfile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Facebook Sayfası</FormLabel>
+                      <FormControl>
+                        <Input type="url" placeholder="https://facebook.com/..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Dosya Yükleme */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">İş Belgeleri</h3>
+              <p className="text-sm text-gray-600">
+                Başvurunuzla ilgili referans v.b. belgeler ile şirketinizi temsil eden resmi belgeleri buradan ekleyebilirsiniz. 
+                Dosya boyutu maksimum 10MB olmalıdır.
+              </p>
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <div className="text-center">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="mt-4">
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <span className="mt-2 block text-sm font-medium text-gray-900">
+                        Dosya Seç (Birden Fazla Dosya Seçilebilir)
+                      </span>
+                      <input
+                        id="file-upload"
+                        name="file-upload"
+                        type="file"
+                        className="sr-only"
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={handleFileSelect}
+                      />
+                    </label>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Desteklenen formatlar: PDF, DOC, DOCX, JPG, JPEG, PNG | Maksimum dosya boyutu: 10MB
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Seçilen Dosyalar:</h4>
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <span className="text-sm text-gray-700">{file.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* KVKK Onayı */}
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="kvkkAccepted"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm">
+                        6698 Sayılı KVKK uyarınca, bilgilerimin ticari bilgi kapsamında Dijital İhracat Platformu ve paydaşları ile paylaşılmasına ve gerçekleşecek olan etkinliklerde, OTT / Canlı kayıt - yayın yapılmasına razı olduğumu kabul / beyan ederim. *
+                      </FormLabel>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-4 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                İptal
+              </Button>
+              <Button
+                type="submit"
+                className="bg-dip-blue hover:bg-dip-dark-blue"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Gönderiliyor...
+                  </>
+                ) : (
+                  "Başvuruyu Gönder"
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

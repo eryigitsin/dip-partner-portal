@@ -5,7 +5,7 @@ import { HeroSection } from '@/components/sections/hero-section';
 import { CategoryCards } from '@/components/sections/category-cards';
 import { PartnersCatalog } from '@/components/sections/partners-catalog';
 import { PartnershipCta } from '@/components/sections/partnership-cta';
-import { PartnerApplicationModal } from '@/components/modals/partner-application-modal';
+import { PartnerApplicationDialog } from '@/components/forms/partner-application-dialog';
 import { QuoteRequestModal } from '@/components/modals/quote-request-modal';
 import { Partner } from '@shared/schema';
 
@@ -67,9 +67,9 @@ export default function HomePage() {
       
       <Footer />
 
-      <PartnerApplicationModal 
-        isOpen={isPartnerApplicationOpen}
-        onClose={() => setIsPartnerApplicationOpen(false)}
+      <PartnerApplicationDialog 
+        open={isPartnerApplicationOpen}
+        onOpenChange={setIsPartnerApplicationOpen}
       />
 
       <QuoteRequestModal 

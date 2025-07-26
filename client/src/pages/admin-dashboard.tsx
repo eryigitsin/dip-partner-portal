@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { ApplicationDetailDialog } from "@/components/forms/application-detail-dialog";
 import { PartnerApplication, Partner, QuoteRequest } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -32,6 +33,8 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null);
 
   const { data: applications = [] } = useQuery<PartnerApplication[]>({
     queryKey: ["/api/partner-applications"],
@@ -100,20 +103,25 @@ export default function AdminDashboard() {
     );
   }
 
-  const handleApproveApplication = (id: number) => {
+  const handleApproveApplication = (id: number, notes?: string) => {
     updateApplicationMutation.mutate({ 
       id, 
       status: "approved", 
-      notes: "Başvuru onaylandı ve partner olarak sisteme eklendi." 
+      notes: notes || "Başvuru onaylandı ve partner olarak sisteme eklendi." 
     });
   };
 
-  const handleRejectApplication = (id: number) => {
+  const handleRejectApplication = (id: number, notes?: string) => {
     updateApplicationMutation.mutate({ 
       id, 
       status: "rejected", 
-      notes: "Başvuru kriterleri karşılamadığı için reddedildi." 
+      notes: notes || "Başvuru kriterleri karşılamadığı için reddedildi." 
     });
+  };
+
+  const handleViewApplicationDetail = (id: number) => {
+    setSelectedApplicationId(id);
+    setDetailDialogOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -397,7 +405,11 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button size="sm" variant="outline">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleViewApplicationDetail(application.id)}
+                              >
                                 <Eye className="h-4 w-4 mr-1" />
                                 Detay
                               </Button>
@@ -559,6 +571,15 @@ export default function AdminDashboard() {
       </div>
 
       <Footer />
+
+      {/* Application Detail Dialog */}
+      <ApplicationDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        applicationId={selectedApplicationId}
+        onApprove={handleApproveApplication}
+        onReject={handleRejectApplication}
+      />
     </div>
   );
 }

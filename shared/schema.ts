@@ -41,10 +41,12 @@ export const partners = pgTable("partners", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   companyName: text("company_name").notNull(),
+  contactPerson: text("contact_person"),
   logo: text("logo"),
   coverImage: text("cover_image"),
   description: text("description"),
   shortDescription: text("short_description"),
+  businessType: text("business_type"),
   serviceCategory: text("service_category").notNull(),
   services: text("services").notNull(),
   dipAdvantages: text("dip_advantages"),
@@ -52,7 +54,14 @@ export const partners = pgTable("partners", {
   city: text("city"),
   country: text("country"),
   companySize: text("company_size"),
+  foundingYear: text("founding_year"),
+  sectorExperience: text("sector_experience"),
+  targetMarkets: text("target_markets"),
   website: text("website"),
+  linkedinProfile: text("linkedin_profile"),
+  twitterProfile: text("twitter_profile"),
+  instagramProfile: text("instagram_profile"),
+  facebookProfile: text("facebook_profile"),
   socialMedia: jsonb("social_media"), // {linkedin, twitter, facebook, instagram}
   isApproved: boolean("is_approved").default(false),
   isActive: boolean("is_active").default(true),
@@ -114,11 +123,23 @@ export const partnerApplications = pgTable("partner_applications", {
   email: text("email").notNull(),
   phone: text("phone").notNull(),
   company: text("company").notNull(),
-  title: text("title").notNull(),
+  contactPerson: text("contact_person").notNull(),
   website: text("website"),
-  serviceCategory: text("service_category").notNull(),
+  businessType: text("business_type").notNull(),
+  businessDescription: text("business_description").notNull(),
+  companySize: text("company_size").notNull(),
+  foundingYear: text("founding_year").notNull(),
+  sectorExperience: text("sector_experience"),
+  targetMarkets: text("target_markets"),
   services: text("services").notNull(),
-  dipAdvantages: text("dip_advantages"),
+  dipAdvantages: text("dip_advantages").notNull(),
+  whyPartner: text("why_partner").notNull(),
+  references: text("references"),
+  linkedinProfile: text("linkedin_profile"),
+  twitterProfile: text("twitter_profile"),
+  instagramProfile: text("instagram_profile"),
+  facebookProfile: text("facebook_profile"),
+  documents: text("documents"), // JSON array of document URLs
   status: text("status").default("pending"), // pending, approved, rejected
   reviewedBy: integer("reviewed_by").references(() => users.id),
   reviewedAt: timestamp("reviewed_at"),
@@ -203,6 +224,18 @@ export const tempUserRegistrations = pgTable("temp_user_registrations", {
   verificationCode: text("verification_code").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Application documents for file uploads
+export const applicationDocuments = pgTable("application_documents", {
+  id: serial("id").primaryKey(),
+  applicationId: integer("application_id").references(() => partnerApplications.id).notNull(),
+  fileName: text("file_name").notNull(),
+  originalName: text("original_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: text("mime_type").notNull(),
+  filePath: text("file_path").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
 });
 
 // Relations
@@ -342,6 +375,11 @@ export const insertTempUserRegistrationSchema = createInsertSchema(tempUserRegis
   createdAt: true,
 });
 
+export const insertApplicationDocumentSchema = createInsertSchema(applicationDocuments).omit({
+  id: true,
+  uploadedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -367,3 +405,5 @@ export type SmsOtpCode = typeof smsOtpCodes.$inferSelect;
 export type InsertSmsOtpCode = z.infer<typeof insertSmsOtpCodeSchema>;
 export type TempUserRegistration = typeof tempUserRegistrations.$inferSelect;
 export type InsertTempUserRegistration = z.infer<typeof insertTempUserRegistrationSchema>;
+export type ApplicationDocument = typeof applicationDocuments.$inferSelect;
+export type InsertApplicationDocument = z.infer<typeof insertApplicationDocumentSchema>;
