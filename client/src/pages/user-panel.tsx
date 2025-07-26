@@ -296,26 +296,26 @@ export default function UserPanel() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profil
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+            <TabsTrigger value="profile" className="flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-3">
+              <User className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Profil</span>
             </TabsTrigger>
-            <TabsTrigger value="company" className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              Şirket
+            <TabsTrigger value="company" className="flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-3">
+              <Building className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Şirket</span>
             </TabsTrigger>
-            <TabsTrigger value="billing" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Faturalama
+            <TabsTrigger value="billing" className="flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-3">
+              <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Faturalama</span>
             </TabsTrigger>
-            <TabsTrigger value="following" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Takip Ettiklerim
+            <TabsTrigger value="following" className="flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-3">
+              <Heart className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Takip Ettiklerim</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Ayarlar
+            <TabsTrigger value="settings" className="flex items-center justify-center gap-1 md:gap-2 text-xs md:text-sm px-1 md:px-3">
+              <Settings className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Ayarlar</span>
             </TabsTrigger>
           </TabsList>
 
