@@ -1236,6 +1236,37 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Delete partner post (owner or admin only)
+  app.delete("/api/partners/:partnerId/posts/:postId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const partnerId = parseInt(req.params.partnerId);
+      const postId = parseInt(req.params.postId);
+      
+      const partner = await storage.getPartner(partnerId);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      // Allow partner owner or admins to delete posts
+      const isOwner = partner.userId === req.user!.id;
+      const isAdmin = req.user!.userType === 'master_admin' || req.user!.userType === 'editor_admin';
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "You can only delete your own posts or you must be an admin" });
+      }
+
+      await storage.deletePartnerPost(postId);
+      res.json({ message: "Post deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting partner post:', error);
+      res.status(500).json({ message: "Failed to delete partner post" });
+    }
+  });
+
   // Configure multer for profile image uploads  
   const uploadProfileImages = multer({
     storage: multer.diskStorage({
@@ -1289,8 +1320,12 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      if (partner.userId !== req.user!.id) {
-        return res.status(403).json({ message: "You can only update your own partner profile" });
+      // Allow partner owner or admins to update
+      const isOwner = partner.userId === req.user!.id;
+      const isAdmin = req.user!.userType === 'master_admin' || req.user!.userType === 'editor_admin';
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "You can only update your own partner profile or you must be an admin" });
       }
 
       const updates: any = { ...req.body };

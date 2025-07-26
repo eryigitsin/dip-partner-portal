@@ -37,7 +37,8 @@ import {
   Instagram,
   Facebook,
   User,
-  Share2
+  Share2,
+  Trash2
 } from 'lucide-react';
 // import experienceIcon from "@assets/Tecrübe İkonu_1753558515148.png";
 import { Header } from '@/components/layout/header';
@@ -313,6 +314,38 @@ export default function PartnerProfile() {
     messageMutation.mutate();
   };
 
+  // Delete post mutation
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const res = await apiRequest('DELETE', `/api/partners/${partner?.id}/posts/${postId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/partners/${partner?.id}/posts`] });
+      toast({
+        title: 'Başarılı',
+        description: 'Paylaşım silindi',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Hata',
+        description: 'Paylaşım silinemedi',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleCreatePost = () => {
+    createPostMutation.mutate({ content: postContent });
+  };
+
+  const handleDeletePost = (postId: number) => {
+    if (confirm('Bu paylaşımı silmek istediğinizden emin misiniz?')) {
+      deletePostMutation.mutate(postId);
+    }
+  };
+
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'coverImage') => {
     const file = event.target.files?.[0];
@@ -352,17 +385,12 @@ export default function PartnerProfile() {
     updatePartnerMutation.mutate(editData);
   };
 
-  const handleCreatePost = () => {
-    if (postContent.trim()) {
-      createPostMutation.mutate({
-        content: postContent,
-        type: 'text'
-      });
-    }
-  };
+
 
   // Check if current user is the partner owner
   const isOwner = user && partner && user.id === partner.userId;
+  const isAdmin = user && (user.userType === 'master_admin' || user.userType === 'editor_admin');
+  const canEdit = isOwner || isAdmin;
 
   if (partnerLoading) {
     return (
@@ -406,8 +434,8 @@ export default function PartnerProfile() {
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           
-          {/* Edit Profile Button - Only visible to owner */}
-          {isOwner && (
+          {/* Edit Profile Button - Visible to owner and admins */}
+          {canEdit && (
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
               <DialogTrigger asChild>
                 <Button
@@ -476,8 +504,7 @@ export default function PartnerProfile() {
           <div className="absolute top-6 right-6">
             <Badge 
               variant="secondary" 
-              className="bg-white/90 text-gray-900 hover:bg-white cursor-pointer"
-              onClick={() => setLocation(`/?category=${encodeURIComponent(partner.serviceCategory)}`)}
+              className="bg-white/90 text-gray-900"
             >
               {partner.serviceCategory}
             </Badge>
@@ -731,6 +758,7 @@ export default function PartnerProfile() {
                           </Dialog>
                         </div>
                       </div>
+
                       <div className="flex items-center justify-between mt-4 pt-3 border-t">
                         <Button variant="ghost" size="sm" className="flex-1 justify-center">
                           <Image className="h-5 w-5 mr-2" />
@@ -785,6 +813,16 @@ export default function PartnerProfile() {
                               </p>
                             </div>
                           </div>
+                          {canEdit && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeletePost(post.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </CardHeader>
                       <CardContent>

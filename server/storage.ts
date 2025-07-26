@@ -576,6 +576,12 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newPost;
   }
+
+  async deletePartnerPost(postId: number): Promise<void> {
+    await db
+      .delete(partnerPosts)
+      .where(eq(partnerPosts.id, postId));
+  }
 }
 
 export const storage = new DatabaseStorage();
