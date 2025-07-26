@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save } from 'lucide-react';
 import { UserProfile, CompanyBillingInfo, Partner } from '@shared/schema';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
 
 export default function UserPanel() {
   const { user, logoutMutation } = useAuth();
@@ -205,14 +207,17 @@ export default function UserPanel() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Kişisel Panelim</h1>
-          <p className="text-gray-600 mt-2">Hesap bilgilerinizi yönetin ve takip ettiğiniz partnerleri görün</p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Kişisel Panelim</h1>
+            <p className="text-gray-600 mt-2">Hesap bilgilerinizi yönetin ve takip ettiğiniz partnerleri görün</p>
+          </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -612,8 +617,11 @@ export default function UserPanel() {
               </Card>
             </div>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }

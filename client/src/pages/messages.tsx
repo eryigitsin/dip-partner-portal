@@ -19,6 +19,8 @@ import {
   Clock
 } from 'lucide-react';
 import { Message, Partner, User } from '@shared/schema';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
 
 interface Conversation {
   partnerId: number;
@@ -142,15 +144,19 @@ export default function Messages() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Sohbet</h1>
-              <p className="text-gray-600 mt-2">Partnerlerle mesajlaşın</p>
-            </div>
-            <Dialog open={newChatOpen} onOpenChange={setNewChatOpen}>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Sohbet</h1>
+                <p className="text-gray-600 mt-2">Partnerlerle mesajlaşın</p>
+              </div>
+              
+              <Dialog open={newChatOpen} onOpenChange={setNewChatOpen}>
               <DialogTrigger asChild>
                 <Button className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
@@ -218,6 +224,7 @@ export default function Messages() {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </div>
 
@@ -269,7 +276,7 @@ export default function Messages() {
                             <div className="flex items-center gap-1 mt-1">
                               <Clock className="h-3 w-3 text-gray-400" />
                               <span className="text-xs text-gray-400">
-                                {formatTime(conversation.lastMessage.createdAt)}
+                                {conversation.lastMessage?.createdAt ? formatTime(conversation.lastMessage.createdAt) : ''}
                               </span>
                             </div>
                           </div>
@@ -316,7 +323,7 @@ export default function Messages() {
                               <span className={`text-xs ${
                                 message.senderId === user.id ? 'text-blue-200' : 'text-gray-500'
                               }`}>
-                                {formatTime(message.createdAt)}
+                                {message.createdAt ? formatTime(message.createdAt) : ''}
                               </span>
                             </div>
                           </div>
@@ -358,6 +365,8 @@ export default function Messages() {
           </Card>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }

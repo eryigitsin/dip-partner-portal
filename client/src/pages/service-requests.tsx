@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { QuoteRequest, QuoteResponse, Partner } from '@shared/schema';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
 
 export default function ServiceRequests() {
   const { user } = useAuth();
@@ -123,15 +125,18 @@ export default function ServiceRequests() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Hizmet Taleplerim</h1>
-          <p className="text-gray-600 mt-2">Hizmet taleplerinizi yönetin ve teklifleri değerlendirin</p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Hizmet Taleplerim</h1>
+            <p className="text-gray-600 mt-2">Hizmet taleplerinizi yönetin ve teklifleri değerlendirin</p>
+          </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Mevcut Talepler
@@ -177,7 +182,7 @@ export default function ServiceRequests() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">Talep Tarihi: {formatDate(request.createdAt)}</span>
+                          <span className="text-sm">Talep Tarihi: {request.createdAt ? formatDate(request.createdAt) : 'Bilinmiyor'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-gray-500" />
@@ -361,8 +366,11 @@ export default function ServiceRequests() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }
