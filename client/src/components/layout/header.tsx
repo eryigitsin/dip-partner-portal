@@ -33,13 +33,13 @@ export function Header() {
       {/* Top contact bar */}
       <div className="bg-gray-50 border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-10 text-sm">
-            <div className="flex items-center space-x-4 text-gray-600">
-              <span>Ecza Sok. No:4-1 Şişli, İstanbul</span>
-              <span>info@dip.tc</span>
-              <span>08503071245</span>
+          <div className="flex justify-between items-center h-10 text-xs sm:text-sm">
+            <div className="flex items-center space-x-2 sm:space-x-4 text-gray-600 overflow-hidden">
+              <span className="hidden md:inline">Ecza Sok. No:4-1 Şişli, İstanbul</span>
+              <span className="hidden sm:inline md:inline">info@dip.tc</span>
+              <span className="whitespace-nowrap">08503071245</span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               <Button
                 variant={language === 'tr' ? 'default' : 'ghost'}
                 size="sm"
@@ -74,7 +74,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex space-x-8">
+          <nav className="hidden md:flex items-center space-x-4 lg:space-x-8">
             {navigation.map((item) => (
               item.external ? (
                 <a
@@ -82,7 +82,7 @@ export function Header() {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors"
+                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors text-sm lg:text-base"
                 >
                   {item.name}
                 </a>
@@ -90,12 +90,19 @@ export function Header() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors"
+                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors text-sm lg:text-base"
                 >
                   {item.name}
                 </Link>
               )
             ))}
+            
+            {/* Partner Catalog Button */}
+            <Link href="/partners">
+              <Button variant="outline" className="ml-2 lg:ml-4" size="sm">
+                Partner Kataloğu
+              </Button>
+            </Link>
           </nav>
 
           {/* Auth Buttons */}
@@ -220,7 +227,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden"
+              className="md:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? (
@@ -235,7 +242,7 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100">
+        <div className="md:hidden bg-white border-t border-gray-100">
           <div className="px-4 py-3 space-y-2">
             {navigation.map((item) => (
               item.external ? (

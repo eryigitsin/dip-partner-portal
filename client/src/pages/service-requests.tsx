@@ -136,12 +136,12 @@ export default function ServiceRequests() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 gap-2">
-            <TabsTrigger value="requests" className="flex items-center gap-2">
+            <TabsList className="flex flex-wrap w-full gap-1 h-auto p-1">
+            <TabsTrigger value="requests" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[150px] px-4 py-2 text-sm">
               <FileText className="h-4 w-4" />
               Mevcut Talepler
             </TabsTrigger>
-            <TabsTrigger value="suggested" className="flex items-center gap-2">
+            <TabsTrigger value="suggested" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[150px] px-4 py-2 text-sm">
               <Heart className="h-4 w-4" />
               Önerilen Partnerler
             </TabsTrigger>
