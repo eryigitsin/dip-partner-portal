@@ -547,9 +547,9 @@ export default function PartnerProfile() {
       {/* Cover Image Section with Gradient */}
       <div className="relative">
         <div 
-          className="h-80 bg-gradient-to-r from-blue-600 to-purple-600 bg-cover bg-center"
+          className="h-32 sm:h-80 bg-gradient-to-r from-blue-600 to-purple-600 bg-cover bg-center"
           style={{
-            backgroundImage: partner.coverImage ? `url(${partner.coverImage})` : undefined
+            backgroundImage: partner.coverImage && window.innerWidth >= 640 ? `url(${partner.coverImage})` : undefined
           }}
         >
           {/* Gradient overlay */}
@@ -671,54 +671,142 @@ export default function PartnerProfile() {
           </Dialog>
           
           {/* Service Category Badge */}
-          <div className="absolute top-6 right-6">
+          <div className="absolute top-4 right-4 md:top-6 md:right-6">
             <Badge 
               variant="secondary" 
-              className="bg-white/90 text-gray-900"
+              className="bg-white/90 text-gray-900 text-xs md:text-sm"
             >
               {partner.serviceCategory}
             </Badge>
           </div>
           
           {/* Partner Info */}
-          <div className="absolute bottom-0 left-0 right-0 p-6">
-            <div className="flex items-end justify-between">
+          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+            {/* Mobile Layout */}
+            <div className="block sm:hidden">
+              <div className="flex items-center justify-between">
+                {/* Logo and Name */}
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-12 h-12 border-2 border-white">
+                    <AvatarImage src={partner.logo} alt={partner.companyName} />
+                    <AvatarFallback className="text-sm">
+                      {partner.companyName.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-white">
+                    <h1 className="text-lg font-bold">{partner.companyName}</h1>
+                    <div className="flex items-center gap-1 text-xs">
+                      <MapPin className="h-3 w-3" />
+                      <span>{partner.city}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mobile Action Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    variant={isFollowing ? "outline" : "default"}
+                    onClick={handleFollow}
+                    disabled={followMutation.isPending}
+                    size="sm"
+                    className={`text-xs ${isFollowing ? 
+                      'bg-blue-600 border-blue-600 text-white hover:bg-red-600 hover:border-red-600 hover:text-white' : 
+                      'bg-white text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    {followMutation.isPending ? (
+                      <div className="animate-spin w-3 h-3 border-2 border-current border-t-transparent rounded-full" />
+                    ) : isFollowing ? (
+                      <Heart className="h-3 w-3 fill-current" />
+                    ) : (
+                      <Heart className="h-3 w-3" />
+                    )}
+                  </Button>
+                  
+                  <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-xs px-3">
+                        TEKLİF
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Teklif Talebi</DialogTitle>
+                        <DialogDescription>
+                          {partner.companyName} firmasından teklif almak için formu doldurun.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Input
+                          placeholder="İhtiyacınız olan hizmet"
+                          value={quoteRequest.serviceNeeded}
+                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, serviceNeeded: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Bütçe aralığınız"
+                          value={quoteRequest.budget}
+                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, budget: e.target.value }))}
+                        />
+                        <Input
+                          type="date"
+                          placeholder="Proje tarihi"
+                          value={quoteRequest.projectDate}
+                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, projectDate: e.target.value }))}
+                        />
+                        <Textarea
+                          placeholder="Proje detayları..."
+                          value={quoteRequest.message}
+                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, message: e.target.value }))}
+                          rows={4}
+                        />
+                        <Button onClick={handleQuoteRequest} disabled={quoteRequestMutation.isPending} className="w-full">
+                          Teklif Talebi Gönder
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden sm:flex items-end justify-between">
               <div className="flex items-end gap-6">
                 {/* Profile Image */}
-                <Avatar className="w-24 h-24 border-4 border-white">
+                <Avatar className="w-16 h-16 md:w-24 md:h-24 border-4 border-white">
                   <AvatarImage src={partner.logo} alt={partner.companyName} />
-                  <AvatarFallback className="text-2xl">
+                  <AvatarFallback className="text-lg md:text-2xl">
                     {partner.companyName.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 
                 {/* Company Info */}
                 <div className="text-white mb-2">
-                  <h1 className="text-3xl font-bold">{partner.companyName}</h1>
-                  <div className="flex items-center gap-4 mt-2 text-sm">
+                  <h1 className="text-2xl md:text-3xl font-bold">{partner.companyName}</h1>
+                  <div className="flex items-center gap-2 md:gap-4 mt-2 text-xs md:text-sm flex-wrap">
                     <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
+                      <MapPin className="h-3 w-3 md:h-4 md:w-4" />
                       <span>{partner.city}, {partner.country}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Building className="h-4 w-4" />
+                      <Building className="h-3 w-3 md:h-4 md:w-4" />
                       <span>{partner.companySize}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <svg className="h-3 w-3 md:h-4 md:w-4" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z"/>
                       </svg>
                       <span>{partner.sectorExperience} yıl</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
+                      <Users className="h-3 w-3 md:h-4 md:w-4" />
                       <span>{partner.followersCount} takipçi</span>
                     </div>
                   </div>
                 </div>
               </div>
               
-              {/* Action Buttons */}
+              {/* Desktop Action Buttons */}
               <div className="flex gap-3 mb-2">
                 <Button
                   variant={isFollowing ? "outline" : "default"}
