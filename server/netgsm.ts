@@ -1,0 +1,153 @@
+import crypto from 'crypto';
+
+interface NetGsmConfig {
+  username: string;
+  password: string;
+  msgheader: string;
+}
+
+interface SendOtpResponse {
+  success: boolean;
+  jobId?: string;
+  message: string;
+  code?: string;
+}
+
+export class NetGsmService {
+  private config: NetGsmConfig;
+  private baseUrl = 'https://api.netgsm.com.tr';
+
+  constructor(config: NetGsmConfig) {
+    this.config = config;
+  }
+
+  // Generate 6-digit OTP code
+  generateOtpCode(): string {
+    return crypto.randomInt(100000, 999999).toString();
+  }
+
+  // Send OTP SMS using NetGSM API
+  async sendOtpSms(phone: string, code: string): Promise<SendOtpResponse> {
+    try {
+      // Format phone number (remove + and spaces)
+      const formattedPhone = phone.replace(/[\s+]/g, '');
+      
+      // OTP message template
+      const message = `DIP doğrulama kodunuz: ${code}`;
+
+      // Prepare request data for NetGSM SMS API
+      const requestData = new URLSearchParams({
+        usercode: this.config.username,
+        password: this.config.password,
+        gsmno: formattedPhone,
+        message: message,
+        msgheader: this.config.msgheader,
+        filter: '0', // Bilgilendirme mesajı (İYS kontrolü yok)
+      });
+
+      console.log('Sending OTP SMS to:', formattedPhone);
+      console.log('Message:', message);
+
+      const response = await fetch(`${this.baseUrl}/sms/send/otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'text/plain',
+        },
+        body: requestData.toString(),
+      });
+
+      const responseText = await response.text();
+      console.log('NetGSM Response:', responseText);
+
+      // Parse NetGSM response
+      if (response.ok) {
+        // NetGSM returns job ID for successful requests (e.g., "17377215342605050417149344")
+        if (responseText && responseText.length > 5 && !responseText.includes('ERROR')) {
+          return {
+            success: true,
+            jobId: responseText.trim(),
+            message: 'OTP SMS sent successfully',
+            code: code,
+          };
+        }
+      }
+
+      // Handle error responses
+      return {
+        success: false,
+        message: this.parseErrorMessage(responseText),
+      };
+
+    } catch (error) {
+      console.error('NetGSM API Error:', error);
+      return {
+        success: false,
+        message: 'SMS gönderim hatası',
+      };
+    }
+  }
+
+  // Parse NetGSM error messages
+  private parseErrorMessage(response: string): string {
+    const errorMessages: { [key: string]: string } = {
+      '20': 'Mesaj içeriği hatalı veya çok uzun',
+      '30': 'Geçersiz kullanıcı adı veya şifre',
+      '40': 'Mesaj başlığı sistemde tanımlı değil',
+      '50': 'İYS kontrollü gönderim yapılamıyor',
+      '51': 'İYS Marka bilgisi bulunamadı',
+      '70': 'Hatalı parametre gönderimi',
+      '80': 'Gönderim sınır aşımı',
+      '85': 'Mükerrer gönderim sınır aşımı',
+    };
+
+    // Check if response contains known error codes
+    for (const [code, message] of Object.entries(errorMessages)) {
+      if (response.includes(code)) {
+        return message;
+      }
+    }
+
+    return response || 'Bilinmeyen hata';
+  }
+
+  // Verify OTP code format
+  isValidOtpCode(code: string): boolean {
+    return /^\d{6}$/.test(code);
+  }
+
+  // Format Turkish phone number
+  formatPhoneNumber(phone: string): string {
+    // Remove all non-digit characters
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Handle Turkish phone numbers
+    if (cleaned.startsWith('90') && cleaned.length === 12) {
+      return cleaned; // Already formatted with country code
+    } else if (cleaned.startsWith('0') && cleaned.length === 11) {
+      return '90' + cleaned.substring(1); // Add country code, remove leading 0
+    } else if (cleaned.length === 10) {
+      return '90' + cleaned; // Add country code
+    }
+    
+    return cleaned; // Return as is for international numbers
+  }
+}
+
+// Factory function to create NetGSM service
+export function createNetGsmService(): NetGsmService | null {
+  const username = process.env.NETGSM_USERNAME;
+  const password = process.env.NETGSM_PASSWORD;
+  const msgheader = process.env.NETGSM_MSGHEADER || 'DIP';
+
+  if (!username || !password) {
+    console.warn('NetGSM credentials not configured');
+    return null;
+  }
+
+  return new NetGsmService({
+    username,
+    password,
+    msgheader,
+  });
+}

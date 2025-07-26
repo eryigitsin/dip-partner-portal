@@ -2,8 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertPartnerApplicationSchema, insertQuoteRequestSchema } from "@shared/schema";
+import { insertPartnerApplicationSchema, insertQuoteRequestSchema, insertTempUserRegistrationSchema } from "@shared/schema";
 import { z } from "zod";
+import { createNetGsmService } from "./netgsm";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -343,6 +348,178 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error('Error creating partner application:', error);
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // OTP endpoints
+  const netgsmService = createNetGsmService();
+
+  // Start registration with phone verification
+  app.post('/api/auth/register/start', async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, phone } = req.body;
+
+      // Validate input
+      if (!email || !password || !firstName || !lastName || !phone) {
+        return res.status(400).json({ message: 'Tüm alanlar gereklidir' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'Bu email adresi zaten kullanılıyor' });
+      }
+
+      // Check NetGSM service availability
+      if (!netgsmService) {
+        return res.status(500).json({ message: 'SMS servisi kullanılamıyor' });
+      }
+
+      // Format phone number
+      const formattedPhone = netgsmService.formatPhoneNumber(phone);
+
+      // Generate OTP code
+      const otpCode = netgsmService.generateOtpCode();
+
+      // Hash password
+      const salt = randomBytes(16).toString("hex");
+      const hashedPassword = (await scryptAsync(password, salt, 64) as Buffer).toString("hex") + "." + salt;
+
+      // Store temporary user data
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      await storage.createTempUserRegistration({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        phone: formattedPhone,
+        verificationCode: otpCode,
+        expiresAt,
+      });
+
+      // Store OTP code
+      await storage.createSmsOtpCode({
+        phone: formattedPhone,
+        code: otpCode,
+        purpose: 'registration',
+        expiresAt,
+      });
+
+      // Send OTP SMS
+      const smsResult = await netgsmService.sendOtpSms(formattedPhone, otpCode);
+
+      if (smsResult.success) {
+        res.json({ 
+          success: true, 
+          message: 'Doğrulama kodu gönderildi',
+          phone: formattedPhone 
+        });
+      } else {
+        res.status(500).json({ message: smsResult.message });
+      }
+
+    } catch (error) {
+      console.error('Registration start error:', error);
+      res.status(500).json({ message: 'Kayıt işlemi başlatılamadı' });
+    }
+  });
+
+  // Complete registration with OTP verification
+  app.post('/api/auth/register/verify', async (req, res) => {
+    try {
+      const { phone, code } = req.body;
+
+      if (!phone || !code) {
+        return res.status(400).json({ message: 'Telefon numarası ve doğrulama kodu gerekli' });
+      }
+
+      // Verify OTP code
+      const isValidOtp = await storage.verifySmsOtpCode(phone, code, 'registration');
+      if (!isValidOtp) {
+        return res.status(400).json({ message: 'Geçersiz veya süresi dolmuş doğrulama kodu' });
+      }
+
+      // Get temporary user data
+      const tempUser = await storage.getTempUserRegistration(phone);
+      if (!tempUser) {
+        return res.status(400).json({ message: 'Kayıt bilgileri bulunamadı' });
+      }
+
+      // Check if temp registration expired
+      if (tempUser.expiresAt < new Date()) {
+        await storage.deleteTempUserRegistration(phone);
+        return res.status(400).json({ message: 'Kayıt süresi dolmuş, lütfen tekrar deneyin' });
+      }
+
+      // Create user
+      const user = await storage.createUser({
+        email: tempUser.email,
+        password: tempUser.password,
+        firstName: tempUser.firstName,
+        lastName: tempUser.lastName,
+        phone: tempUser.phone,
+        isVerified: true,
+        userType: 'user',
+      });
+
+      // Clean up temporary data
+      await storage.deleteTempUserRegistration(phone);
+
+      // Log user in
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Login error after registration:', err);
+          return res.status(500).json({ message: 'Kayıt başarılı ancak giriş yapılamadı' });
+        }
+        res.json({ success: true, user, message: 'Kayıt başarıyla tamamlandı' });
+      });
+
+    } catch (error) {
+      console.error('Registration verify error:', error);
+      res.status(500).json({ message: 'Doğrulama işlemi tamamlanamadı' });
+    }
+  });
+
+  // Resend OTP code
+  app.post('/api/auth/resend-otp', async (req, res) => {
+    try {
+      const { phone, purpose = 'registration' } = req.body;
+
+      if (!phone) {
+        return res.status(400).json({ message: 'Telefon numarası gerekli' });
+      }
+
+      if (!netgsmService) {
+        return res.status(500).json({ message: 'SMS servisi kullanılamıyor' });
+      }
+
+      // Generate new OTP code
+      const otpCode = netgsmService.generateOtpCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Store new OTP code
+      await storage.createSmsOtpCode({
+        phone,
+        code: otpCode,
+        purpose,
+        expiresAt,
+      });
+
+      // Send OTP SMS
+      const smsResult = await netgsmService.sendOtpSms(phone, otpCode);
+
+      if (smsResult.success) {
+        res.json({ 
+          success: true, 
+          message: 'Yeni doğrulama kodu gönderildi' 
+        });
+      } else {
+        res.status(500).json({ message: smsResult.message });
+      }
+
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      res.status(500).json({ message: 'Doğrulama kodu gönderilemedi' });
     }
   });
 

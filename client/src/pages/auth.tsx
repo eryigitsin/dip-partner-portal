@@ -12,9 +12,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/contexts/language-context";
 import { t } from "@/lib/i18n";
 import { z } from "zod";
-import { Loader2, Mail, Lock, User, Phone, Building } from "lucide-react";
+import { Loader2, Mail, Lock, User, Phone, Building, MessageSquare } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import dipLogo from '@assets/dip ince_1753540745210.png';
 import workshopBg from '@assets/dip-workshop_1753540666527.png';
 
@@ -27,6 +29,7 @@ const registerSchema = z.object({
   firstName: z.string().min(2, "Ad en az 2 karakter olmalıdır"),
   lastName: z.string().min(2, "Soyad en az 2 karakter olmalıdır"),
   email: z.string().email("Geçerli bir e-posta adresi giriniz"),
+  phone: z.string().min(10, "Geçerli bir telefon numarası giriniz"),
   password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -34,15 +37,27 @@ const registerSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const otpSchema = z.object({
+  code: z.string().length(6, "Doğrulama kodu 6 haneli olmalıdır"),
+});
+
 type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
+type OtpFormData = z.infer<typeof otpSchema>;
 
 export default function AuthPage() {
   const [location, setLocation] = useLocation();
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const { language } = useLanguage();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("login");
   const [kvkkDialogOpen, setKvkkDialogOpen] = useState(false);
+  const [showOtpStep, setShowOtpStep] = useState(false);
+  const [registrationPhone, setRegistrationPhone] = useState("");
+  const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -58,8 +73,16 @@ export default function AuthPage() {
       firstName: "",
       lastName: "",
       email: "",
+      phone: "",
       password: "",
       confirmPassword: "",
+    },
+  });
+
+  const otpForm = useForm<OtpFormData>({
+    resolver: zodResolver(otpSchema),
+    defaultValues: {
+      code: "",
     },
   });
 
@@ -70,14 +93,126 @@ export default function AuthPage() {
     }
   }, [user, isLoading, setLocation]);
 
+  // Timer for resend OTP
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
   const onLogin = (data: LoginFormData) => {
     loginMutation.mutate(data);
   };
 
-  const onRegister = (data: RegisterFormData) => {
-    const { confirmPassword, ...registerData } = data;
-    registerMutation.mutate(registerData);
+  const onRegister = async (data: RegisterFormData) => {
+    setIsSubmittingRegistration(true);
+    try {
+      const response = await apiRequest("POST", "/api/auth/register/start", data);
+      const result = await response.json();
+      
+      if (result.success) {
+        setRegistrationPhone(result.phone);
+        setShowOtpStep(true);
+        setResendTimer(60); // 60 seconds cooldown
+        toast({
+          title: "Doğrulama kodu gönderildi",
+          description: `${result.phone} numarasına SMS ile doğrulama kodu gönderildi.`,
+        });
+      } else {
+        toast({
+          title: "Hata",
+          description: result.message || "Kayıt işlemi başlatılamadı",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Bir hata oluştu",
+        variant: "destructive",
+      });
+    }
+    setIsSubmittingRegistration(false);
   };
+
+  const onVerifyOtp = async (data: OtpFormData) => {
+    setIsVerifyingOtp(true);
+    try {
+      const response = await apiRequest("POST", "/api/auth/register/verify", {
+        phone: registrationPhone,
+        code: data.code,
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Başarılı",
+          description: "Hesabınız başarıyla oluşturuldu ve giriş yapıldı!",
+        });
+        // Auth hook will automatically update
+        setLocation("/");
+      } else {
+        toast({
+          title: "Hata",
+          description: result.message || "Doğrulama başarısız",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Doğrulama sırasında hata oluştu",
+        variant: "destructive",
+      });
+    }
+    setIsVerifyingOtp(false);
+  };
+
+  const onResendOtp = async () => {
+    if (resendTimer > 0) return;
+    
+    setIsResendingOtp(true);
+    try {
+      const response = await apiRequest("POST", "/api/auth/resend-otp", {
+        phone: registrationPhone,
+        purpose: "registration",
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setResendTimer(60);
+        toast({
+          title: "Kod gönderildi",
+          description: "Yeni doğrulama kodu gönderildi.",
+        });
+      } else {
+        toast({
+          title: "Hata",
+          description: result.message || "Kod gönderilemedi",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Bir hata oluştu",
+        variant: "destructive",
+      });
+    }
+    setIsResendingOtp(false);
+  };
+
+  const onBackToRegistration = () => {
+    setShowOtpStep(false);
+    setRegistrationPhone("");
+    otpForm.reset();
+  };
+
+
 
   if (isLoading) {
     return (
@@ -194,8 +329,9 @@ export default function AuthPage() {
                   </TabsContent>
 
                   <TabsContent value="register" className="space-y-4">
-                    <Form {...registerForm}>
-                      <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
+                    {!showOtpStep ? (
+                      <Form {...registerForm}>
+                        <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={registerForm.control}
@@ -264,6 +400,28 @@ export default function AuthPage() {
 
                         <FormField
                           control={registerForm.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Telefon</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                  <Input 
+                                    type="tel" 
+                                    placeholder="0532 123 45 67"
+                                    className="pl-10"
+                                    {...field} 
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={registerForm.control}
                           name="password"
                           render={({ field }) => (
                             <FormItem>
@@ -309,53 +467,133 @@ export default function AuthPage() {
                         <Button 
                           type="submit" 
                           className="w-full bg-dip-blue hover:bg-dip-dark-blue"
-                          disabled={registerMutation.isPending}
+                          disabled={isSubmittingRegistration}
                         >
-                          {registerMutation.isPending ? (
+                          {isSubmittingRegistration ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Kayıt yapılıyor...
+                              SMS gönderiliyor...
                             </>
                           ) : (
-                            "Hesap Oluştur"
+                            "SMS Doğrulaması Gönder"
                           )}
                         </Button>
-                      </form>
-                    </Form>
+                        </form>
+                      </Form>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <div className="mb-4">
+                            <MessageSquare className="w-12 h-12 text-dip-blue mx-auto mb-2" />
+                            <h3 className="text-lg font-semibold">SMS Doğrulama</h3>
+                            <p className="text-sm text-gray-600 mt-2">
+                              {registrationPhone} numarasına gönderilen 6 haneli doğrulama kodunu giriniz
+                            </p>
+                          </div>
+                        </div>
 
-                    <div className="text-center text-sm text-gray-600">
-                      Kayıt olarak{" "}
-                      <Dialog open={kvkkDialogOpen} onOpenChange={setKvkkDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="link" className="p-0 h-auto text-dip-blue">
-                            Kullanım Şartlarını
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>KVKK Kullanım Şartları</DialogTitle>
-                            <DialogDescription className="text-left">
-                              6698 Sayılı KVKK uyarınca, bilgilerimin ticari bilgi kapsamında Dijital İhracat Platformu ve paydaşları ile paylaşılmasına razı olduğumu kabul ederim.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <Button onClick={() => setKvkkDialogOpen(false)}>
-                              Anladım
+                        <Form {...otpForm}>
+                          <form onSubmit={otpForm.handleSubmit(onVerifyOtp)} className="space-y-4">
+                            <FormField
+                              control={otpForm.control}
+                              name="code"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Doğrulama Kodu</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="text" 
+                                      placeholder="123456"
+                                      className="text-center text-lg tracking-widest"
+                                      maxLength={6}
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <Button 
+                              type="submit" 
+                              className="w-full bg-dip-blue hover:bg-dip-dark-blue"
+                              disabled={isVerifyingOtp}
+                            >
+                              {isVerifyingOtp ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Doğrulanıyor...
+                                </>
+                              ) : (
+                                "Doğrula ve Hesap Oluştur"
+                              )}
                             </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>{" "}
-                      ve{" "}
-                      <a 
-                        href="https://dip.tc/gizlilik-ilkesi/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-dip-blue hover:underline"
-                      >
-                        Gizlilik Politikasını
-                      </a>{" "}
-                      kabul etmiş olursunuz.
-                    </div>
+                          </form>
+                        </Form>
+
+                        <div className="text-center space-y-2">
+                          <Button 
+                            variant="link" 
+                            onClick={onResendOtp}
+                            disabled={resendTimer > 0 || isResendingOtp}
+                            className="text-sm"
+                          >
+                            {isResendingOtp ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Gönderiliyor...
+                              </>
+                            ) : resendTimer > 0 ? (
+                              `Yeniden gönder (${resendTimer}s)`
+                            ) : (
+                              "Kodu yeniden gönder"
+                            )}
+                          </Button>
+                          
+                          <div>
+                            <Button variant="ghost" onClick={onBackToRegistration} className="text-sm">
+                              Geri dön
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {!showOtpStep && (
+                      <div className="text-center text-sm text-gray-600">
+                        Kayıt olarak{" "}
+                        <Dialog open={kvkkDialogOpen} onOpenChange={setKvkkDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="link" className="p-0 h-auto text-dip-blue">
+                              Kullanım Şartlarını
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>KVKK Kullanım Şartları</DialogTitle>
+                              <DialogDescription className="text-left">
+                                6698 Sayılı KVKK uyarınca, bilgilerimin ticari bilgi kapsamında Dijital İhracat Platformu ve paydaşları ile paylaşılmasına razı olduğumu kabul ederim.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button onClick={() => setKvkkDialogOpen(false)}>
+                                Anladım
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>{" "}
+                        ve{" "}
+                        <a 
+                          href="https://dip.tc/gizlilik-ilkesi/" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-dip-blue hover:underline"
+                        >
+                          Gizlilik Politikasını
+                        </a>{" "}
+                        kabul etmiş olursunuz.
+                      </div>
+                    )}
                   </TabsContent>
                 </Tabs>
               </CardContent>

@@ -180,6 +180,31 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// SMS OTP verification codes
+export const smsOtpCodes = pgTable("sms_otp_codes", {
+  id: serial("id").primaryKey(),
+  phone: text("phone").notNull(),
+  code: text("code").notNull(),
+  isUsed: boolean("is_used").default(false),
+  isVerified: boolean("is_verified").default(false),
+  purpose: text("purpose").notNull(), // registration, login, password_reset
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Temporary user registrations (before phone verification)
+export const tempUserRegistrations = pgTable("temp_user_registrations", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  password: text("password"),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  phone: text("phone").notNull(),
+  verificationCode: text("verification_code").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -307,6 +332,16 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 
+export const insertSmsOtpCodeSchema = createInsertSchema(smsOtpCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTempUserRegistrationSchema = createInsertSchema(tempUserRegistrations).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -328,3 +363,7 @@ export type InsertCompanyBillingInfo = z.infer<typeof insertCompanyBillingInfoSc
 export type QuoteResponse = typeof quoteResponses.$inferSelect;
 export type InsertQuoteResponse = z.infer<typeof insertQuoteResponseSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type SmsOtpCode = typeof smsOtpCodes.$inferSelect;
+export type InsertSmsOtpCode = z.infer<typeof insertSmsOtpCodeSchema>;
+export type TempUserRegistration = typeof tempUserRegistrations.$inferSelect;
+export type InsertTempUserRegistration = z.infer<typeof insertTempUserRegistrationSchema>;

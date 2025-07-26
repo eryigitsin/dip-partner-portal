@@ -8,6 +8,8 @@ import {
   partnerServices,
   partnerFollowers,
   messages,
+  smsOtpCodes,
+  tempUserRegistrations,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -20,6 +22,10 @@ import {
   type InsertQuoteRequest,
   type ServiceCategory,
   type InsertServiceCategory,
+  type SmsOtpCode,
+  type InsertSmsOtpCode,
+  type TempUserRegistration,
+  type InsertTempUserRegistration,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count } from "drizzle-orm";
@@ -70,6 +76,16 @@ export interface IStorage {
   followPartner(userId: number, partnerId: number): Promise<void>;
   unfollowPartner(userId: number, partnerId: number): Promise<void>;
   isFollowingPartner(userId: number, partnerId: number): Promise<boolean>;
+  
+  // OTP methods
+  createSmsOtpCode(otpData: InsertSmsOtpCode): Promise<SmsOtpCode>;
+  getSmsOtpCode(phone: string, purpose: string): Promise<SmsOtpCode | undefined>;
+  verifySmsOtpCode(phone: string, code: string, purpose: string): Promise<boolean>;
+  
+  // Temporary user registration methods
+  createTempUserRegistration(tempUserData: InsertTempUserRegistration): Promise<TempUserRegistration>;
+  getTempUserRegistration(phone: string): Promise<TempUserRegistration | undefined>;
+  deleteTempUserRegistration(phone: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -386,6 +402,81 @@ export class DatabaseStorage implements IStorage {
   async rejectQuoteResponse(responseId: number, userId: number): Promise<any> {
     // Quote response reject logic would go here
     return { success: true };
+  }
+
+  // OTP methods
+  async createSmsOtpCode(otpData: InsertSmsOtpCode): Promise<SmsOtpCode> {
+    const [otpCode] = await db
+      .insert(smsOtpCodes)
+      .values(otpData)
+      .returning();
+    return otpCode;
+  }
+
+  async getSmsOtpCode(phone: string, purpose: string): Promise<SmsOtpCode | undefined> {
+    const [otpCode] = await db
+      .select()
+      .from(smsOtpCodes)
+      .where(and(
+        eq(smsOtpCodes.phone, phone),
+        eq(smsOtpCodes.purpose, purpose),
+        eq(smsOtpCodes.isUsed, false)
+      ))
+      .orderBy(desc(smsOtpCodes.createdAt))
+      .limit(1);
+    return otpCode || undefined;
+  }
+
+  async verifySmsOtpCode(phone: string, code: string, purpose: string): Promise<boolean> {
+    const otpRecord = await this.getSmsOtpCode(phone, purpose);
+    
+    if (!otpRecord) {
+      return false;
+    }
+
+    // Check if code matches and hasn't expired
+    const now = new Date();
+    if (otpRecord.code === code && otpRecord.expiresAt > now && !otpRecord.isUsed) {
+      // Mark as used
+      await db
+        .update(smsOtpCodes)
+        .set({ isUsed: true, isVerified: true })
+        .where(eq(smsOtpCodes.id, otpRecord.id));
+      
+      return true;
+    }
+
+    return false;
+  }
+
+  // Temporary user registration methods
+  async createTempUserRegistration(tempUserData: InsertTempUserRegistration): Promise<TempUserRegistration> {
+    // First, delete any existing temp registration for this phone
+    await db
+      .delete(tempUserRegistrations)
+      .where(eq(tempUserRegistrations.phone, tempUserData.phone));
+
+    const [tempUser] = await db
+      .insert(tempUserRegistrations)
+      .values(tempUserData)
+      .returning();
+    return tempUser;
+  }
+
+  async getTempUserRegistration(phone: string): Promise<TempUserRegistration | undefined> {
+    const [tempUser] = await db
+      .select()
+      .from(tempUserRegistrations)
+      .where(eq(tempUserRegistrations.phone, phone))
+      .orderBy(desc(tempUserRegistrations.createdAt))
+      .limit(1);
+    return tempUser || undefined;
+  }
+
+  async deleteTempUserRegistration(phone: string): Promise<void> {
+    await db
+      .delete(tempUserRegistrations)
+      .where(eq(tempUserRegistrations.phone, phone));
   }
 
   async getUserConversations(userId: number): Promise<any[]> {
