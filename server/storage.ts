@@ -57,6 +57,7 @@ export interface IStorage {
   getPartners(options?: { category?: string; search?: string; approved?: boolean; limit?: number; offset?: number }): Promise<Partner[]>;
   getPartner(id: number): Promise<Partner | undefined>;
   getPartnerByUserId(userId: number): Promise<Partner | undefined>;
+  getPartnerByUsername(username: string): Promise<Partner | undefined>;
   createPartner(partner: InsertPartner): Promise<Partner>;
   updatePartner(id: number, partner: Partial<InsertPartner>): Promise<Partner | undefined>;
   
