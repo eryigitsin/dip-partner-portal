@@ -494,7 +494,7 @@ export function PartnerApplicationDialog({ open, onOpenChange }: PartnerApplicat
                   name="linkedinProfile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>LinkedIn Profili</FormLabel>
+                      <FormLabel>LinkedIn Sayfası</FormLabel>
                       <FormControl>
                         <Input type="url" placeholder="https://linkedin.com/in/..." {...field} />
                       </FormControl>
