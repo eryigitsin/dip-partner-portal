@@ -422,6 +422,9 @@ export default function PartnerProfile() {
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Profili Düzenle</DialogTitle>
+                  <DialogDescription>
+                    Logo ve kapak fotoğrafınızı güncelleyin veya şirket açıklamanızı düzenleyin.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -683,6 +686,9 @@ export default function PartnerProfile() {
                             <DialogContent className="max-w-lg">
                               <DialogHeader>
                                 <DialogTitle>Paylaşım Oluştur</DialogTitle>
+                                <DialogDescription>
+                                  Sosyal medya benzeri paylaşımınızı oluşturun ve takipçilerinizle paylaşın.
+                                </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div className="flex items-center gap-3">

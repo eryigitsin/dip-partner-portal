@@ -1270,6 +1270,11 @@ export function registerRoutes(app: Express): Server {
     { name: 'coverImage', maxCount: 1 }
   ]), async (req, res) => {
     try {
+      console.log('Partner update request - User:', req.user?.id, 'Partner ID:', req.params.id);
+      console.log('Request authenticated:', req.isAuthenticated());
+      console.log('Files:', req.files);
+      console.log('Body:', req.body);
+
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Authentication required" });
       }
@@ -1277,7 +1282,14 @@ export function registerRoutes(app: Express): Server {
       const partnerId = parseInt(req.params.id);
       const partner = await storage.getPartner(partnerId);
       
-      if (!partner || partner.userId !== req.user!.id) {
+      console.log('Found partner:', partner);
+      console.log('Partner userId:', partner?.userId, 'Request userId:', req.user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      if (partner.userId !== req.user!.id) {
         return res.status(403).json({ message: "You can only update your own partner profile" });
       }
 
@@ -1285,15 +1297,17 @@ export function registerRoutes(app: Express): Server {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
       // Handle file uploads
-      if (files.logo && files.logo[0]) {
+      if (files && files.logo && files.logo[0]) {
         updates.logo = `/uploads/logos/${files.logo[0].filename}`;
       }
       
-      if (files.coverImage && files.coverImage[0]) {
+      if (files && files.coverImage && files.coverImage[0]) {
         updates.coverImage = `/uploads/covers/${files.coverImage[0].filename}`;
       }
 
+      console.log('Updates to apply:', updates);
       const updatedPartner = await storage.updatePartner(partnerId, updates);
+      console.log('Partner updated successfully:', updatedPartner);
       res.json(updatedPartner);
     } catch (error) {
       console.error('Error updating partner:', error);
