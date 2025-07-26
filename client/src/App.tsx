@@ -14,6 +14,9 @@ import UserPanel from "@/pages/user-panel";
 import ServiceRequests from "@/pages/service-requests";
 import Messages from "@/pages/messages";
 import ApplicationStatus from "@/pages/application-status";
+import UserManagement from "@/pages/user-management";
+import Statistics from "@/pages/statistics";
+import SystemStatus from "@/pages/system-status";
 import PartnerProfile from "@/pages/partner-profile";
 import TestUpload from "@/pages/test-upload";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -39,6 +42,9 @@ function Router() {
       <ProtectedRoute path="/user-panel" component={UserPanel} />
       <ProtectedRoute path="/service-requests" component={ServiceRequests} />
       <ProtectedRoute path="/messages" component={Messages} />
+      <ProtectedRoute path="/user-management" component={UserManagement} />
+      <ProtectedRoute path="/statistics" component={Statistics} />
+      <ProtectedRoute path="/system-status" component={SystemStatus} />
       <Route path="/application-status/:id" component={ApplicationStatus} />
       <Route path="/partner/:username" component={PartnerProfile} />
       <Route path="/test-upload" component={TestUpload} />

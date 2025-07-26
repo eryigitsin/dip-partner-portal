@@ -683,6 +683,7 @@ export function registerRoutes(app: Express): Server {
         twitterProfile,
         instagramProfile,
         facebookProfile,
+        username,
       } = req.body;
 
       // Validate required fields
@@ -1364,6 +1365,161 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error updating partner:', error);
       res.status(500).json({ message: "Failed to update partner" });
+    }
+  });
+
+  // Admin API endpoints - Master Admin only
+  app.get("/api/admin/users", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/partners", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const partners = await storage.getAllPartnersWithUsers();
+      res.json(partners);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/users", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const userData = req.body;
+      const hashedPassword = await hashPassword(userData.password);
+      
+      const newUser = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+        isVerified: true
+      });
+      
+      // Send welcome email
+      await sendEmail({
+        to: newUser.email,
+        from: 'noreply@dip.tc',
+        subject: 'DİP Hesabınız Oluşturuldu',
+        html: `
+          <h2>Hoş Geldiniz!</h2>
+          <p>Merhaba ${newUser.firstName} ${newUser.lastName},</p>
+          <p>DİP platformunda hesabınız başarıyla oluşturuldu.</p>
+          <p><strong>E-posta:</strong> ${newUser.email}</p>
+          <p><strong>Şifre:</strong> ${userData.password}</p>
+          <p>Güvenliğiniz için ilk girişinizde şifrenizi değiştirmenizi öneririz.</p>
+          <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5000'}/auth">DİP'e Giriş Yapın</a></p>
+        `
+      });
+      
+      res.status(201).json(newUser);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/partners", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const partnerData = req.body;
+      const hashedPassword = await hashPassword(partnerData.password);
+      
+      // Create user first
+      const newUser = await storage.createUser({
+        email: partnerData.email,
+        password: hashedPassword,
+        firstName: partnerData.firstName,
+        lastName: partnerData.lastName,
+        userType: 'partner',
+        isVerified: true,
+        language: 'tr'
+      });
+      
+      // Create partner profile
+      const newPartner = await storage.createPartner({
+        userId: newUser.id,
+        companyName: partnerData.companyName,
+        contactPerson: partnerData.contactPerson,
+        description: partnerData.description,
+        serviceCategory: partnerData.serviceCategory,
+        services: partnerData.services,
+        city: partnerData.city,
+        country: partnerData.country,
+        website: partnerData.website,
+        dipAdvantages: partnerData.dipAdvantages,
+        isApproved: true,
+        isActive: true
+      });
+      
+      // Send welcome email
+      await sendEmail({
+        to: newUser.email,
+        from: 'noreply@dip.tc',
+        subject: 'DİP Partner Hesabınız Oluşturuldu',
+        html: `
+          <h2>Partner Hoş Geldiniz!</h2>
+          <p>Merhaba ${partnerData.contactPerson},</p>
+          <p>${partnerData.companyName} şirketi için DİP Partner hesabınız başarıyla oluşturuldu.</p>
+          <p><strong>E-posta:</strong> ${newUser.email}</p>
+          <p><strong>Şifre:</strong> ${partnerData.password}</p>
+          <p>Partner panelinizden şirket profilinizi yönetebilir, paylaşımlar yapabilir ve müşterilerle iletişim kurabilirsiniz.</p>
+          <p><a href="${process.env.FRONTEND_URL || 'http://localhost:5000'}/auth">Partner Paneline Giriş Yapın</a></p>
+        `
+      });
+      
+      res.status(201).json({ user: newUser, partner: newPartner });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/users/:userId/type", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const { userId } = req.params;
+      const { userType } = req.body;
+      
+      const updatedUser = await storage.updateUserType(parseInt(userId), userType);
+      res.json(updatedUser);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/users/:userId/assign-partner", async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const { userId } = req.params;
+      const { partnerId } = req.body;
+      
+      // Update user type to partner and link to partner record
+      const updatedUser = await storage.assignUserToPartner(parseInt(userId), parseInt(partnerId));
+      res.json(updatedUser);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 

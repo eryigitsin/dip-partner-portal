@@ -110,6 +110,26 @@ export interface IStorage {
   // Other methods
   getUserConversations(userId: number): Promise<any[]>;
   createMessage(messageData: any): Promise<any>;
+  
+  // Admin methods
+  getAllUsers(): Promise<User[]>;
+  getAllPartnersWithUsers(): Promise<Partner[]>;
+  updateUserType(userId: number, userType: string): Promise<User | undefined>;
+  assignUserToPartner(userId: number, partnerId: number): Promise<User | undefined>;
+  
+  // Additional user methods for dropdown menu functionality
+  getUserBillingInfo(userId: number): Promise<any>;
+  updateUserBillingInfo(userId: number, data: any): Promise<any>;
+  getUserFollowedPartners(userId: number): Promise<Partner[]>;
+  updateUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<void>;
+  deleteUserAccount(userId: number): Promise<void>;
+  getUserQuoteRequests(userId: number): Promise<any[]>;
+  getSuggestedPartners(userId: number): Promise<Partner[]>;
+  acceptQuoteResponse(responseId: number, userId: number): Promise<any>;
+  rejectQuoteResponse(responseId: number, userId: number): Promise<any>;
+  markSmsOtpCodeAsUsed(phone: string, code: string, purpose: string): Promise<void>;
+  markTempUserRegistrationAsUsed(phone: string, purpose: string): Promise<void>;
+  deletePartnerPost(postId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -431,7 +451,7 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
-  // Additional user methods for dropdown menu functionality
+  // Additional user methods for dropdown menu functionality  
   async getUserBillingInfo(userId: number): Promise<any> {
     // Return empty object for now - can be expanded later
     return {};
@@ -602,6 +622,41 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(partnerPosts)
       .where(eq(partnerPosts.id, postId));
+  }
+
+  // Admin functions
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
+  async getAllPartnersWithUsers(): Promise<Partner[]> {
+    return db.select().from(partners);
+  }
+
+  async updateUserType(userId: number, userType: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ userType })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async assignUserToPartner(userId: number, partnerId: number): Promise<User | undefined> {
+    // First update user type to partner
+    const [user] = await db
+      .update(users)
+      .set({ userType: 'partner' })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    // Then update the partner record to link this user
+    await db
+      .update(partners)
+      .set({ userId })
+      .where(eq(partners.id, partnerId));
+      
+    return user;
   }
 }
 
