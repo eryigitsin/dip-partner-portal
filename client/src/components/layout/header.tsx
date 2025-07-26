@@ -74,7 +74,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-4 lg:space-x-8">
+          <nav className="hidden lg:flex space-x-8">
             {navigation.map((item) => (
               item.external ? (
                 <a
@@ -82,7 +82,7 @@ export function Header() {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors text-sm lg:text-base"
+                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors"
                 >
                   {item.name}
                 </a>
@@ -90,19 +90,12 @@ export function Header() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors text-sm lg:text-base"
+                  className="text-gray-700 hover:text-dip-blue font-medium transition-colors"
                 >
                   {item.name}
                 </Link>
               )
             ))}
-            
-            {/* Partner Catalog Button */}
-            <Link href="/partners">
-              <Button variant="outline" className="ml-2 lg:ml-4" size="sm">
-                Partner Kataloğu
-              </Button>
-            </Link>
           </nav>
 
           {/* Auth Buttons */}
@@ -227,7 +220,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className="lg:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? (
@@ -242,7 +235,7 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100">
+        <div className="lg:hidden bg-white border-t border-gray-100">
           <div className="px-4 py-3 space-y-2">
             {navigation.map((item) => (
               item.external ? (
