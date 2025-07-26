@@ -44,6 +44,15 @@ export function PartnersCatalog({
     },
   });
 
+  // Filter partners on client side based on category name
+  const filteredPartners = partners.filter(partner => {
+    if (!currentCategory || currentCategory === 'all') return true;
+    
+    // Match by exact service category name or slug
+    return partner.serviceCategory === currentCategory || 
+           partner.serviceCategory?.toLowerCase().includes(currentCategory.toLowerCase());
+  });
+
   useEffect(() => {
     if (selectedCategory) {
       setCategory(selectedCategory);
@@ -183,7 +192,7 @@ export function PartnersCatalog({
               </Card>
             ))}
           </div>
-        ) : partners.length === 0 ? (
+        ) : filteredPartners.length === 0 ? (
           <div className="text-center py-12">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               Arama kriterlerinize uygun iş ortağı bulunamadı
@@ -197,7 +206,7 @@ export function PartnersCatalog({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {partners.map((partner) => (
+            {filteredPartners.map((partner) => (
               <Card key={partner.id} className="hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex items-center mb-4">
@@ -261,7 +270,7 @@ export function PartnersCatalog({
         )}
 
         {/* Load More Button */}
-        {partners.length > 0 && partners.length % 20 === 0 && (
+        {filteredPartners.length > 0 && filteredPartners.length % 20 === 0 && (
           <div className="text-center mt-12">
             <Button variant="outline" size="lg">
               <Plus className="mr-2 h-4 w-4" />

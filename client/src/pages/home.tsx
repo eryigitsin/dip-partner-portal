@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { HeroSection } from '@/components/sections/hero-section';
@@ -10,10 +11,27 @@ import { QuoteRequestModal } from '@/components/modals/quote-request-modal';
 import { Partner } from '@shared/schema';
 
 export default function HomePage() {
+  const [location] = useLocation();
   const [isPartnerApplicationOpen, setIsPartnerApplicationOpen] = useState(false);
   const [isQuoteRequestOpen, setIsQuoteRequestOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+
+  // Check URL parameters on mount and when location changes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const categoryParam = urlParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(decodeURIComponent(categoryParam));
+      // Scroll to partners section after a brief delay
+      setTimeout(() => {
+        const partnersSection = document.getElementById('partnerships-section');
+        if (partnersSection) {
+          partnersSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [location]);
 
   const handleBecomePartner = () => {
     setIsPartnerApplicationOpen(true);
