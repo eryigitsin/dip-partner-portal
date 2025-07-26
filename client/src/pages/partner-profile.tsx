@@ -1277,8 +1277,8 @@ export default function PartnerProfile() {
                   )}
                 </div>
                 
-                {/* Message Button - Only visible to regular users, not admins */}
-                {user && user.role !== 'masterAdmin' && user.role !== 'editorAdmin' && (
+                {/* Message Button - Only visible to regular users and partners, not admins */}
+                {user && user.userType !== 'master_admin' && user.userType !== 'editor_admin' && (
                   <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="w-full">
