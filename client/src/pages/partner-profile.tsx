@@ -238,24 +238,28 @@ export default function PartnerProfile() {
     },
   });
 
-  // Update partner profile mutation
+  // Update partner profile mutation for description
   const updatePartnerMutation = useMutation({
     mutationFn: async (updates: any) => {
+      console.log('Updating partner with data:', updates);
       const res = await apiRequest('PATCH', `/api/partners/${partner?.id}`, updates);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedPartner) => {
+      console.log('Partner update successful:', updatedPartner);
+      queryClient.invalidateQueries({ queryKey: ['/api/partners', identifier] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partners'] });
       toast({
         title: 'Başarılı',
-        description: 'Profil güncellendi',
+        description: 'Profil başarıyla güncellendi',
       });
       setIsEditDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/partners', partner?.id] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Partner update error:', error);
       toast({
         title: 'Hata',
-        description: 'Profil güncellenemedi',
+        description: 'Profil güncellenirken bir hata oluştu',
         variant: 'destructive',
       });
     },
@@ -433,7 +437,10 @@ export default function PartnerProfile() {
           lastModified: Date.now()
         });
         formData.append(cropField, croppedFile);
-        formData.append('description', editData.description);
+        // Only include description if it has changed
+        if (editData.description !== partner?.description) {
+          formData.append('description', editData.description);
+        }
 
         console.log('Uploading to:', `/api/partners/${partner?.id}`);
         console.log('FormData entries:');

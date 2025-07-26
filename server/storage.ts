@@ -246,12 +246,21 @@ export class DatabaseStorage implements IStorage {
 
   async updatePartner(id: number, partnerUpdate: Partial<InsertPartner>): Promise<Partner | undefined> {
     console.log('Storage updatePartner called with:', { id, partnerUpdate });
+    
+    // Log update details for debugging
+    if (partnerUpdate.logo) console.log('Updating logo to:', partnerUpdate.logo);
+    if (partnerUpdate.coverImage) console.log('Updating cover image to:', partnerUpdate.coverImage);
+    if (partnerUpdate.description) console.log('Updating description to:', partnerUpdate.description);
+    
     const [partner] = await db
       .update(partners)
       .set({ ...partnerUpdate, updatedAt: new Date() })
       .where(eq(partners.id, id))
       .returning();
+    
     console.log('Storage updatePartner result:', partner);
+    console.log('Updated partner logo:', partner?.logo);
+    console.log('Updated partner coverImage:', partner?.coverImage);
     return partner || undefined;
   }
 
@@ -263,11 +272,6 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(partners.id, id));
-  }
-
-  async getPartnerByUsername(username: string): Promise<Partner | undefined> {
-    const [partner] = await db.select().from(partners).where(eq(partners.username, username));
-    return partner || undefined;
   }
 
   async getPartnerApplications(status?: string): Promise<PartnerApplication[]> {

@@ -1332,27 +1332,33 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "You can only update your own partner profile or you must be an admin" });
       }
 
-      const updates: any = { ...req.body };
+      const updates: any = {};
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
-      // Handle file uploads
+      // Handle file uploads first
       if (files && files.logo && files.logo[0]) {
         updates.logo = `/uploads/logos/${files.logo[0].filename}`;
-        console.log('Logo file path:', updates.logo);
+        console.log('Setting logo path:', updates.logo);
       }
       
       if (files && files.coverImage && files.coverImage[0]) {
         updates.coverImage = `/uploads/covers/${files.coverImage[0].filename}`;
-        console.log('Cover file path:', updates.coverImage);
+        console.log('Setting coverImage path:', updates.coverImage);
+      }
+      
+      // Handle text updates
+      if (req.body.description !== undefined) {
+        updates.description = req.body.description;
+        console.log('Setting description:', updates.description);
       }
 
-      console.log('Updates to apply:', updates);
+      console.log('Final updates to apply:', updates);
       console.log('Updates keys:', Object.keys(updates));
       
       const updatedPartner = await storage.updatePartner(partnerId, updates);
       console.log('Partner updated successfully:', updatedPartner);
-      console.log('Updated logo:', updatedPartner?.logo);
-      console.log('Updated coverImage:', updatedPartner?.coverImage);
+      console.log('Final logo path:', updatedPartner?.logo);
+      console.log('Final coverImage path:', updatedPartner?.coverImage);
       
       res.json(updatedPartner);
     } catch (error) {
