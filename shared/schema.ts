@@ -68,6 +68,7 @@ export const partners = pgTable("partners", {
   isActive: boolean("is_active").default(true),
   followersCount: integer("followers_count").default(0),
   profileViews: integer("profile_views").default(0),
+  username: text("username").unique(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -1,14 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { QuoteRequest, Partner } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { 
   BarChart3, 
   Users, 
@@ -23,12 +27,15 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Save
 } from "lucide-react";
 
 export default function PartnerDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const [usernameInput, setUsernameInput] = useState("");
 
   const { data: partner } = useQuery<Partner>({
     queryKey: ["/api/partners", "me"],
@@ -38,6 +45,27 @@ export default function PartnerDashboard() {
       return response.json();
     },
     enabled: !!user && user.userType === "partner",
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updates: Partial<Partner>) => {
+      const response = await apiRequest("PATCH", "/api/partners/me", updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partners", "me"] });
+      toast({
+        title: "Başarılı",
+        description: "Profil bilgileriniz güncellendi",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Profil güncellenirken hata oluştu",
+        variant: "destructive",
+      });
+    },
   });
 
   const { data: quoteRequests = [] } = useQuery<QuoteRequest[]>({
@@ -363,15 +391,74 @@ export default function PartnerDashboard() {
                   Şirket profilinizi güncelleyin ve yönetin
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Profil Yönetimi
-                  </h3>
-                  <p className="text-gray-600">
-                    Profil yönetimi özelliği yakında eklenecektir.
-                  </p>
+              <CardContent className="space-y-6">
+                {/* Username Section */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="username">Kullanıcı Adı</Label>
+                    <p className="text-sm text-gray-500 mb-2">
+                      Profilinizin özel URL'si: /partner/{partner?.username || 'kullaniciadi'}
+                    </p>
+                    <div className="flex space-x-2">
+                      <Input
+                        id="username"
+                        value={usernameInput || partner?.username || ''}
+                        onChange={(e) => setUsernameInput(e.target.value)}
+                        placeholder={partner?.username || `partner${partner?.id}` || "kullaniciadi"}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={() => {
+                          if (usernameInput && usernameInput !== partner?.username) {
+                            updateProfileMutation.mutate({ username: usernameInput });
+                          }
+                        }}
+                        disabled={updateProfileMutation.isPending || !usernameInput || usernameInput === partner?.username}
+                        className="bg-dip-blue hover:bg-dip-dark-blue"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      * Sadece İngilizce harfler, rakamlar, alt çizgi (_) ve tire (-) kullanabilirsiniz
+                    </p>
+                  </div>
+
+                  {/* Current URL Display */}
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <Label className="text-sm font-medium text-gray-700">Mevcut Profil URL'niz:</Label>
+                    <div className="mt-2">
+                      <a 
+                        href={`/partner/${partner?.username || partner?.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-dip-blue hover:text-dip-dark-blue underline"
+                      >
+                        {window.location.origin}/partner/{partner?.username || partner?.id}
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Company Info Display */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Şirket Adı</Label>
+                      <p className="mt-1 text-gray-900">{partner?.companyName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">İletişim Kişisi</Label>
+                      <p className="mt-1 text-gray-900">{partner?.contactPerson || "Belirtilmemiş"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Hizmet Kategorisi</Label>
+                      <p className="mt-1 text-gray-900">{partner?.serviceCategory}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Profil Görüntüleme</Label>
+                      <p className="mt-1 text-gray-900">{partner?.profileViews || 0} görüntüleme</p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

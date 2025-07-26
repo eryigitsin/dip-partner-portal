@@ -241,13 +241,13 @@ export function PartnersCatalog({
                   
                   <div className="flex space-x-3">
                     <Button 
-                      onClick={() => window.location.href = `/partners/${partner.id}`}
+                      onClick={() => window.location.href = `/partner/${partner.username || partner.id}`}
                       className="flex-1 bg-dip-green hover:bg-green-600"
                     >
                       {t('getQuote', language)}
                     </Button>
                     <Button 
-                      onClick={() => window.location.href = `/partners/${partner.id}`}
+                      onClick={() => window.location.href = `/partner/${partner.username || partner.id}`}
                       variant="outline"
                       className="flex-1"
                     >

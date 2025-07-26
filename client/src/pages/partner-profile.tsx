@@ -98,24 +98,24 @@ export default function PartnerProfile() {
     message: ''
   });
 
-  const partnerId = parseInt(id || '0');
+  const identifier = id || '';
 
-  // Fetch partner data
+  // Fetch partner data using identifier (can be ID or username)
   const { data: partner, isLoading: partnerLoading } = useQuery<Partner>({
-    queryKey: ['/api/partners', partnerId],
-    enabled: !!partnerId,
+    queryKey: ['/api/partners', identifier],
+    enabled: !!identifier,
   });
 
   // Fetch partner posts
   const { data: posts = [], isLoading: postsLoading } = useQuery<PartnerPost[]>({
-    queryKey: ['/api/partners', partnerId, 'posts'],
-    enabled: !!partnerId,
+    queryKey: ['/api/partners', partner?.id, 'posts'],
+    enabled: !!partner?.id,
   });
 
   // Check if following
   const { data: followingStatus } = useQuery<{ isFollowing: boolean }>({
-    queryKey: ['/api/partners', partnerId, 'following'],
-    enabled: !!partnerId && !!user,
+    queryKey: ['/api/partners', partner?.id, 'following'],
+    enabled: !!partner?.id && !!user,
   });
 
   useEffect(() => {
@@ -127,18 +127,19 @@ export default function PartnerProfile() {
   // Follow/Unfollow mutation
   const followMutation = useMutation({
     mutationFn: async () => {
+      if (!partner?.id) return;
       if (isFollowing) {
-        const res = await apiRequest('DELETE', `/api/partners/${partnerId}/follow`);
+        const res = await apiRequest('DELETE', `/api/partners/${partner.id}/follow`);
         return res.json();
       } else {
-        const res = await apiRequest('POST', `/api/partners/${partnerId}/follow`);
+        const res = await apiRequest('POST', `/api/partners/${partner.id}/follow`);
         return res.json();
       }
     },
     onSuccess: () => {
       setIsFollowing(!isFollowing);
-      queryClient.invalidateQueries({ queryKey: ['/api/partners', partnerId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/partners', partnerId, 'following'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partners', partner?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partners', partner?.id, 'following'] });
       queryClient.invalidateQueries({ queryKey: ['/api/user/followed-partners'] });
       
       toast({
@@ -158,8 +159,9 @@ export default function PartnerProfile() {
   // Send quote request mutation
   const quoteRequestMutation = useMutation({
     mutationFn: async () => {
+      if (!partner?.id) return;
       const res = await apiRequest('POST', '/api/quote-requests', {
-        partnerId,
+        partnerId: partner.id,
         ...quoteRequest
       });
       return res.json();

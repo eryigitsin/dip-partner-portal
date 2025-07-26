@@ -108,19 +108,28 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/partners/:id", async (req, res) => {
+  // Get partner by ID or username
+  app.get("/api/partners/:identifier", async (req, res) => {
     try {
-      const partnerId = parseInt(req.params.id);
-      const partner = await storage.getPartner(partnerId);
+      const identifier = req.params.identifier;
+      let partner;
+      
+      // Check if identifier is numeric (ID) or string (username)
+      if (/^\d+$/.test(identifier)) {
+        partner = await storage.getPartner(parseInt(identifier));
+      } else {
+        partner = await storage.getPartnerByUsername(identifier);
+      }
+      
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
       
       // Increment profile view count for every visit
-      await storage.incrementPartnerViews(partnerId);
+      await storage.incrementPartnerViews(partner.id);
       
       // Return updated partner data with incremented view count
-      const updatedPartner = await storage.getPartner(partnerId);
+      const updatedPartner = await storage.getPartner(partner.id);
       res.json(updatedPartner);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch partner" });
@@ -488,6 +497,64 @@ export function registerRoutes(app: Express): Server {
       res.json({ message: "Partner unfollowed successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to unfollow partner" });
+    }
+  });
+
+  // Get partner profile for current user
+  app.get("/api/partners/me", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user!.userType !== "partner") {
+        return res.status(403).json({ message: "Only partners can access this endpoint" });
+      }
+
+      const partner = await storage.getPartnerByUserId(req.user!.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner profile not found" });
+      }
+      
+      res.json(partner);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch partner profile" });
+    }
+  });
+
+  // Update partner profile (for partners to update their own profile)
+  app.patch("/api/partners/me", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user!.userType !== "partner") {
+        return res.status(403).json({ message: "Only partners can update their profile" });
+      }
+
+      const partner = await storage.getPartnerByUserId(req.user!.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner profile not found" });
+      }
+
+      const updates = req.body;
+      
+      // If updating username, validate it
+      if (updates.username) {
+        // Check if username is valid (no Turkish characters, no spaces, alphanumeric + underscore/dash)
+        if (!/^[a-zA-Z0-9_-]+$/.test(updates.username)) {
+          return res.status(400).json({ 
+            message: "Kullanıcı adı sadece İngilizce harfler, rakamlar, alt çizgi ve tire içerebilir" 
+          });
+        }
+        
+        // Check if username is taken
+        const existingPartner = await storage.getPartnerByUsername(updates.username);
+        if (existingPartner && existingPartner.id !== partner.id) {
+          return res.status(400).json({ 
+            message: "Bu kullanıcı adı zaten kullanılıyor" 
+          });
+        }
+      }
+
+      const updatedPartner = await storage.updatePartner(partner.id, updates);
+      res.json(updatedPartner);
+    } catch (error) {
+      console.error('Error updating partner profile:', error);
+      res.status(500).json({ message: "Failed to update partner profile" });
     }
   });
 
