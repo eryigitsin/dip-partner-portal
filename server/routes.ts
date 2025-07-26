@@ -20,7 +20,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const upload = multer({
+const uploadDocuments = multer({
   dest: uploadDir,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
@@ -137,7 +137,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Partner applications
-  app.post("/api/partner-applications", upload.array('documents', 10), async (req, res) => {
+  app.post("/api/partner-applications", uploadDocuments.array('documents', 10), async (req, res) => {
     try {
       console.log('Request body:', req.body);
       // Temporary bypass validation for testing
@@ -676,7 +676,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Partner application endpoint with file upload
-  app.post('/api/partner-applications', upload.fields([
+  app.post('/api/partner-applications', uploadDocuments.fields([
     { name: 'documents', maxCount: 10 },
     { name: 'logo', maxCount: 1 }
   ]), async (req, res) => {
@@ -1225,8 +1225,7 @@ export function registerRoutes(app: Express): Server {
 
       const postData = {
         partnerId,
-        ...req.body,
-        authorId: req.user!.id
+        ...req.body
       };
 
       const newPost = await storage.createPartnerPost(postData);
@@ -1237,8 +1236,39 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Partner profile update endpoint
-  app.patch("/api/partners/:id", async (req, res) => {
+  // Configure multer for profile image uploads  
+  const uploadProfileImages = multer({
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => {
+        const subDir = file.fieldname === 'logo' ? 'logos' : 'covers';
+        const fullPath = path.join('uploads', subDir);
+        if (!fs.existsSync(fullPath)) {
+          fs.mkdirSync(fullPath, { recursive: true });
+        }
+        cb(null, fullPath);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+      }
+    }),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed!'), false);
+      }
+    }
+  });
+
+  // Partner profile update endpoint with file upload
+  app.patch("/api/partners/:id", uploadProfileImages.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'coverImage', maxCount: 1 }
+  ]), async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Authentication required" });
@@ -1251,7 +1281,19 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "You can only update your own partner profile" });
       }
 
-      const updatedPartner = await storage.updatePartner(partnerId, req.body);
+      const updates: any = { ...req.body };
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      // Handle file uploads
+      if (files.logo && files.logo[0]) {
+        updates.logo = `/uploads/logos/${files.logo[0].filename}`;
+      }
+      
+      if (files.coverImage && files.coverImage[0]) {
+        updates.coverImage = `/uploads/covers/${files.coverImage[0].filename}`;
+      }
+
+      const updatedPartner = await storage.updatePartner(partnerId, updates);
       res.json(updatedPartner);
     } catch (error) {
       console.error('Error updating partner:', error);

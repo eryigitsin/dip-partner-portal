@@ -36,7 +36,8 @@ import {
   Twitter,
   Instagram,
   Facebook,
-  User
+  User,
+  Share2
 } from 'lucide-react';
 // import experienceIcon from "@assets/Tecrübe İkonu_1753558515148.png";
 import { Header } from '@/components/layout/header';
@@ -103,6 +104,10 @@ export default function PartnerProfile() {
     logo: '',
     coverImage: '',
     description: ''
+  });
+  const [uploadingFiles, setUploadingFiles] = useState({
+    logo: false,
+    coverImage: false
   });
   const [quoteRequest, setQuoteRequest] = useState<QuoteRequest>({
     serviceNeeded: '',
@@ -308,6 +313,41 @@ export default function PartnerProfile() {
     messageMutation.mutate();
   };
 
+  // Handle file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'coverImage') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFiles(prev => ({ ...prev, [field]: true }));
+
+    try {
+      const formData = new FormData();
+      formData.append(field, file);
+      formData.append('description', editData.description);
+
+      const res = await fetch(`/api/partners/${partner?.id}`, {
+        method: 'PATCH',
+        body: formData,
+      });
+      
+      if (!res.ok) throw new Error('Upload failed');
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/partners', identifier] });
+      toast({
+        title: 'Başarılı',
+        description: `${field === 'logo' ? 'Logo' : 'Kapak fotoğrafı'} başarıyla güncellendi`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Hata',
+        description: 'Dosya yüklenirken bir hata oluştu',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingFiles(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
   const handleUpdateProfile = () => {
     updatePartnerMutation.mutate(editData);
   };
@@ -385,22 +425,26 @@ export default function PartnerProfile() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="logo">Logo URL</Label>
+                    <Label htmlFor="logo">Logo (Kare format önerilir - 400x400px)</Label>
                     <Input
                       id="logo"
-                      value={editData.logo}
-                      onChange={(e) => setEditData({ ...editData, logo: e.target.value })}
-                      placeholder="Logo URL'si"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, 'logo')}
+                      className="cursor-pointer"
                     />
+                    <p className="text-xs text-gray-500 mt-1">En iyi sonuç için 400x400px boyutunda yükleyin</p>
                   </div>
                   <div>
-                    <Label htmlFor="coverImage">Kapak Fotoğrafı URL</Label>
+                    <Label htmlFor="coverImage">Kapak Fotoğrafı (1200x400px önerilir)</Label>
                     <Input
                       id="coverImage"
-                      value={editData.coverImage}
-                      onChange={(e) => setEditData({ ...editData, coverImage: e.target.value })}
-                      placeholder="Kapak fotoğrafı URL'si"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, 'coverImage')}
+                      className="cursor-pointer"
                     />
+                    <p className="text-xs text-gray-500 mt-1">En iyi sonuç için 1200x400px boyutunda yükleyin</p>
                   </div>
                   <div>
                     <Label htmlFor="description">Açıklama</Label>
@@ -412,9 +456,13 @@ export default function PartnerProfile() {
                       rows={4}
                     />
                   </div>
-                  <Button onClick={handleUpdateProfile} className="w-full">
-                    <Camera className="h-4 w-4 mr-2" />
-                    Profili Güncelle
+                  <Button onClick={handleUpdateProfile} className="w-full" disabled={updatePartnerMutation.isPending}>
+                    {updatePartnerMutation.isPending ? (
+                      <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                    ) : (
+                      <Camera className="h-4 w-4 mr-2" />
+                    )}
+                    {updatePartnerMutation.isPending ? 'Güncelleniyor...' : 'Profili Güncelle'}
                   </Button>
                 </div>
               </DialogContent>

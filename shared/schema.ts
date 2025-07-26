@@ -92,7 +92,6 @@ export const partnerServices = pgTable("partner_services", {
 export const partnerPosts = pgTable("partner_posts", {
   id: serial("id").primaryKey(),
   partnerId: integer("partner_id").references(() => partners.id).notNull(),
-  authorId: integer("author_id").references(() => users.id).notNull(),
   title: text("title"),
   content: text("content").notNull(),
   type: text("type").default("text"), // text, image, video
