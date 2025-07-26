@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { sendEmail, emailTemplates } from "./email";
 
 declare global {
   namespace Express {
@@ -100,6 +101,30 @@ export function setupAuth(app: Express) {
       await storage.createUserProfile({
         userId: user.id,
       });
+
+      // Send email notification to editor admins
+      try {
+        const admins = await storage.getAdminUsers();
+        const editorAdmins = admins.filter(admin => admin.userType === 'editor_admin');
+        const adminEmails = editorAdmins.map(admin => admin.email);
+        
+        if (adminEmails.length > 0) {
+          const userRegistrationTemplate = emailTemplates.userRegistration(
+            `${firstName} ${lastName}`,
+            email
+          );
+          
+          await sendEmail({
+            to: adminEmails,
+            from: 'info@dip.tc',
+            subject: userRegistrationTemplate.subject,
+            html: userRegistrationTemplate.html,
+          });
+        }
+      } catch (emailError) {
+        console.error('User registration email notification failed:', emailError);
+        // Don't block registration if email fails
+      }
 
       req.login(user, (err) => {
         if (err) return next(err);

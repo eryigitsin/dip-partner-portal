@@ -134,7 +134,7 @@ export const partnerApplications = pgTable("partner_applications", {
   services: text("services").notNull(),
   dipAdvantages: text("dip_advantages").notNull(),
   whyPartner: text("why_partner").notNull(),
-  references: text("references"),
+  references: text("refs"),
   linkedinProfile: text("linkedin_profile"),
   twitterProfile: text("twitter_profile"),
   instagramProfile: text("instagram_profile"),

@@ -13,6 +13,7 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import UserPanel from "@/pages/user-panel";
 import ServiceRequests from "@/pages/service-requests";
 import Messages from "@/pages/messages";
+import ApplicationStatus from "@/pages/application-status";
 import { ProtectedRoute } from "./lib/protected-route";
 import { useQuery } from "@tanstack/react-query";
 
@@ -36,6 +37,7 @@ function Router() {
       <ProtectedRoute path="/user-panel" component={UserPanel} />
       <ProtectedRoute path="/service-requests" component={ServiceRequests} />
       <ProtectedRoute path="/messages" component={Messages} />
+      <Route path="/application-status/:id" component={ApplicationStatus} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -69,7 +69,7 @@ export interface IStorage {
   // Application document methods
   getApplicationDocuments(applicationId: number): Promise<ApplicationDocument[]>;
   getApplicationDocument(id: number): Promise<ApplicationDocument | undefined>;
-  createApplicationDocument(document: InsertApplicationDocument): Promise<ApplicationDocument>;
+  addApplicationDocument(document: InsertApplicationDocument): Promise<ApplicationDocument>;
   
   // Quote request methods
   getQuoteRequests(partnerId?: number, userId?: number): Promise<QuoteRequest[]>;
@@ -83,6 +83,9 @@ export interface IStorage {
   // Partner follower methods
   followPartner(userId: number, partnerId: number): Promise<void>;
   unfollowPartner(userId: number, partnerId: number): Promise<void>;
+  
+  // Admin methods
+  getAdminUsers(): Promise<User[]>;
   isFollowingPartner(userId: number, partnerId: number): Promise<boolean>;
   
   // OTP methods
@@ -274,7 +277,7 @@ export class DatabaseStorage implements IStorage {
     return document || undefined;
   }
 
-  async createApplicationDocument(document: InsertApplicationDocument): Promise<ApplicationDocument> {
+  async addApplicationDocument(document: InsertApplicationDocument): Promise<ApplicationDocument> {
     const [newDocument] = await db
       .insert(applicationDocuments)
       .values(document)
@@ -514,6 +517,13 @@ export class DatabaseStorage implements IStorage {
   async createMessage(data: any): Promise<any> {
     // Message creation logic would go here
     return data;
+  }
+
+  async getAdminUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(or(eq(users.userType, 'master_admin'), eq(users.userType, 'editor_admin')));
   }
 }
 
