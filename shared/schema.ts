@@ -125,7 +125,7 @@ export const partnerApplications = pgTable("partner_applications", {
   company: text("company").notNull(),
   contactPerson: text("contact_person").notNull(),
   website: text("website"),
-  businessType: text("business_type").notNull(),
+  serviceCategory: text("service_category").notNull(),
   businessDescription: text("business_description").notNull(),
   companySize: text("company_size").notNull(),
   foundingYear: text("founding_year").notNull(),

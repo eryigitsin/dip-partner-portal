@@ -10,18 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Loader2, Upload, X } from "lucide-react";
 
-const businessTypes = [
-  "Danışmanlık",
-  "Pazarlama", 
-  "Lojistik",
-  "Teknoloji",
-  "Finans",
-  "Hukuk",
-  "Diğer"
-];
+// Service categories will be fetched from API
 
 const companySizes = [
   "1-10 çalışan",
@@ -39,7 +32,7 @@ const partnerApplicationSchema = z.object({
   company: z.string().min(2, "Şirket adı en az 2 karakter olmalıdır"),
   contactPerson: z.string().min(2, "İletişim kişisi en az 2 karakter olmalıdır"),
   website: z.string().url("Geçerli bir web sitesi adresi giriniz").optional().or(z.literal("")),
-  businessType: z.string().min(1, "İş türü seçiniz"),
+  serviceCategory: z.string().min(1, "Hizmet kategorisi seçiniz"),
   businessDescription: z.string().min(10, "İş tanımı en az 10 karakter olmalıdır"),
   companySize: z.string().min(1, "Şirket büyüklüğü seçiniz"),
   foundingYear: z.string().min(4, "Kuruluş yılı giriniz"),
@@ -70,6 +63,11 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
+  // Fetch service categories
+  const { data: categories = [] } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ["/api/categories"],
+  });
+
   const form = useForm<PartnerApplicationFormData>({
     resolver: zodResolver(partnerApplicationSchema),
     defaultValues: {
@@ -80,7 +78,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
       company: prefilledData?.company || "",
       contactPerson: prefilledData?.contactPerson || "",
       website: prefilledData?.website || "",
-      businessType: prefilledData?.businessType || "",
+      serviceCategory: prefilledData?.serviceCategory || "",
       businessDescription: prefilledData?.businessDescription || "",
       companySize: prefilledData?.companySize || "",
       foundingYear: prefilledData?.foundingYear || "",
@@ -109,7 +107,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
         company: prefilledData?.company || "",
         contactPerson: prefilledData?.contactPerson || "",
         website: prefilledData?.website || "",
-        businessType: prefilledData?.businessType || "",
+        serviceCategory: prefilledData?.serviceCategory || "",
         businessDescription: prefilledData?.businessDescription || "",
         companySize: prefilledData?.companySize || "",
         foundingYear: prefilledData?.foundingYear || "",
@@ -324,10 +322,10 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="businessType"
+                  name="serviceCategory"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>İş Türü *</FormLabel>
+                      <FormLabel>Hizmet Kategorisi *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -335,9 +333,9 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {businessTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

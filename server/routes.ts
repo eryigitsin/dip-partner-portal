@@ -133,7 +133,7 @@ export function registerRoutes(app: Express): Server {
         company: req.body.company,
         contactPerson: req.body.contactPerson,
         website: req.body.website,
-        businessType: req.body.businessType,
+        serviceCategory: req.body.serviceCategory,
         businessDescription: req.body.businessDescription,
         companySize: req.body.companySize,
         foundingYear: req.body.foundingYear,
@@ -205,7 +205,7 @@ export function registerRoutes(app: Express): Server {
         });
         console.log('Applicant confirmation email sent');
         
-      } catch (emailError) {
+      } catch (emailError: any) {
         console.error('Email notification failed:', emailError);
         // Don't block the application if email fails
       }
@@ -312,9 +312,8 @@ export function registerRoutes(app: Express): Server {
           userId: user.id,
           companyName: application.company,
           contactPerson: application.contactPerson,
-          businessType: application.businessType,
+          serviceCategory: application.serviceCategory,
           description: application.businessDescription,
-          serviceCategory: application.businessType,
           services: application.services,
           dipAdvantages: application.dipAdvantages,
           companySize: application.companySize,
@@ -549,7 +548,7 @@ export function registerRoutes(app: Express): Server {
         company,
         contactPerson,
         website,
-        businessType,
+        serviceCategory,
         businessDescription,
         companySize,
         foundingYear,
@@ -566,7 +565,7 @@ export function registerRoutes(app: Express): Server {
       } = req.body;
 
       // Validate required fields
-      if (!firstName || !lastName || !email || !phone || !company || !contactPerson || !businessType || !businessDescription || !companySize || !foundingYear || !services || !dipAdvantages || !whyPartner) {
+      if (!firstName || !lastName || !email || !phone || !company || !contactPerson || !serviceCategory || !businessDescription || !companySize || !foundingYear || !services || !dipAdvantages || !whyPartner) {
         return res.status(400).json({ message: 'Zorunlu alanlar eksik' });
       }
 
@@ -578,7 +577,7 @@ export function registerRoutes(app: Express): Server {
         company,
         contactPerson,
         website,
-        businessType,
+        serviceCategory,
         businessDescription,
         companySize,
         foundingYear,
