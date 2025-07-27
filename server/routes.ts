@@ -1523,25 +1523,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Test SMS endpoint - temporary
-  app.post("/api/test-sms", async (req, res) => {
-    try {
-      const { phone } = req.body;
-      const netgsmService = createNetGsmService();
-      
-      if (!netgsmService) {
-        return res.status(500).json({ message: 'SMS service not configured' });
-      }
-      
-      const code = netgsmService.generateOtpCode();
-      const result = await netgsmService.sendOtpSms(phone, code);
-      
-      res.json(result);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
   const httpServer = createServer(app);
   return httpServer;
 }
