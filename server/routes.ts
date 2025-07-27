@@ -492,8 +492,16 @@ export function registerRoutes(app: Express): Server {
       if (!partner) {
         return res.status(404).json({ message: "Partner profile not found" });
       }
+
+      // Also get user contact information
+      const user = await storage.getUser(req.user!.id);
+      const partnerWithContact = {
+        ...partner,
+        contactEmail: user?.email,
+        contactPhone: user?.phone
+      };
       
-      res.json(partner);
+      res.json(partnerWithContact);
     } catch (error) {
       console.error('Error fetching partner profile:', error);
       res.status(500).json({ message: "Failed to fetch partner profile" });

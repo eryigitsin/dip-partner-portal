@@ -91,11 +91,11 @@ export default function PartnerProfilePage() {
                     rel="noopener noreferrer"
                     className="text-dip-blue hover:text-dip-dark-blue underline flex-1 mr-4"
                   >
-                    {window.location.origin}/partner/{partner?.username || partner?.id}
+                    https://partner.dip.tc/partner/{partner?.username || partner?.id}
                   </a>
                   <Button 
                     onClick={() => {
-                      const url = `${window.location.origin}/partner/${partner?.username || partner?.id}`;
+                      const url = `https://partner.dip.tc/partner/${partner?.username || partner?.id}`;
                       navigator.clipboard.writeText(url).then(() => {
                         toast({
                           title: "Başarılı",
@@ -160,14 +160,14 @@ export default function PartnerProfilePage() {
                     <Mail className="mr-2 h-4 w-4" />
                     E-posta
                   </Label>
-                  <p className="mt-1 text-gray-900">Yönetici ile iletişim kurunuz</p>
+                  <p className="mt-1 text-gray-900">{(partner as any)?.contactEmail || "Belirtilmemiş"}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700 flex items-center">
                     <Phone className="mr-2 h-4 w-4" />
                     Telefon
                   </Label>
-                  <p className="mt-1 text-gray-900">Yönetici ile iletişim kurunuz</p>
+                  <p className="mt-1 text-gray-900">{(partner as any)?.contactPhone || "Belirtilmemiş"}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700 flex items-center">
