@@ -571,7 +571,7 @@ export default function UserPanel() {
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => window.location.href = `/partners/${partner.id}`}
+                              onClick={() => window.location.href = `/partner/${partner.username || partner.id}`}
                             >
                               Profili Gör
                             </Button>
