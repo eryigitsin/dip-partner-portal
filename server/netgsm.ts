@@ -29,8 +29,17 @@ export class NetGsmService {
   // Send OTP SMS using NetGSM API
   async sendOtpSms(phone: string, code: string): Promise<SendOtpResponse> {
     try {
-      // Format phone number (remove + and spaces)
-      const formattedPhone = phone.replace(/[\s+]/g, '');
+      // Format phone number - remove country code for NetGSM API
+      let formattedPhone = phone.replace(/[\s+]/g, '');
+      
+      // Remove Turkish country code (90) if present
+      if (formattedPhone.startsWith('90') && formattedPhone.length === 12) {
+        formattedPhone = formattedPhone.substring(2); // Remove 90
+      }
+      // Remove leading 0 if present
+      if (formattedPhone.startsWith('0') && formattedPhone.length === 11) {
+        formattedPhone = formattedPhone.substring(1); // Remove leading 0
+      }
       
       // OTP message template
       const message = `DIP doğrulama kodunuz: ${code}`;
