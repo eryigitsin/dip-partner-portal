@@ -41,7 +41,6 @@ export const partners = pgTable("partners", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   companyName: text("company_name").notNull(),
-  contactPerson: text("contact_person"),
   logo: text("logo"),
   coverImage: text("cover_image"),
   description: text("description"),
