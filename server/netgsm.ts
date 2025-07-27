@@ -48,10 +48,10 @@ export class NetGsmService {
       const requestData = new URLSearchParams({
         usercode: this.config.username,
         password: this.config.password,
-        no: formattedPhone,
-        msg: message,
+        gsmno: formattedPhone, // Changed from 'no' to 'gsmno'
+        message: message, // Changed from 'msg' to 'message'
         msgheader: this.config.msgheader,
-        iysfilter: '0', // Bilgilendirme mesajı (İYS kontrolü yok)
+        dil: 'TR', // Turkish language support
       });
 
       console.log('Sending OTP SMS to:', formattedPhone);
@@ -108,7 +108,7 @@ export class NetGsmService {
       '40': 'Mesaj başlığı sistemde tanımlı değil',
       '50': 'İYS kontrollü gönderim yapılamıyor',
       '51': 'İYS Marka bilgisi bulunamadı',
-      '70': 'Hatalı parametre gönderimi / Mesaj başlığı yetkisi yok',
+      '70': 'Hatalı XML formatı / Mesaj başlığı yetkisi yok (Başlığın panelde tanımlı ve aktif olduğundan emin olun)',
       '73': 'Input parametrelerini kontrol ediniz',
       '80': 'Gönderim sınır aşımı',
       '85': 'Mükerrer gönderim sınır aşımı',
