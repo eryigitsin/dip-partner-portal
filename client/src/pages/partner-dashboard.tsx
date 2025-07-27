@@ -36,7 +36,7 @@ export default function PartnerDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
-  const [usernameInput, setUsernameInput] = useState("");
+
 
   const { data: partner } = useQuery<Partner>({
     queryKey: ["/api/partners", "me"],
@@ -393,40 +393,8 @@ export default function PartnerDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Username Section */}
+                {/* Profile URL Display */}
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="username">Kullanıcı Adı</Label>
-                    <p className="text-sm text-gray-500 mb-2">
-                      Profilinizin özel URL'si: /partner/{partner?.username || 'kullaniciadi'}
-                    </p>
-                    <div className="flex space-x-2">
-                      <Input
-                        id="username"
-                        value={usernameInput || partner?.username || ''}
-                        onChange={(e) => setUsernameInput(e.target.value)}
-                        placeholder="Kullanıcı adınızı yazın..."
-                        className="flex-1"
-                      />
-                      <Button 
-                        onClick={() => {
-                          if (usernameInput && usernameInput !== partner?.username) {
-                            updateProfileMutation.mutate({ username: usernameInput });
-                          }
-                        }}
-                        disabled={updateProfileMutation.isPending || !usernameInput || usernameInput === partner?.username}
-                        className="bg-dip-blue hover:bg-dip-dark-blue"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Kaydet
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      * Sadece İngilizce harfler, rakamlar, alt çizgi (_) ve tire (-) kullanabilirsiniz
-                    </p>
-                  </div>
-
-                  {/* Current URL Display */}
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <Label className="text-sm font-medium text-gray-700">Mevcut Profil URL'niz:</Label>
                     <div className="mt-2 flex items-center justify-between">
@@ -465,6 +433,10 @@ export default function PartnerDashboard() {
                       <p className="mt-1 text-gray-900">{partner?.companyName}</p>
                     </div>
                     <div>
+                      <Label className="text-sm font-medium text-gray-700">Kullanıcı Adı</Label>
+                      <p className="mt-1 text-gray-900">@{partner?.username || partner?.id}</p>
+                    </div>
+                    <div>
                       <Label className="text-sm font-medium text-gray-700">İletişim Kişisi</Label>
                       <p className="mt-1 text-gray-900">{partner?.contactPerson || "Belirtilmemiş"}</p>
                     </div>
@@ -475,6 +447,29 @@ export default function PartnerDashboard() {
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Profil Görüntüleme</Label>
                       <p className="mt-1 text-gray-900">{partner?.profileViews || 0} görüntüleme</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Takipçi Sayısı</Label>
+                      <p className="mt-1 text-gray-900">{partner?.followersCount || 0} takipçi</p>
+                    </div>
+                  </div>
+
+                  {/* Notice about editing */}
+                  <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-yellow-800">
+                          Profil Bilgilerini Düzenleme
+                        </h3>
+                        <p className="mt-1 text-sm text-yellow-700">
+                          Kullanıcı adı ve diğer profil bilgilerinizi düzenlemek için yönetici ile iletişime geçiniz. Bu bilgiler sadece yetkili personel tarafından güncellenebilir.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

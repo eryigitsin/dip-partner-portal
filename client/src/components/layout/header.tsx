@@ -168,24 +168,47 @@ export function Header() {
 
                 {/* Partner users */}
                 {user.userType === 'partner' && (
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-600">
-                      {user.firstName} {user.lastName}
-                    </span>
-                    <Link href="/partner-dashboard">
-                      <Button variant="outline" size="sm">
-                        Partner Paneli
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                      >
+                        <span>{user.firstName} {user.lastName}</span>
+                        <ChevronDown className="h-4 w-4" />
                       </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => logoutMutation.mutate()}
-                      disabled={logoutMutation.isPending}
-                    >
-                      Çıkış
-                    </Button>
-                  </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem asChild>
+                        <Link href="/partner-dashboard" className="flex items-center">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Partner Paneli</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/partner-profile" className="flex items-center">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Profil</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/partner-statistics" className="flex items-center">
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          <span>İstatistikler</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => logoutMutation.mutate()}
+                        disabled={logoutMutation.isPending}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Çıkış Yap</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
 
                 {/* Admin users */}

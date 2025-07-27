@@ -18,6 +18,8 @@ import UserManagement from "@/pages/user-management";
 import Statistics from "@/pages/statistics";
 import SystemStatus from "@/pages/system-status";
 import PartnerProfile from "@/pages/partner-profile";
+import PartnerProfilePage from "@/pages/partner-profile-page";
+import PartnerStatisticsPage from "@/pages/partner-statistics-page";
 import TestUpload from "@/pages/test-upload";
 import { ProtectedRoute } from "./lib/protected-route";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +40,8 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/partner-dashboard" component={PartnerDashboard} />
+      <ProtectedRoute path="/partner-profile" component={PartnerProfilePage} />
+      <ProtectedRoute path="/partner-statistics" component={PartnerStatisticsPage} />
       <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} />
       <ProtectedRoute path="/user-panel" component={UserPanel} />
       <ProtectedRoute path="/service-requests" component={ServiceRequests} />
