@@ -72,8 +72,10 @@ export class NetGsmService {
 
       // Parse NetGSM response
       if (response.ok) {
-        // NetGSM returns job ID for successful requests (e.g., "17377215342605050417149344")
-        if (responseText && responseText.length > 5 && !responseText.includes('ERROR')) {
+        // NetGSM returns different responses:
+        // Success: Job ID (e.g., "17377215342605050417149344")
+        // Or: "00" for successful bulk SMS
+        if (responseText && (responseText.trim() === '00' || (responseText.length > 5 && !responseText.includes('ERROR') && !responseText.includes('<')))) {
           return {
             success: true,
             jobId: responseText.trim(),
@@ -106,7 +108,8 @@ export class NetGsmService {
       '40': 'Mesaj başlığı sistemde tanımlı değil',
       '50': 'İYS kontrollü gönderim yapılamıyor',
       '51': 'İYS Marka bilgisi bulunamadı',
-      '70': 'Hatalı parametre gönderimi',
+      '70': 'Hatalı parametre gönderimi / Mesaj başlığı yetkisi yok',
+      '73': 'Input parametrelerini kontrol ediniz',
       '80': 'Gönderim sınır aşımı',
       '85': 'Mükerrer gönderim sınır aşımı',
     };
