@@ -29,26 +29,35 @@ export class NetGsmService {
   // Send OTP SMS using NetGSM API
   async sendOtpSms(phone: string, code: string): Promise<SendOtpResponse> {
     try {
-      // Format phone number (remove + and spaces)
-      const formattedPhone = phone.replace(/[\s+]/g, '');
+      // Format phone number for NetGSM (Turkish format: 5XXXXXXXXX)
+      let formattedPhone = phone.replace(/[\s+]/g, '');
+      
+      // Convert to NetGSM expected format (5XXXXXXXXX)
+      if (formattedPhone.startsWith('90')) {
+        formattedPhone = formattedPhone.substring(2); // Remove country code
+      }
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = formattedPhone.substring(1); // Remove leading 0
+      }
       
       // OTP message template
       const message = `DIP doğrulama kodunuz: ${code}`;
 
-      // Prepare request data for NetGSM SMS API
+      // Prepare request data for NetGSM SMS API - minimal required parameters
       const requestData = new URLSearchParams({
         usercode: this.config.username,
         password: this.config.password,
-        gsmno: formattedPhone,
+        no: formattedPhone,
         message: message,
-        msgheader: this.config.msgheader,
-        filter: '0', // Bilgilendirme mesajı (İYS kontrolü yok)
+        msgheader: this.config.msgheader
       });
 
-      console.log('Sending OTP SMS to:', formattedPhone);
+      console.log('Original phone:', phone);
+      console.log('Formatted phone:', formattedPhone);
       console.log('Message:', message);
+      console.log('Request data:', requestData.toString());
 
-      const response = await fetch(`${this.baseUrl}/sms/send/otp`, {
+      const response = await fetch(`${this.baseUrl}/sms/send/get`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -97,6 +106,7 @@ export class NetGsmService {
       '50': 'İYS kontrollü gönderim yapılamıyor',
       '51': 'İYS Marka bilgisi bulunamadı',
       '70': 'Hatalı parametre gönderimi',
+      '73': 'Input parametrelerini kontrol ediniz - eksik veya hatalı alan',
       '80': 'Gönderim sınır aşımı',
       '85': 'Mükerrer gönderim sınır aşımı',
     };
