@@ -490,7 +490,8 @@ export function registerRoutes(app: Express): Server {
       console.log('User from session:', req.user);
       const partner = await storage.getPartnerByUserId(req.user!.id);
       if (!partner) {
-        return res.status(404).json({ message: "Partner profile not found" });
+        console.log('Partner not found for userId:', req.user!.id);
+        return res.status(404).json({ message: "Partner not found" });
       }
 
       // Also get user contact information
