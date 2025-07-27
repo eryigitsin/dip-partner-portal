@@ -48,16 +48,17 @@ export class NetGsmService {
       const requestData = new URLSearchParams({
         usercode: this.config.username,
         password: this.config.password,
-        gsmno: formattedPhone,
-        message: message,
+        no: formattedPhone,
+        msg: message,
         msgheader: this.config.msgheader,
-        filter: '0', // Bilgilendirme mesajı (İYS kontrolü yok)
+        iysfilter: '0', // Bilgilendirme mesajı (İYS kontrolü yok)
       });
 
       console.log('Sending OTP SMS to:', formattedPhone);
       console.log('Message:', message);
+      console.log('Request params:', Object.fromEntries(requestData));
 
-      const response = await fetch(`${this.baseUrl}/sms/send/otp`, {
+      const response = await fetch(`${this.baseUrl}/bulkhttppost.asp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
