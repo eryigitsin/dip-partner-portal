@@ -151,7 +151,7 @@ export class NetGsmService {
 export function createNetGsmService(): NetGsmService | null {
   const username = process.env.NETGSM_USERNAME;
   const password = process.env.NETGSM_PASSWORD;
-  const msgheader = process.env.NETGSM_MSGHEADER || 'DIP';
+  const msgheader = process.env.NETGSM_MSGHEADER || '8503071245';
 
   if (!username || !password) {
     console.warn('NetGSM credentials not configured');
