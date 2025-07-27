@@ -44,14 +44,15 @@ export class NetGsmService {
       // OTP message template
       const message = `DIP doğrulama kodunuz: ${code}`;
 
-      // Prepare request data for NetGSM SMS API
+      // Prepare request data for NetGSM SMS API (resmi dokümantasyona göre)
       const requestData = new URLSearchParams({
         usercode: this.config.username,
         password: this.config.password,
-        gsmno: formattedPhone, // Changed from 'no' to 'gsmno'
-        message: message, // Changed from 'msg' to 'message'
-        msgheader: this.config.msgheader,
-        dil: 'TR', // Turkish language support
+        no: formattedPhone, // Resmi dokümantasyonda 'no' kullanılıyor
+        msg: message, // Resmi dokümantasyonda 'msg' kullanılıyor
+        header: this.config.msgheader, // 'msgheader' değil 'header' kullanılıyor
+        encoding: 'TR', // 'dil' değil 'encoding' kullanılıyor
+        filter: '0', // İYS filtresi - zorunlu parametre
       });
 
       console.log('Sending OTP SMS to:', formattedPhone);
@@ -149,9 +150,9 @@ export class NetGsmService {
 
 // Factory function to create NetGSM service
 export function createNetGsmService(): NetGsmService | null {
-  const username = process.env.NETGSM_USERNAME;
+  const username = process.env.NETGSM_USERCODE || process.env.NETGSM_USERNAME;
   const password = process.env.NETGSM_PASSWORD;
-  const msgheader = process.env.NETGSM_MSGHEADER || '8503071245';
+  const msgheader = process.env.NETGSM_HEADER || process.env.NETGSM_MSGHEADER || '8503071245';
 
   if (!username || !password) {
     console.warn('NetGSM credentials not configured');
