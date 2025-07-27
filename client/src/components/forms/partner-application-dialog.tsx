@@ -333,7 +333,23 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
                     <FormItem>
                       <FormLabel>Telefon</FormLabel>
                       <FormControl>
-                        <Input type="tel" placeholder="0532 123 45 67" {...field} />
+                        <Input 
+                          type="tel" 
+                          placeholder="5xxxxxxxxx" 
+                          maxLength={10}
+                          value={field.value ? field.value.replace(/\D/g, '') : ''}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '');
+                            if (digits.length <= 10) {
+                              // Always start with 5
+                              if (digits.length === 0 || digits.startsWith('5')) {
+                                field.onChange(digits);
+                              } else if (digits.length === 1) {
+                                field.onChange('5');
+                              }
+                            }
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

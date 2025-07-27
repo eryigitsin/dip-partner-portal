@@ -409,9 +409,21 @@ export default function AuthPage() {
                                   <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                   <Input 
                                     type="tel" 
-                                    placeholder="0532 123 45 67"
+                                    placeholder="5xxxxxxxxx"
                                     className="pl-10"
-                                    {...field} 
+                                    maxLength={10}
+                                    value={field.value ? field.value.replace(/\D/g, '') : ''}
+                                    onChange={(e) => {
+                                      const digits = e.target.value.replace(/\D/g, '');
+                                      if (digits.length <= 10) {
+                                        // Always start with 5
+                                        if (digits.length === 0 || digits.startsWith('5')) {
+                                          field.onChange(digits);
+                                        } else if (digits.length === 1) {
+                                          field.onChange('5');
+                                        }
+                                      }
+                                    }}
                                   />
                                 </div>
                               </FormControl>

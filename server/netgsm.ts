@@ -125,12 +125,12 @@ export class NetGsmService {
     return /^\d{6}$/.test(code);
   }
 
-  // Format Turkish phone number
+  // Format Turkish phone number for database storage (with country code)
   formatPhoneNumber(phone: string): string {
     // Remove all non-digit characters
     const cleaned = phone.replace(/\D/g, '');
     
-    // Handle Turkish phone numbers
+    // Handle Turkish phone numbers - always store with country code for database
     if (cleaned.startsWith('90') && cleaned.length === 12) {
       return cleaned; // Already formatted with country code
     } else if (cleaned.startsWith('0') && cleaned.length === 11) {
