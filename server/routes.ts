@@ -15,6 +15,13 @@ import express from "express";
 
 const scryptAsync = promisify(scrypt);
 
+// Hash password function
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
 // Multer configuration for file uploads
 const uploadDir = path.join(process.cwd(), 'uploads', 'partner-applications');
 if (!fs.existsSync(uploadDir)) {
@@ -483,15 +490,26 @@ export function registerRoutes(app: Express): Server {
   // Get partner profile for current user
   app.get("/api/partners/me", async (req, res) => {
     try {
+      console.log('=== /api/partners/me called ===');
+      console.log('Session ID:', req.sessionID);
+      console.log('Session data:', req.session);
+      console.log('User authenticated:', req.isAuthenticated());
+      console.log('User object:', req.user);
+      
       if (!req.isAuthenticated()) {
+        console.log('User not authenticated, returning 401');
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      console.log('User from session:', req.user);
+      console.log('Looking for partner with userId:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
-      console.log('Partner retrieved:', partner);
+      console.log('Partner query result:', partner);
+      
       if (!partner) {
         console.log('Partner not found for userId:', req.user!.id);
+        // Let's also check what partners exist
+        const allPartners = await storage.getPartners({});
+        console.log('All partners:', allPartners.map(p => ({ id: p.id, userId: p.userId, companyName: p.companyName })));
         return res.status(404).json({ message: "Partner not found" });
       }
 
@@ -1471,7 +1489,6 @@ export function registerRoutes(app: Express): Server {
       const newPartner = await storage.createPartner({
         userId: newUser.id,
         companyName: partnerData.companyName,
-        contactPerson: partnerData.contactPerson,
         description: partnerData.description,
         serviceCategory: partnerData.serviceCategory,
         services: partnerData.services,
