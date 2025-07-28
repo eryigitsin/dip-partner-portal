@@ -9,16 +9,14 @@ import { Label } from "@/components/ui/label";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import dipLogo from '@assets/dip ince_1753361664425.png';
 import workshopBg from '@assets/dip-workshop-kck_1753705308627.png';
-import { CustomOAuth } from "@/components/auth/custom-oauth";
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showCustomOAuth, setShowCustomOAuth] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -33,42 +31,6 @@ export default function AuthPage() {
   if (localUser) {
     window.location.href = '/';
     return null;
-  }
-
-  if (showCustomOAuth) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div 
-          className="min-h-screen flex items-center justify-center relative"
-          style={{
-            backgroundImage: `url(${workshopBg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          }}
-        >
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black/40"></div>
-          
-          {/* Content */}
-          <div className="relative z-10 w-full max-w-md mx-auto px-4">
-            <div className="mb-4">
-              <Button
-                variant="ghost"
-                className="text-white hover:bg-white/20"
-                onClick={() => setShowCustomOAuth(false)}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Geri Dön
-              </Button>
-            </div>
-            <CustomOAuth />
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -423,38 +385,25 @@ export default function AuthPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="mt-6 space-y-3">
+                  <div className="mt-6 grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
-                      onClick={() => setShowCustomOAuth(true)}
+                      onClick={() => handleSocialAuth('google')}
                       disabled={isLoading}
-                      className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                      className="w-full"
                     >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Özel OAuth ile Giriş Yap
+                      <FaGoogle className="h-4 w-4 mr-2" />
+                      Google
                     </Button>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={() => handleSocialAuth('google')}
-                        disabled={isLoading}
-                        className="w-full"
-                      >
-                        <FaGoogle className="h-4 w-4 mr-2" />
-                        Google
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleSocialAuth('linkedin_oidc')}
-                        disabled={isLoading}
-                        className="w-full"
-                      >
-                        <FaLinkedin className="h-4 w-4 mr-2" />
-                        LinkedIn
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleSocialAuth('linkedin_oidc')}
+                      disabled={isLoading}
+                      className="w-full"
+                    >
+                      <FaLinkedin className="h-4 w-4 mr-2" />
+                      LinkedIn
+                    </Button>
                   </div>
                 </div>
               </CardContent>
