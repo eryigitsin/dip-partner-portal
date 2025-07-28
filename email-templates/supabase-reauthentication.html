@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hesap Doğrulama - Account Reauthentication | DİP</title>
+    <title>Kimlik Onayı - Identity Confirmation | DİP</title>
     <style>
         body {
             margin: 0;
@@ -141,30 +141,30 @@
         <div class="content">
             <!-- Turkish Column -->
             <div class="column">
-                <h2>🔐 Hesap Doğrulama Gerekli</h2>
-                <p>DİP İş Ortakları Platformu hesabınızda güvenlik amacıyla kimlik doğrulama yapmanız gerekmektedir.</p>
-                <p>Hassas bir işlem gerçekleştirmek üzeresiniz ve güvenliğiniz için hesabınızı yeniden doğrulamanız zorunludur.</p>
+                <h2>🔐 Kimlik Onayı Gerekli</h2>
+                <p>DİP İş Ortakları Platformu'nda güvenlik amacıyla kimliğinizi onaylamanız gerekmektedir.</p>
+                <p>Hassas bir işlem gerçekleştirmek üzeresiniz ve güvenliğiniz için kimliğinizi yeniden onaylamanız zorunludur.</p>
                 
                 <a href="{{ .ConfirmationURL }}" class="cta-button">
-                    ✅ Hesabımı Doğrula
+                    ✅ Kimliğimi Onayla
                 </a>
 
                 <div class="security-alert">
-                    <strong>Güvenlik Uyarısı:</strong> Bu doğrulama talebini siz yapmadıysanız, derhal şifrenizi değiştirin ve <a href="mailto:info@dip.tc">info@dip.tc</a> adresine bilgi verin.
+                    <strong>Güvenlik Uyarısı:</strong> Bu onay talebini siz yapmadıysanız, derhal şifrenizi değiştirin ve <a href="mailto:info@dip.tc">info@dip.tc</a> adresine bilgi verin.
                 </div>
 
                 <div class="info-note">
-                    <strong>Neden doğrulama gerekli?</strong><br>
-                    • Hesap ayarları değişiklikleri<br>
+                    <strong>Neden onay gerekli?</strong><br>
+                    • Profil ayarları değişiklikleri<br>
                     • Önemli bilgi güncellemeleri<br>
                     • Güvenlik ayarları değişiklikleri<br>
-                    • Admin işlemler (yetkiniz varsa)
+                    • Yönetici işlemler (yetkiniz varsa)
                 </div>
 
                 <div class="warning-list">
                     <strong>Önemli Bilgiler:</strong>
                     <ul style="margin: 10px 0; padding-left: 20px;">
-                        <li>Doğrulama linki 10 dakika geçerlidir</li>
+                        <li>Onay linki 10 dakika geçerlidir</li>
                         <li>Link sadece bir kez kullanılabilir</li>
                         <li>İşlem tamamlandıktan sonra normal kullanıma devam edebilirsiniz</li>
                         <li>Şüpheli bir aktivite fark ederseniz hemen iletişime geçin</li>
@@ -174,30 +174,30 @@
 
             <!-- English Column -->
             <div class="column">
-                <h2>🔐 Account Verification Required</h2>
-                <p>Your DİP Business Partners Platform account requires identity verification for security purposes.</p>
-                <p>You are about to perform a sensitive operation and re-verification of your account is mandatory for your security.</p>
+                <h2>🔐 Identity Confirmation Required</h2>
+                <p>Your DİP Business Partners Platform requires identity confirmation for security purposes.</p>
+                <p>You are about to perform a sensitive operation and re-confirmation of your identity is mandatory for your security.</p>
                 
                 <a href="{{ .ConfirmationURL }}" class="cta-button">
-                    ✅ Verify My Account
+                    ✅ Confirm My Identity
                 </a>
 
                 <div class="security-alert">
-                    <strong>Security Warning:</strong> If you didn't request this verification, immediately change your password and contact <a href="mailto:info@dip.tc">info@dip.tc</a>.
+                    <strong>Security Warning:</strong> If you didn't request this confirmation, immediately change your password and contact <a href="mailto:info@dip.tc">info@dip.tc</a>.
                 </div>
 
                 <div class="info-note">
-                    <strong>Why is verification needed?</strong><br>
-                    • Account settings changes<br>
+                    <strong>Why is confirmation needed?</strong><br>
+                    • Profile settings changes<br>
                     • Important information updates<br>
                     • Security settings modifications<br>
-                    • Admin operations (if authorized)
+                    • Administrative operations (if authorized)
                 </div>
 
                 <div class="warning-list">
                     <strong>Important Information:</strong>
                     <ul style="margin: 10px 0; padding-left: 20px;">
-                        <li>Verification link is valid for 10 minutes</li>
+                        <li>Confirmation link is valid for 10 minutes</li>
                         <li>Link can only be used once</li>
                         <li>You can continue normal usage after completion</li>
                         <li>Contact us immediately if you notice any suspicious activity</li>
@@ -212,7 +212,7 @@
             <p>Ecza Sok. No:4-1 Şişli, İstanbul • <a href="mailto:info@dip.tc">info@dip.tc</a> • 08503071245</p>
             <p><a href="{{ .SiteURL }}">dip.tc</a> | <a href="{{ .SiteURL }}/hakkimizda">Hakkımızda</a> | <a href="{{ .SiteURL }}/iletisim">İletişim</a></p>
             <p style="font-size: 12px; margin-top: 20px;">
-                Bu doğrulama talebi {{ .Email }} adresine gönderilmiştir. Hesap güvenliğiniz için bu e-postayı kimseyle paylaşmayın.
+                Bu onay talebi {{ .Email }} adresine gönderilmiştir. Güvenliğiniz için bu e-postayı kimseyle paylaşmayın.
             </p>
         </div>
     </div>

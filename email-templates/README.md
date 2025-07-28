@@ -78,4 +78,4 @@ Bu HTML şablonlarını Supabase Dashboard > Authentication > Email Templates b�
 - **Magic Link:** `DİP Güvenli Giriş - Secure Login`
 - **Invite:** `DİP Platform Davetiniz - Your Platform Invitation`
 - **Email Change:** `DİP E-posta Değişikliği - Email Change Confirmation`
-- **Reauthentication:** `DİP Hesap Doğrulama - Account Verification Required`
+- **Reauthentication:** `DİP Kimlik Onayı - Identity Confirmation Required`
