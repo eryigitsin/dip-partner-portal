@@ -152,10 +152,16 @@ export class NetGsmService {
 export function createNetGsmService(): NetGsmService | null {
   const username = process.env.NETGSM_USERCODE || process.env.NETGSM_USERNAME;
   const password = process.env.NETGSM_PASSWORD;
-  const msgheader = process.env.NETGSM_HEADER || process.env.NETGSM_MSGHEADER || '8503071245';
+  const msgheader = process.env.NETGSM_MSGHEADER || process.env.NETGSM_HEADER;
 
-  if (!username || !password) {
-    console.warn('NetGSM credentials not configured');
+  console.log('NetGSM Factory - Environment check:', {
+    username: username ? `Set (${username})` : 'Missing',
+    password: password ? 'Set' : 'Missing',
+    msgheader: msgheader ? `Set (${msgheader})` : 'Missing',
+  });
+
+  if (!username || !password || !msgheader) {
+    console.warn('NetGSM credentials not fully configured');
     return null;
   }
 
