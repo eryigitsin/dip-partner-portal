@@ -155,3 +155,9 @@ Preferred communication style: Simple, everyday language.
 - **Statistics Dashboard**: Developed comprehensive CRM analytics dashboard with user engagement tracking, partner performance metrics, and editor activity monitoring using Recharts visualization
 - **System Status Page**: Created detailed system monitoring page with real-time metrics, performance graphs, incident tracking, and error log monitoring
 - **Backend Admin API**: Added complete admin API endpoints for user management, partner creation, role assignment, and comprehensive data retrieval with proper authentication and authorization
+- **Email Subscription Management System**: Implemented comprehensive email subscription system with user preferences, unsubscribe functionality, and admin subscriber management
+- **E-Posta Bildirim Tercihi**: Created user preference page allowing control over marketing emails, partner updates, platform updates, and weekly digest options
+- **E-Posta Aboneleri Admin Panel**: Developed admin interface for viewing active/inactive email subscribers with CSV export functionality
+- **Unsubscribe System**: Added public unsubscribe link functionality (https://partner.dip.tc/unsubscribe?email=...) with branded confirmation page
+- **Database Schema Updates**: Added emailSubscribers and userEmailPreferences tables with proper relations and storage methods
+- **Email Template Integration**: Updated all email templates to include proper unsubscribe links and support for subscription management

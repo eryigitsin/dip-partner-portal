@@ -12,6 +12,8 @@ import {
   messages,
   smsOtpCodes,
   tempUserRegistrations,
+  emailSubscribers,
+  userEmailPreferences,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -32,6 +34,10 @@ import {
   type InsertTempUserRegistration,
   type PartnerPost,
   type InsertPartnerPost,
+  type EmailSubscriber,
+  type InsertEmailSubscriber,
+  type UserEmailPreferences,
+  type InsertUserEmailPreferences,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql } from "drizzle-orm";
@@ -132,6 +138,18 @@ export interface IStorage {
   markSmsOtpCodeAsUsed(phone: string, code: string, purpose: string): Promise<void>;
   markTempUserRegistrationAsUsed(phone: string, purpose: string): Promise<void>;
   deletePartnerPost(postId: number): Promise<void>;
+  
+  // Email subscription methods
+  getAllEmailSubscribers(): Promise<EmailSubscriber[]>;
+  getEmailSubscriber(userId: number): Promise<EmailSubscriber | undefined>;
+  subscribeToEmails(userId: number, email: string): Promise<EmailSubscriber>;
+  unsubscribeFromEmails(userId: number): Promise<void>;
+  unsubscribeByEmail(email: string): Promise<void>;
+  
+  // User email preferences methods
+  getUserEmailPreferences(userId: number): Promise<UserEmailPreferences | undefined>;
+  updateUserEmailPreferences(userId: number, preferences: Partial<InsertUserEmailPreferences>): Promise<UserEmailPreferences>;
+  createUserEmailPreferences(preferences: InsertUserEmailPreferences): Promise<UserEmailPreferences>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -683,6 +701,88 @@ export class DatabaseStorage implements IStorage {
       .where(eq(partners.id, partnerId));
       
     return user;
+  }
+
+  // Email subscription methods
+  async getAllEmailSubscribers(): Promise<EmailSubscriber[]> {
+    return await db.select().from(emailSubscribers).where(eq(emailSubscribers.isActive, true));
+  }
+
+  async getEmailSubscriber(userId: number): Promise<EmailSubscriber | undefined> {
+    const [subscriber] = await db.select().from(emailSubscribers).where(
+      and(eq(emailSubscribers.userId, userId), eq(emailSubscribers.isActive, true))
+    );
+    return subscriber || undefined;
+  }
+
+  async subscribeToEmails(userId: number, email: string): Promise<EmailSubscriber> {
+    // First check if user already has a subscription record
+    const existing = await db.select().from(emailSubscribers).where(eq(emailSubscribers.userId, userId));
+    
+    if (existing.length > 0) {
+      // Reactivate existing subscription
+      const [subscriber] = await db
+        .update(emailSubscribers)
+        .set({ 
+          isActive: true, 
+          email: email,
+          subscribedAt: new Date(),
+          unsubscribedAt: null 
+        })
+        .where(eq(emailSubscribers.userId, userId))
+        .returning();
+      return subscriber;
+    } else {
+      // Create new subscription
+      const [subscriber] = await db
+        .insert(emailSubscribers)
+        .values({ userId, email, isActive: true })
+        .returning();
+      return subscriber;
+    }
+  }
+
+  async unsubscribeFromEmails(userId: number): Promise<void> {
+    await db
+      .update(emailSubscribers)
+      .set({ 
+        isActive: false, 
+        unsubscribedAt: new Date() 
+      })
+      .where(eq(emailSubscribers.userId, userId));
+  }
+
+  async unsubscribeByEmail(email: string): Promise<void> {
+    await db
+      .update(emailSubscribers)
+      .set({ 
+        isActive: false, 
+        unsubscribedAt: new Date() 
+      })
+      .where(eq(emailSubscribers.email, email));
+  }
+
+  // User email preferences methods
+  async getUserEmailPreferences(userId: number): Promise<UserEmailPreferences | undefined> {
+    const [preferences] = await db.select().from(userEmailPreferences).where(eq(userEmailPreferences.userId, userId));
+    return preferences || undefined;
+  }
+
+  async updateUserEmailPreferences(userId: number, preferences: Partial<InsertUserEmailPreferences>): Promise<UserEmailPreferences> {
+    const [updated] = await db
+      .update(userEmailPreferences)
+      .set({ ...preferences, updatedAt: new Date() })
+      .where(eq(userEmailPreferences.userId, userId))
+      .returning();
+    return updated;
+  }
+
+  async createUserEmailPreferences(preferences: InsertUserEmailPreferences): Promise<UserEmailPreferences> {
+    const [created] = await db
+      .insert(userEmailPreferences)
+      .values(preferences)
+      .returning();
+    return created;
   }
 }
 

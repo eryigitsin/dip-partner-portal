@@ -1560,6 +1560,186 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Email preferences API routes
+  app.get("/api/email-preferences", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const preferences = await storage.getUserEmailPreferences(req.user!.id);
+      
+      if (!preferences) {
+        // Create default preferences if none exist
+        const defaultPreferences = {
+          userId: req.user!.id,
+          marketingEmails: true,
+          partnerUpdates: true,
+          platformUpdates: true,
+          weeklyDigest: false,
+        };
+        
+        const created = await storage.createUserEmailPreferences(defaultPreferences);
+        return res.json(created);
+      }
+      
+      res.json(preferences);
+    } catch (error: any) {
+      console.error('Error fetching email preferences:', error);
+      res.status(500).json({ message: 'Failed to fetch email preferences' });
+    }
+  });
+
+  app.post("/api/email-preferences", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const { marketingEmails, partnerUpdates, platformUpdates, weeklyDigest } = req.body;
+      const userId = req.user!.id;
+      
+      // Check if preferences exist
+      const existing = await storage.getUserEmailPreferences(userId);
+      
+      if (existing) {
+        // Update existing preferences
+        const updated = await storage.updateUserEmailPreferences(userId, {
+          marketingEmails,
+          partnerUpdates,
+          platformUpdates,
+          weeklyDigest,
+        });
+        
+        // Update email subscription status
+        if (marketingEmails) {
+          await storage.subscribeToEmails(userId, req.user!.email);
+        } else {
+          await storage.unsubscribeFromEmails(userId);
+        }
+        
+        res.json(updated);
+      } else {
+        // Create new preferences
+        const created = await storage.createUserEmailPreferences({
+          userId,
+          marketingEmails,
+          partnerUpdates,
+          platformUpdates,
+          weeklyDigest,
+        });
+        
+        // Handle email subscription
+        if (marketingEmails) {
+          await storage.subscribeToEmails(userId, req.user!.email);
+        }
+        
+        res.json(created);
+      }
+    } catch (error: any) {
+      console.error('Error updating email preferences:', error);
+      res.status(500).json({ message: 'Failed to update email preferences' });
+    }
+  });
+
+  app.post("/api/email-preferences/unsubscribe-all", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const userId = req.user!.id;
+      
+      // Update preferences to disable all non-essential emails
+      await storage.updateUserEmailPreferences(userId, {
+        marketingEmails: false,
+        partnerUpdates: false,
+        weeklyDigest: false,
+        platformUpdates: true, // Keep platform updates for important announcements
+      });
+      
+      // Unsubscribe from email list
+      await storage.unsubscribeFromEmails(userId);
+      
+      res.json({ success: true, message: 'Successfully unsubscribed from all emails' });
+    } catch (error: any) {
+      console.error('Error unsubscribing from emails:', error);
+      res.status(500).json({ message: 'Failed to unsubscribe from emails' });
+    }
+  });
+
+  app.post("/api/email-preferences/subscribe-back", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const userId = req.user!.id;
+      
+      // Update preferences to re-enable marketing emails
+      await storage.updateUserEmailPreferences(userId, {
+        marketingEmails: true,
+        partnerUpdates: true,
+      });
+      
+      // Re-subscribe to email list
+      await storage.subscribeToEmails(userId, req.user!.email);
+      
+      res.json({ success: true, message: 'Successfully subscribed back to emails' });
+    } catch (error: any) {
+      console.error('Error subscribing back to emails:', error);
+      res.status(500).json({ message: 'Failed to subscribe back to emails' });
+    }
+  });
+
+  // Admin route to get all email subscribers
+  app.get("/api/admin/email-subscribers", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const subscribers = await storage.getAllEmailSubscribers();
+      res.json(subscribers);
+    } catch (error: any) {
+      console.error('Error fetching email subscribers:', error);
+      res.status(500).json({ message: 'Failed to fetch email subscribers' });
+    }
+  });
+
+  // Unsubscribe route accessible via email link (no authentication required)
+  app.get("/api/unsubscribe", async (req, res) => {
+    try {
+      const { email } = req.query;
+      
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ message: 'Email parameter is required' });
+      }
+      
+      await storage.unsubscribeByEmail(email);
+      
+      // Return a simple HTML page confirming unsubscription
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>E-posta Aboneliği İptal Edildi - DİP</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .container { max-width: 600px; margin: 0 auto; }
+            h1 { color: #2563eb; }
+            p { color: #666; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>✅ E-posta Aboneliği İptal Edildi</h1>
+            <p>E-posta adresiniz (${email}) başarıyla e-posta listesinden çıkarıldı.</p>
+            <p>Artık bizden pazarlama e-postaları almayacaksınız. Hesap güvenliği ile ilgili önemli e-postalar bu ayardan etkilenmez.</p>
+            <p><a href="https://partner.dip.tc">DİP Platformuna Dön</a></p>
+          </div>
+        </body>
+        </html>
+      `);
+    } catch (error: any) {
+      console.error('Error unsubscribing email:', error);
+      res.status(500).send('E-posta aboneliği iptal edilirken bir hata oluştu.');
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

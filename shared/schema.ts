@@ -221,6 +221,29 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Email subscribers for marketing emails
+export const emailSubscribers = pgTable("email_subscribers", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  email: text("email").notNull(),
+  isActive: boolean("is_active").default(true),
+  subscribedAt: timestamp("subscribed_at").defaultNow(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+  preferences: jsonb("preferences").default({}), // Store email type preferences
+});
+
+// User email preferences
+export const userEmailPreferences = pgTable("user_email_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull().unique(),
+  marketingEmails: boolean("marketing_emails").default(true), // Campaign and personalized offers
+  partnerUpdates: boolean("partner_updates").default(true), // Partner announcements
+  platformUpdates: boolean("platform_updates").default(true), // Platform news and updates
+  weeklyDigest: boolean("weekly_digest").default(false), // Weekly summary emails
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // SMS OTP verification codes
 export const smsOtpCodes = pgTable("sms_otp_codes", {
   id: serial("id").primaryKey(),
@@ -421,6 +444,18 @@ export const insertPartnerPostSchema = createInsertSchema(partnerPosts).omit({
   updatedAt: true,
 });
 
+export const insertEmailSubscriberSchema = createInsertSchema(emailSubscribers).omit({
+  id: true,
+  subscribedAt: true,
+  unsubscribedAt: true,
+});
+
+export const insertUserEmailPreferencesSchema = createInsertSchema(userEmailPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -450,3 +485,7 @@ export type ApplicationDocument = typeof applicationDocuments.$inferSelect;
 export type InsertApplicationDocument = z.infer<typeof insertApplicationDocumentSchema>;
 export type PartnerPost = typeof partnerPosts.$inferSelect;
 export type InsertPartnerPost = z.infer<typeof insertPartnerPostSchema>;
+export type EmailSubscriber = typeof emailSubscribers.$inferSelect;
+export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
+export type UserEmailPreferences = typeof userEmailPreferences.$inferSelect;
+export type InsertUserEmailPreferences = z.infer<typeof insertUserEmailPreferencesSchema>;

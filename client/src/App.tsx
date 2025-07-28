@@ -18,6 +18,8 @@ import ApplicationStatus from "@/pages/application-status";
 import UserManagement from "@/pages/user-management";
 import Statistics from "@/pages/statistics";
 import SystemStatus from "@/pages/system-status";
+import EmailPreferences from "@/pages/email-preferences";
+import EmailSubscribers from "@/pages/admin/email-subscribers";
 import PartnerProfile from "@/pages/partner-profile";
 import PartnerProfilePage from "@/pages/partner-profile-page";
 import PartnerStatisticsPage from "@/pages/partner-statistics-page";
@@ -50,6 +52,8 @@ function Router() {
       <ProtectedRoute path="/user-management" component={UserManagement} />
       <ProtectedRoute path="/statistics" component={Statistics} />
       <ProtectedRoute path="/system-status" component={SystemStatus} />
+      <ProtectedRoute path="/email-preferences" component={EmailPreferences} />
+      <ProtectedRoute path="/email-subscribers" component={EmailSubscribers} />
       <Route path="/application-status/:id" component={ApplicationStatus} />
       <Route path="/partner/:username" component={PartnerProfile} />
       <Route path="/test-upload" component={TestUpload} />
