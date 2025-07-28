@@ -12,7 +12,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useAuth } from '@/hooks/use-auth';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { t } from '@/lib/i18n';
-import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity } from 'lucide-react';
+import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 
@@ -247,6 +247,12 @@ export function Header() {
                               <Link href="/system-status" className="flex items-center gap-2 w-full">
                                 <Activity className="h-4 w-4" />
                                 Sistem Durumu
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Link href="/marketing-list" className="flex items-center gap-2 w-full">
+                                <Database className="h-4 w-4" />
+                                Pazarlama & CRM
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />

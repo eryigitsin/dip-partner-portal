@@ -28,6 +28,8 @@ import {
   RefreshCw,
   RotateCcw
 } from 'lucide-react';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
 
 interface MarketingContact {
   id: number;
@@ -140,9 +142,11 @@ export default function MarketingListPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Pazarlama Listesi</h1>
+        <h1 className="text-3xl font-bold mb-4">Pazarlama & CRM</h1>
         <p className="text-gray-600">
           Resend API ile senkronize edilen tüm iletişim bilgileri ve pazarlama listesi yönetimi
         </p>
@@ -424,6 +428,8 @@ export default function MarketingListPage() {
           </Tabs>
         </CardContent>
       </Card>
+      </div>
+      <Footer />
     </div>
   );
 }
