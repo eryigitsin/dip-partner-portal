@@ -28,6 +28,10 @@ Bu HTML şablonlarını Supabase Dashboard > Authentication > Email Templates b�
 **Kullanım Yeri:** Change email address
 **Açıklama:** E-posta adresi değişikliği onayı için kullanılır.
 
+### 6. supabase-reauthentication.html
+**Kullanım Yeri:** Reauthentication
+**Açıklama:** Hassas işlemler için hesap yeniden doğrulama talebi için kullanılır.
+
 ## Supabase Parametreleri
 
 Şablonlarda kullanılabilir parametreler:
@@ -74,3 +78,4 @@ Bu HTML şablonlarını Supabase Dashboard > Authentication > Email Templates b�
 - **Magic Link:** `DİP Güvenli Giriş - Secure Login`
 - **Invite:** `DİP Platform Davetiniz - Your Platform Invitation`
 - **Email Change:** `DİP E-posta Değişikliği - Email Change Confirmation`
+- **Reauthentication:** `DİP Hesap Doğrulama - Account Verification Required`

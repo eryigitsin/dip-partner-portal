@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Şifre Sıfırlama - Password Reset | DİP</title>
+    <title>Hesap Doğrulama - Account Reauthentication | DİP</title>
     <style>
         body {
             margin: 0;
@@ -86,7 +86,7 @@
             color: #3b82f6;
             text-decoration: none;
         }
-        .security-note {
+        .security-alert {
             background-color: #fef2f2;
             border: 1px solid #ef4444;
             border-radius: 8px;
@@ -95,7 +95,16 @@
             font-size: 14px;
             color: #991b1b;
         }
-        .warning-note {
+        .info-note {
+            background-color: #f0f9ff;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #1e40af;
+        }
+        .warning-list {
             background-color: #fef3c7;
             border: 1px solid #f59e0b;
             border-radius: 8px;
@@ -132,54 +141,68 @@
         <div class="content">
             <!-- Turkish Column -->
             <div class="column">
-                <h2>🔐 Şifre Sıfırlama</h2>
-                <p>DİP hesabınız için şifre sıfırlama talebinde bulundunuz.</p>
-                <p>Yeni bir şifre oluşturmak için aşağıdaki butona tıklayın. Bu link güvenlik amacıyla 1 saat sonra geçersiz hale gelecektir.</p>
+                <h2>🔐 Hesap Doğrulama Gerekli</h2>
+                <p>DİP İş Ortakları Platformu hesabınızda güvenlik amacıyla kimlik doğrulama yapmanız gerekmektedir.</p>
+                <p>Hassas bir işlem gerçekleştirmek üzeresiniz ve güvenliğiniz için hesabınızı yeniden doğrulamanız zorunludur.</p>
                 
                 <a href="{{ .ConfirmationURL }}" class="cta-button">
-                    🔑 Yeni Şifre Oluştur
+                    ✅ Hesabımı Doğrula
                 </a>
 
-                <div class="security-note">
-                    <strong>Önemli Güvenlik Uyarısı:</strong> Bu şifre sıfırlama talebini siz yapmadıysanız, derhal <a href="mailto:info@dip.tc">info@dip.tc</a> adresine bilgi verin ve bu e-postayı silin.
+                <div class="security-alert">
+                    <strong>Güvenlik Uyarısı:</strong> Bu doğrulama talebini siz yapmadıysanız, derhal şifrenizi değiştirin ve <a href="mailto:info@dip.tc">info@dip.tc</a> adresine bilgi verin.
                 </div>
 
-                <div class="warning-note">
-                    <strong>Hatırlatma:</strong>
+                <div class="info-note">
+                    <strong>Neden doğrulama gerekli?</strong><br>
+                    • Hesap ayarları değişiklikleri<br>
+                    • Önemli bilgi güncellemeleri<br>
+                    • Güvenlik ayarları değişiklikleri<br>
+                    • Admin işlemler (yetkiniz varsa)
+                </div>
+
+                <div class="warning-list">
+                    <strong>Önemli Bilgiler:</strong>
                     <ul style="margin: 10px 0; padding-left: 20px;">
-                        <li>Link sadece 1 saat geçerlidir</li>
+                        <li>Doğrulama linki 10 dakika geçerlidir</li>
                         <li>Link sadece bir kez kullanılabilir</li>
-                        <li>Güçlü bir şifre seçmeyi unutmayın</li>
+                        <li>İşlem tamamlandıktan sonra normal kullanıma devam edebilirsiniz</li>
+                        <li>Şüpheli bir aktivite fark ederseniz hemen iletişime geçin</li>
                     </ul>
                 </div>
-
-                <p>Şifrenizi değiştirdikten sonra, güvenlik amacıyla tüm cihazlarda yeniden giriş yapmanız gerekecektir.</p>
             </div>
 
             <!-- English Column -->
             <div class="column">
-                <h2>🔐 Password Reset</h2>
-                <p>You have requested a password reset for your DİP account.</p>
-                <p>Click the button below to create a new password. This link will expire in 1 hour for security purposes.</p>
+                <h2>🔐 Account Verification Required</h2>
+                <p>Your DİP Business Partners Platform account requires identity verification for security purposes.</p>
+                <p>You are about to perform a sensitive operation and re-verification of your account is mandatory for your security.</p>
                 
                 <a href="{{ .ConfirmationURL }}" class="cta-button">
-                    🔑 Create New Password
+                    ✅ Verify My Account
                 </a>
 
-                <div class="security-note">
-                    <strong>Important Security Warning:</strong> If you didn't request this password reset, please immediately contact <a href="mailto:info@dip.tc">info@dip.tc</a> and delete this email.
+                <div class="security-alert">
+                    <strong>Security Warning:</strong> If you didn't request this verification, immediately change your password and contact <a href="mailto:info@dip.tc">info@dip.tc</a>.
                 </div>
 
-                <div class="warning-note">
-                    <strong>Reminder:</strong>
+                <div class="info-note">
+                    <strong>Why is verification needed?</strong><br>
+                    • Account settings changes<br>
+                    • Important information updates<br>
+                    • Security settings modifications<br>
+                    • Admin operations (if authorized)
+                </div>
+
+                <div class="warning-list">
+                    <strong>Important Information:</strong>
                     <ul style="margin: 10px 0; padding-left: 20px;">
-                        <li>Link is valid for 1 hour only</li>
+                        <li>Verification link is valid for 10 minutes</li>
                         <li>Link can only be used once</li>
-                        <li>Don't forget to choose a strong password</li>
+                        <li>You can continue normal usage after completion</li>
+                        <li>Contact us immediately if you notice any suspicious activity</li>
                     </ul>
                 </div>
-
-                <p>After changing your password, you will need to log in again on all devices for security reasons.</p>
             </div>
         </div>
 
@@ -189,10 +212,9 @@
             <p>Ecza Sok. No:4-1 Şişli, İstanbul • <a href="mailto:info@dip.tc">info@dip.tc</a> • 08503071245</p>
             <p><a href="{{ .SiteURL }}">dip.tc</a> | <a href="{{ .SiteURL }}/hakkimizda">Hakkımızda</a> | <a href="{{ .SiteURL }}/iletisim">İletişim</a></p>
             <p style="font-size: 12px; margin-top: 20px;">
-                Bu e-posta {{ .Email }} adresine gönderilmiştir. Güvenlik amacıyla bu e-postayı kimseyle paylaşmayın.
+                Bu doğrulama talebi {{ .Email }} adresine gönderilmiştir. Hesap güvenliğiniz için bu e-postayı kimseyle paylaşmayın.
             </p>
         </div>
     </div>
-</body>
 </body>
 </html>

@@ -20,20 +20,18 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .header {
-            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            background-color: #f1f5f9;
             padding: 40px 20px;
             text-align: center;
+            border-bottom: 1px solid #e2e8f0;
         }
         .logo {
-            color: white;
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            display: inline-block;
+            text-decoration: none;
         }
-        .header-subtitle {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 16px;
-            margin: 0;
+        .logo img {
+            height: 60px;
+            width: auto;
         }
         .content {
             display: flex;
@@ -116,8 +114,9 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="logo">dip</div>
-            <p class="header-subtitle">Dijital İhracat Platformu • Digital Export Platform</p>
+            <a href="https://dip.tc" class="logo">
+                <img src="https://dip.tc/assets/dip-logo.png" alt="DİP - Dijital İhracat Platformu" />
+            </a>
         </div>
 
         <!-- Main Content -->
@@ -125,7 +124,7 @@
             <!-- Turkish Column -->
             <div class="column">
                 <h2>🎉 Hoş Geldiniz!</h2>
-                <p>DİP - Dijital İhracat Platformu'na katıldığınız için teşekkür ederiz!</p>
+                <p>DİP İş Ortakları Platformu'na katıldığınız için teşekkür ederiz!</p>
                 <p>Hesabınızı aktif hale getirmek ve platformumuzun tüm özelliklerinden yararlanmaya başlamak için e-posta adresinizi doğrulamanız gerekmektedir.</p>
                 
                 <a href="{{ .ConfirmationURL }}" class="cta-button">
@@ -148,7 +147,7 @@
             <!-- English Column -->
             <div class="column">
                 <h2>🎉 Welcome!</h2>
-                <p>Thank you for joining DİP - Digital Export Platform!</p>
+                <p>Thank you for joining DİP Business Partners Platform!</p>
                 <p>To activate your account and start benefiting from all features of our platform, you need to verify your email address.</p>
                 
                 <a href="{{ .ConfirmationURL }}" class="cta-button">
@@ -171,7 +170,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            <p><strong>DİP - Dijital İhracat Platformu</strong></p>
+            <p><strong>DİP İş Ortakları Platformu</strong></p>
             <p>Ecza Sok. No:4-1 Şişli, İstanbul • <a href="mailto:info@dip.tc">info@dip.tc</a> • 08503071245</p>
             <p><a href="{{ .SiteURL }}">dip.tc</a> | <a href="{{ .SiteURL }}/hakkimizda">Hakkımızda</a> | <a href="{{ .SiteURL }}/iletisim">İletişim</a></p>
             <p style="font-size: 12px; margin-top: 20px;">
