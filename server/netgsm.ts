@@ -44,43 +44,29 @@ export class NetGsmService {
       // OTP message template
       const message = `DIP doğrulama kodunuz: ${code}`;
 
-      // Prepare request data for NetGSM SMS API (resmi dokümantasyona göre)
-      const requestData = new URLSearchParams({
-        usercode: this.config.username,
+      // NetGSM için basit form-data yaklaşımı - çoğu entegrasyonda çalışan yöntem
+      const formData = new URLSearchParams({
+        username: this.config.username,
         password: this.config.password,
-        no: formattedPhone, // Resmi dokümantasyonda 'no' kullanılıyor
-        msg: message, // Resmi dokümantasyonda 'msg' kullanılıyor
-        msgheader: this.config.msgheader, // Resmi dokümantasyonda 'msgheader' kullanılıyor
-        encoding: 'TR', // 'dil' değil 'encoding' kullanılıyor
-        iysfilter: '0', // İYS filtresi - resmi parametre adı 'iysfilter'
+        gsmno: formattedPhone,
+        message: message,
+        msgheader: this.config.msgheader,
+        dil: 'TR',
+        filter: '0'
       });
 
       console.log('Sending OTP SMS to:', formattedPhone);
       console.log('Message:', message);
-      console.log('Request params:', Object.fromEntries(requestData));
+      console.log('Form Data:', Object.fromEntries(formData));
 
-      // Try the official SMS send endpoint first, then fallback to bulk endpoint
-      let response = await fetch(`${this.baseUrl}/sms/send/get`, {
+      // NetGSM standard HTTP POST endpoint
+      const response = await fetch(`${this.baseUrl}/sms/send/xml`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'text/plain',
         },
-        body: requestData.toString(),
+        body: formData.toString(),
       });
-
-      // If first endpoint fails, try the bulk endpoint
-      if (!response.ok) {
-        console.log('First endpoint failed, trying bulk endpoint...');
-        response = await fetch(`${this.baseUrl}/bulkhttppost.asp`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'text/plain',
-          },
-          body: requestData.toString(),
-        });
-      }
 
       const responseText = await response.text();
       console.log('NetGSM Response:', responseText);
