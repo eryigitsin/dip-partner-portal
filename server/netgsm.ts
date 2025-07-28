@@ -50,9 +50,9 @@ export class NetGsmService {
         password: this.config.password,
         no: formattedPhone, // Resmi dokümantasyonda 'no' kullanılıyor
         msg: message, // Resmi dokümantasyonda 'msg' kullanılıyor
-        header: this.config.msgheader, // 'msgheader' değil 'header' kullanılıyor
+        msgheader: this.config.msgheader, // Resmi dokümantasyonda 'msgheader' kullanılıyor
         encoding: 'TR', // 'dil' değil 'encoding' kullanılıyor
-        filter: '0', // İYS filtresi - zorunlu parametre
+        iysfilter: '0', // İYS filtresi - resmi parametre adı 'iysfilter'
       });
 
       console.log('Sending OTP SMS to:', formattedPhone);
