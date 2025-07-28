@@ -59,7 +59,8 @@ export class NetGsmService {
       console.log('Message:', message);
       console.log('Request params:', Object.fromEntries(requestData));
 
-      const response = await fetch(`${this.baseUrl}/bulkhttppost.asp`, {
+      // Try the official SMS send endpoint first, then fallback to bulk endpoint
+      let response = await fetch(`${this.baseUrl}/sms/send/get`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -67,6 +68,19 @@ export class NetGsmService {
         },
         body: requestData.toString(),
       });
+
+      // If first endpoint fails, try the bulk endpoint
+      if (!response.ok) {
+        console.log('First endpoint failed, trying bulk endpoint...');
+        response = await fetch(`${this.baseUrl}/bulkhttppost.asp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'text/plain',
+          },
+          body: requestData.toString(),
+        });
+      }
 
       const responseText = await response.text();
       console.log('NetGSM Response:', responseText);
@@ -152,7 +166,8 @@ export class NetGsmService {
 export function createNetGsmService(): NetGsmService | null {
   const username = process.env.NETGSM_USERCODE || process.env.NETGSM_USERNAME;
   const password = process.env.NETGSM_PASSWORD;
-  const msgheader = process.env.NETGSM_MSGHEADER || process.env.NETGSM_HEADER;
+  // Force the correct msgheader value as requested by user
+  const msgheader = 'ISTETKNLIK';
 
   console.log('NetGSM Factory - Environment check:', {
     username: username ? `Set (${username})` : 'Missing',
