@@ -31,11 +31,15 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setSupabaseUser(session?.user ?? null);
       if (session?.user) {
-        syncWithBackend(session.user);
+        try {
+          await syncWithBackend(session.user);
+        } catch (error) {
+          // Error already handled in syncWithBackend
+        }
       }
       setIsLoading(false);
     });
@@ -46,11 +50,13 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setSupabaseUser(session?.user ?? null);
       
-      if (session?.user && event === 'SIGNED_IN') {
-        await syncWithBackend(session.user);
-        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-        // Force refetch user data
-        setTimeout(() => refetch(), 100);
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        try {
+          await syncWithBackend(session.user);
+          sessionStorage.removeItem('sync_error_count'); // Reset error count on success
+        } catch (error) {
+          // Error already handled in syncWithBackend
+        }
       } else if (event === 'SIGNED_OUT') {
         queryClient.setQueryData(["/api/user"], null);
         // Also logout from our backend
@@ -76,23 +82,28 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to sync user with backend');
-      }
-
       const result = await response.json();
       if (result.success) {
         queryClient.setQueryData(["/api/user"], result.user);
-        // Force a refetch to ensure UI updates
-        setTimeout(() => refetch(), 100);
+        return result.user;
+      } else {
+        throw new Error(result.error || 'Failed to sync user');
       }
     } catch (error) {
       console.error('Error syncing user with backend:', error);
-      toast({
-        title: "Bağlantı Hatası",
-        description: "Kullanıcı bilgileri senkronize edilemedi",
-        variant: "destructive",
-      });
+      // Only show error toast on repeated failures
+      const errorCount = sessionStorage.getItem('sync_error_count') || '0';
+      const count = parseInt(errorCount);
+      if (count < 2) {
+        sessionStorage.setItem('sync_error_count', (count + 1).toString());
+      } else {
+        toast({
+          title: "Bağlantı Hatası",
+          description: "Lütfen sayfayı yenileyin",
+          variant: "destructive",
+        });
+      }
+      throw error;
     }
   };
 

@@ -21,8 +21,10 @@ export default function AuthPage() {
     email: '',
     password: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    phone: ''
   });
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const { localUser } = useSupabaseAuth();
   const { toast } = useToast();
 
@@ -84,7 +86,9 @@ export default function AuthPage() {
             full_name: `${formData.firstName} ${formData.lastName}`,
             first_name: formData.firstName,
             last_name: formData.lastName,
-          }
+            phone: formData.phone,
+          },
+          emailRedirectTo: 'https://partner.dip.tc/auth'
         }
       });
 
@@ -95,10 +99,7 @@ export default function AuthPage() {
           variant: "destructive",
         });
       } else {
-        toast({
-          title: "Kayıt başarılı!",
-          description: "E-posta adresinizi doğrulayın.",
-        });
+        setRegistrationSuccess(true);
       }
     } catch (error) {
       toast({
@@ -262,7 +263,29 @@ export default function AuthPage() {
                   </TabsContent>
 
                   <TabsContent value="signup" className="space-y-4">
-                    <form onSubmit={handleSignUp} className="space-y-4">
+                    {registrationSuccess ? (
+                      <div className="text-center space-y-4 py-8">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Son bir adım kaldı!</h3>
+                        <p className="text-gray-600 max-w-sm mx-auto">
+                          Gelen kutunuzda e-posta adresinizi onaylamayı unutmayın!
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          E-posta gelmedi mi? Spam klasörünüzü kontrol edin.
+                        </p>
+                        <Button 
+                          onClick={() => window.location.href = '/'}
+                          className="w-full mt-4"
+                        >
+                          Ana Sayfaya Dön
+                        </Button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSignUp} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="firstName">Ad</Label>
@@ -329,11 +352,24 @@ export default function AuthPage() {
                           </Button>
                         </div>
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Telefon (Opsiyonel)</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          placeholder="+90 5XX XXX XX XX"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          disabled={isLoading}
+                        />
+                      </div>
                       <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                         Kayıt Ol
                       </Button>
                     </form>
+                    )}
                   </TabsContent>
                 </Tabs>
 

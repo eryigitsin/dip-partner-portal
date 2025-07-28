@@ -58,18 +58,17 @@
         }
         .cta-button {
             display: inline-block;
-            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            background-color: #3b82f6 !important;
             color: white !important;
-            text-decoration: none;
-            padding: 12px 32px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            margin: 20px 0;
-            transition: transform 0.2s;
-        }
-        .cta-button:hover {
-            transform: translateY(-1px);
+            text-decoration: none !important;
+            padding: 12px 32px !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            font-size: 16px !important;
+            margin: 20px 0 !important;
+            border: none !important;
+            text-align: center !important;
+            font-family: Arial, sans-serif !important;
         }
         .footer {
             background-color: #f1f5f9;
@@ -124,8 +123,8 @@
             <!-- Turkish Column -->
             <div class="column">
                 <h2>🎉 Hoş Geldiniz!</h2>
-                <p>DİP İş Ortakları Platformu'na katıldığınız için teşekkür ederiz!</p>
-                <p>Hesabınızı aktif hale getirmek ve platformumuzun tüm özelliklerinden yararlanmaya başlamak için e-posta adresinizi doğrulamanız gerekmektedir.</p>
+                <p>DİP İş Ortakları Platformu'na hoş geldiniz!</p>
+                <p>Hesabınızı aktif etmek ve platformumuzun özelliklerinden yararlanmaya başlamak için e-posta adresinizi onaylamanız gerekmektedir.</p>
                 
                 <a href="{{ .ConfirmationURL }}" class="cta-button">
                     ✓ E-postamı Doğrula
@@ -147,8 +146,8 @@
             <!-- English Column -->
             <div class="column">
                 <h2>🎉 Welcome!</h2>
-                <p>Thank you for joining DİP Business Partners Platform!</p>
-                <p>To activate your account and start benefiting from all features of our platform, you need to verify your email address.</p>
+                <p>Welcome to DİP Business Partners Platform!</p>
+                <p>To activate your account and start using our platform features, please confirm your email address.</p>
                 
                 <a href="{{ .ConfirmationURL }}" class="cta-button">
                     ✓ Verify My Email
@@ -170,7 +169,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            <p><strong>DİP İş Ortakları Platformu</strong></p>
+            <p><strong>dip | dijital ihracat platformu</strong></p>
             <p>Ecza Sok. No:4-1 Şişli, İstanbul • <a href="mailto:info@dip.tc">info@dip.tc</a> • 08503071245</p>
             <p><a href="{{ .SiteURL }}">dip.tc</a> | <a href="{{ .SiteURL }}/hakkimizda">Hakkımızda</a> | <a href="{{ .SiteURL }}/iletisim">İletişim</a></p>
             <p style="font-size: 12px; margin-top: 20px;">
