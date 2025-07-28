@@ -131,6 +131,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes: Latest modifications with dates
 
+### January 28, 2025
+- **Supabase Storage Migration**: Migrated all file uploads from local storage to Supabase Storage for scalable cloud storage
+- **Storage Buckets**: Created 4 dedicated storage buckets (partner-logos, partner-covers, partner-documents, user-avatars)
+- **Server-side Storage Service**: Implemented comprehensive SupabaseStorageService with automatic bucket creation and file management
+- **Client-side Storage Utility**: Created ClientSupabaseStorage for frontend file upload operations
+- **Memory Storage Configuration**: Updated multer configuration to use memory storage instead of disk storage for better integration
+- **File Upload API Updates**: Modified partner profile and application endpoints to use Supabase Storage URLs instead of local paths
+- **Document Download Enhancement**: Updated document download endpoint to handle both Supabase URLs and legacy local files
+- **Authentication Bug Fix**: Fixed logout functionality to properly clear both Supabase and backend sessions, preventing automatic re-login
+- **Session Management**: Enhanced logout process with complete session destruction and cache clearing
+
 ### January 26, 2025
 - **Mobile Responsive Enhancements**: Fixed tablet tab layout issues with flex-wrap design for proper mobile stacking
 - **Header Top Bar**: Enhanced with Font Awesome-style icons (MapPin, Mail, Phone) and clickable phone functionality  

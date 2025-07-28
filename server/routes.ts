@@ -12,6 +12,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import express from "express";
+import { supabaseStorage } from "./supabase-storage";
 
 const scryptAsync = promisify(scrypt);
 
@@ -22,14 +23,9 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-// Multer configuration for file uploads
-const uploadDir = path.join(process.cwd(), 'uploads', 'partner-applications');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
+// Multer configuration for file uploads (using memory storage for Supabase)
 const uploadDocuments = multer({
-  dest: uploadDir,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
   },
@@ -149,16 +145,8 @@ export function registerRoutes(app: Express): Server {
     });
   });
   
-  // Create upload directories and serve static files
-  const uploadsDir = path.join(process.cwd(), 'uploads');
-  const logosDir = path.join(uploadsDir, 'logos');
-  const coversDir = path.join(uploadsDir, 'covers');
-  
-  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-  if (!fs.existsSync(logosDir)) fs.mkdirSync(logosDir, { recursive: true });
-  if (!fs.existsSync(coversDir)) fs.mkdirSync(coversDir, { recursive: true });
-  
-  app.use('/uploads', express.static(uploadsDir));
+  // Note: File storage is now handled by Supabase Storage
+  // No need for local upload directories
   
   // Serve test page
   app.get('/test-upload', (req, res) => {
@@ -288,18 +276,27 @@ export function registerRoutes(app: Express): Server {
       console.log('Parsed data:', applicationData);
       const application = await storage.createPartnerApplication(applicationData);
       
-      // Store uploaded files
+      // Upload files to Supabase Storage and store document info
       const files = req.files as Express.Multer.File[];
       if (files && files.length > 0) {
+        console.log(`Uploading ${files.length} documents to Supabase Storage...`);
         for (const file of files) {
-          await storage.addApplicationDocument({
-            applicationId: application.id,
-            fileName: file.originalname,
-            originalName: file.originalname,
-            filePath: file.path,
-            fileSize: file.size,
-            mimeType: file.mimetype,
-          });
+          const uploadResult = await supabaseStorage.uploadPartnerDocument(file, application.id.toString());
+          if (uploadResult.success && uploadResult.url) {
+            console.log('Document uploaded:', uploadResult.url);
+            
+            await storage.addApplicationDocument({
+              applicationId: application.id,
+              fileName: file.originalname,
+              originalName: file.originalname,
+              filePath: uploadResult.url, // Store Supabase URL instead of local path
+              fileSize: file.size,
+              mimeType: file.mimetype,
+            });
+          } else {
+            console.error('Document upload failed:', uploadResult.error);
+            // Continue with other files even if one fails
+          }
         }
       }
 
@@ -911,7 +908,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Download application document
+  // Download application document (redirect to Supabase Storage URL)
   app.get('/api/partner-applications/:applicationId/documents/:documentId/download', async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
@@ -928,16 +925,21 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: 'Belge bulunamadı' });
       }
 
-      // Check if file exists
-      if (!fs.existsSync(document.filePath)) {
-        return res.status(404).json({ message: 'Dosya bulunamadı' });
-      }
+      // For Supabase Storage URLs, redirect to the direct URL
+      if (document.filePath.startsWith('http')) {
+        res.redirect(document.filePath);
+      } else {
+        // Legacy local file handling (fallback)
+        if (!fs.existsSync(document.filePath)) {
+          return res.status(404).json({ message: 'Dosya bulunamadı' });
+        }
 
-      res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
-      res.setHeader('Content-Type', document.mimeType);
-      
-      const fileStream = fs.createReadStream(document.filePath);
-      fileStream.pipe(res);
+        res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+        res.setHeader('Content-Type', document.mimeType);
+        
+        const fileStream = fs.createReadStream(document.filePath);
+        fileStream.pipe(res);
+      }
     } catch (error: any) {
       console.error('Error downloading document:', error);
       res.status(500).json({ message: 'Dosya indirilemedi' });
@@ -1383,22 +1385,9 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Configure multer for profile image uploads  
+  // Configure multer for profile image uploads (using memory storage for Supabase)
   const uploadProfileImages = multer({
-    storage: multer.diskStorage({
-      destination: (req, file, cb) => {
-        const subDir = file.fieldname === 'logo' ? 'logos' : 'covers';
-        const fullPath = path.join('uploads', subDir);
-        if (!fs.existsSync(fullPath)) {
-          fs.mkdirSync(fullPath, { recursive: true });
-        }
-        cb(null, fullPath);
-      },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-      }
-    }),
+    storage: multer.memoryStorage(),
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB limit
     },
@@ -1464,15 +1453,29 @@ export function registerRoutes(app: Express): Server {
       const updates: any = {};
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
-      // Handle file uploads first
+      // Handle file uploads to Supabase Storage
       if (files && files.logo && files.logo[0]) {
-        updates.logo = `/uploads/logos/${files.logo[0].filename}`;
-        console.log('Setting logo path:', updates.logo);
+        console.log('Uploading logo to Supabase Storage...');
+        const logoResult = await supabaseStorage.uploadPartnerLogo(files.logo[0], partnerId.toString());
+        if (logoResult.success) {
+          updates.logo = logoResult.url;
+          console.log('Logo uploaded to Supabase:', updates.logo);
+        } else {
+          console.error('Logo upload failed:', logoResult.error);
+          return res.status(500).json({ error: 'Failed to upload logo: ' + logoResult.error });
+        }
       }
       
       if (files && files.coverImage && files.coverImage[0]) {
-        updates.coverImage = `/uploads/covers/${files.coverImage[0].filename}`;
-        console.log('Setting coverImage path:', updates.coverImage);
+        console.log('Uploading cover image to Supabase Storage...');
+        const coverResult = await supabaseStorage.uploadPartnerCover(files.coverImage[0], partnerId.toString());
+        if (coverResult.success) {
+          updates.coverImage = coverResult.url;
+          console.log('Cover image uploaded to Supabase:', updates.coverImage);
+        } else {
+          console.error('Cover upload failed:', coverResult.error);
+          return res.status(500).json({ error: 'Failed to upload cover image: ' + coverResult.error });
+        }
       }
       
       // Handle text updates

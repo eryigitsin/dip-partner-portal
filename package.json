@@ -47,7 +47,7 @@
     "@supabase/auth-helpers-shared": "^0.7.0",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
-    "@supabase/supabase-js": "^2.52.1",
+    "@supabase/supabase-js": "^2.53.0",
     "@tanstack/react-query": "^5.60.5",
     "@types/multer": "^2.0.0",
     "class-variance-authority": "^0.7.1",
