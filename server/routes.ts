@@ -54,6 +54,11 @@ const uploadDocuments = multer({
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
   
+  // Import and setup Supabase auth routes
+  import('./routes/auth').then(authModule => {
+    app.use('/api/auth', authModule.default);
+  }).catch(err => console.error('Failed to load auth routes:', err));
+  
   // Create upload directories and serve static files
   const uploadsDir = path.join(process.cwd(), 'uploads');
   const logosDir = path.join(uploadsDir, 'logos');

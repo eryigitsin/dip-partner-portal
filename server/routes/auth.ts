@@ -41,19 +41,65 @@ router.post('/sync-supabase-user', async (req, res) => {
         lastName = nameParts.slice(1).join(' ') || '';
       }
       
+      // Check if this is one of the pre-added users and set appropriate user type
+      let userType: 'user' | 'partner' | 'editor_admin' | 'master_admin' = 'user';
+      
+      if (supabaseUser.email === 'sinan@dip.tc') {
+        userType = 'master_admin';
+        firstName = 'Sinan';
+        lastName = 'Ercan';
+      } else if (supabaseUser.email === 'info@dip.tc') {
+        userType = 'editor_admin';
+        firstName = 'DİP';
+        lastName = 'Editör';
+      } else if (supabaseUser.email === 'mutfak@markasef.com') {
+        userType = 'partner';
+        firstName = 'Markaşef';
+        lastName = 'Mutfak';
+      } else if (supabaseUser.email === 'eryigitsin@gmail.com') {
+        userType = 'user';
+        firstName = 'Ersin';
+        lastName = 'Eryiğit';
+      }
+
       // Create new user
       const newUserData = {
         email: supabaseUser.email,
         supabaseId: supabaseUser.id,
         firstName: firstName || 'Kullanıcı',
         lastName: lastName || '',
-        userType: 'user' as const,
+        userType,
         isVerified: true, // Supabase handles email verification
         language: 'tr' as const,
       };
       
       user = await storage.createUser(newUserData);
-      console.log('Created new user from Supabase:', user.email);
+      console.log('Created new user from Supabase:', user.email, 'with type:', user.userType);
+      
+      // If this is the Markaşef partner, create the partner profile
+      if (user.email === 'mutfak@markasef.com' && user.userType === 'partner') {
+        try {
+          const existingPartner = await storage.getPartnerByUserId(user.id);
+          if (!existingPartner) {
+            const partnerData = {
+              userId: user.id,
+              companyName: 'Markaşef',
+              contactPerson: 'Mutfak Departmanı',
+              companyAddress: 'İstanbul, Türkiye',
+              serviceCategory: 'Pazarlama ve Tanıtım',
+              services: 'Mutfak ekipmanları ve çözümleri',
+              description: 'Mutfak sektöründe uzman ekibimizle hizmet veriyoruz.',
+              experienceYears: 10,
+              isApproved: true,
+              isActive: true,
+            };
+            await storage.createPartner(partnerData);
+            console.log('Created partner profile for Markaşef');
+          }
+        } catch (error) {
+          console.error('Error creating partner profile for Markaşef:', error);
+        }
+      }
     } else {
       // Update existing user's verification status
       if (!user.isVerified) {
