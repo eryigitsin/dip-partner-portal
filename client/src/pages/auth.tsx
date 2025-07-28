@@ -353,7 +353,7 @@ export default function AuthPage() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Telefon (Opsiyonel)</Label>
+                        <Label htmlFor="phone">Cep Telefonu</Label>
                         <Input
                           id="phone"
                           name="phone"
