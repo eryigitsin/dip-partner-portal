@@ -11,6 +11,7 @@ import HomePage from "@/pages/home";
 import AuthPage from "@/pages/auth";
 import PartnerDashboard from "@/pages/partner-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
+import MarketingListPage from "@/pages/admin/marketing-list";
 import UserPanel from "@/pages/user-panel";
 import ServiceRequests from "@/pages/service-requests";
 import Messages from "@/pages/messages";
@@ -54,6 +55,7 @@ function Router() {
       <ProtectedRoute path="/system-status" component={SystemStatus} />
       <ProtectedRoute path="/email-preferences" component={EmailPreferences} />
       <ProtectedRoute path="/email-subscribers" component={EmailSubscribers} />
+      <ProtectedRoute path="/marketing-list" component={MarketingListPage} />
       <Route path="/application-status/:id" component={ApplicationStatus} />
       <Route path="/partner/:username" component={PartnerProfile} />
       <Route path="/test-upload" component={TestUpload} />

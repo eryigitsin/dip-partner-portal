@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { insertPartnerApplicationSchema, insertQuoteRequestSchema, insertTempUserRegistrationSchema } from "@shared/schema";
 import { z } from "zod";
 import { createNetGsmService } from "./netgsm";
-import { sendEmail, emailTemplates } from "./email";
+import { resendService } from './resend-service';
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 import multer from "multer";
@@ -308,35 +308,46 @@ export function registerRoutes(app: Express): Server {
         console.log('Admin emails:', adminEmails);
         
         if (adminEmails.length > 0) {
-          const adminEmailTemplate = emailTemplates.partnerApplication.toAdmin(
+          const adminEmailTemplate = resendService.createAdminPartnerApplicationNotificationEmail(
             `${application.firstName} ${application.lastName}`,
             application.company,
             application.email,
             application.phone
           );
           
-          await sendEmail({
+          await resendService.sendEmail({
             to: adminEmails,
-            from: 'info@dip.tc',
             subject: adminEmailTemplate.subject,
             html: adminEmailTemplate.html,
+            tags: [{ name: 'type', value: 'admin_notification' }]
           });
-          console.log('Admin notification email sent');
+          console.log('Admin notification email sent via Resend');
         }
 
         // 2. Send to applicant
-        const applicantEmailTemplate = emailTemplates.partnerApplication.toApplicant(
+        const applicantEmailTemplate = resendService.createPartnerApplicationConfirmationEmail(
           `${application.firstName} ${application.lastName}`,
           application.id
         );
         
-        await sendEmail({
+        await resendService.sendEmail({
           to: application.email,
-          from: 'info@dip.tc',
           subject: applicantEmailTemplate.subject,
           html: applicantEmailTemplate.html,
+          tags: [{ name: 'type', value: 'application_confirmation' }]
         });
-        console.log('Applicant confirmation email sent');
+        console.log('Applicant confirmation email sent via Resend');
+
+        // 3. Add to Resend audience
+        await resendService.addToAudience({
+          email: application.email,
+          firstName: application.firstName,
+          lastName: application.lastName,
+          phone: application.phone,
+          company: application.company,
+          userType: 'applicant'
+        });
+        console.log('Contact added to Resend audience');
         
       } catch (emailError: any) {
         console.error('Email notification failed:', emailError);
@@ -1830,6 +1841,93 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error('Error unsubscribing email:', error);
       res.status(500).send('E-posta aboneliği iptal edilirken bir hata oluştu.');
+    }
+  });
+
+  // Marketing contact management routes
+  app.get("/api/admin/marketing-contacts", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const contacts = await storage.getAllMarketingContacts();
+      res.json(contacts);
+    } catch (error: any) {
+      console.error('Error fetching marketing contacts:', error);
+      res.status(500).json({ message: 'Failed to fetch marketing contacts' });
+    }
+  });
+
+  // Sync all existing users to marketing contacts and Resend audience
+  app.post("/api/admin/sync-marketing-contacts", async (req, res) => {
+    if (!req.isAuthenticated() || req.user!.userType !== 'master_admin') {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      let syncedCount = 0;
+      let errors = 0;
+
+      // Sync all users
+      const users = await storage.getAllUsers();
+      for (const user of users) {
+        try {
+          const userType = user.userType === 'master_admin' || user.userType === 'editor_admin' ? 'admin' : user.userType;
+          await storage.syncUserToMarketingContact(user, userType, 'admin_sync');
+          
+          // Add to Resend audience
+          await resendService.addToAudience({
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone,
+            userType: userType
+          });
+          
+          syncedCount++;
+        } catch (error) {
+          console.error(`Error syncing user ${user.email}:`, error);
+          errors++;
+        }
+      }
+
+      // Sync all partners
+      const partners = await storage.getAllPartnersWithUsers();
+      for (const partner of partners) {
+        try {
+          const user = await storage.getUser(partner.userId);
+          if (user) {
+            await storage.syncPartnerToMarketingContact(partner, user);
+            
+            // Add to Resend audience with partner info
+            await resendService.addToAudience({
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              phone: user.phone,
+              company: partner.companyName,
+              website: partner.website,
+              userType: 'partner'
+            });
+            
+            syncedCount++;
+          }
+        } catch (error) {
+          console.error(`Error syncing partner ${partner.companyName}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `${syncedCount} contacts synced successfully`,
+        syncedCount,
+        errors 
+      });
+    } catch (error: any) {
+      console.error('Error syncing marketing contacts:', error);
+      res.status(500).json({ message: 'Failed to sync marketing contacts' });
     }
   });
 

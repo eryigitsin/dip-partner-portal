@@ -14,6 +14,7 @@ import {
   tempUserRegistrations,
   emailSubscribers,
   userEmailPreferences,
+  marketingContacts,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -38,6 +39,8 @@ import {
   type InsertEmailSubscriber,
   type UserEmailPreferences,
   type InsertUserEmailPreferences,
+  type MarketingContact,
+  type InsertMarketingContact,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql } from "drizzle-orm";
@@ -150,6 +153,15 @@ export interface IStorage {
   getUserEmailPreferences(userId: number): Promise<UserEmailPreferences | undefined>;
   updateUserEmailPreferences(userId: number, preferences: Partial<InsertUserEmailPreferences>): Promise<UserEmailPreferences>;
   createUserEmailPreferences(preferences: InsertUserEmailPreferences): Promise<UserEmailPreferences>;
+  
+  // Marketing contact methods
+  getAllMarketingContacts(): Promise<MarketingContact[]>;
+  getMarketingContactByEmail(email: string): Promise<MarketingContact | undefined>;
+  createMarketingContact(contact: InsertMarketingContact): Promise<MarketingContact>;
+  updateMarketingContact(email: string, contact: Partial<InsertMarketingContact>): Promise<MarketingContact | undefined>;
+  deleteMarketingContact(email: string): Promise<void>;
+  syncUserToMarketingContact(user: User, userType: string, source: string): Promise<MarketingContact>;
+  syncPartnerToMarketingContact(partner: Partner, user: User): Promise<MarketingContact>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -783,6 +795,108 @@ export class DatabaseStorage implements IStorage {
       .values(preferences)
       .returning();
     return created;
+  }
+
+  // Marketing contact methods
+  async getAllMarketingContacts(): Promise<MarketingContact[]> {
+    return await db.select().from(marketingContacts).orderBy(desc(marketingContacts.createdAt));
+  }
+
+  async getMarketingContactByEmail(email: string): Promise<MarketingContact | undefined> {
+    const [contact] = await db.select().from(marketingContacts).where(eq(marketingContacts.email, email));
+    return contact || undefined;
+  }
+
+  async createMarketingContact(contact: InsertMarketingContact): Promise<MarketingContact> {
+    const [created] = await db
+      .insert(marketingContacts)
+      .values(contact)
+      .returning();
+    return created;
+  }
+
+  async updateMarketingContact(email: string, contact: Partial<InsertMarketingContact>): Promise<MarketingContact | undefined> {
+    const [updated] = await db
+      .update(marketingContacts)
+      .set({ ...contact, updatedAt: new Date() })
+      .where(eq(marketingContacts.email, email))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteMarketingContact(email: string): Promise<void> {
+    await db.delete(marketingContacts).where(eq(marketingContacts.email, email));
+  }
+
+  async syncUserToMarketingContact(user: User, userType: string, source: string): Promise<MarketingContact> {
+    // Check if contact already exists
+    const existing = await this.getMarketingContactByEmail(user.email);
+    
+    if (existing) {
+      // Update existing contact
+      return await this.updateMarketingContact(user.email, {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        userType,
+        source,
+        isActive: true,
+      }) || existing;
+    } else {
+      // Create new contact
+      return await this.createMarketingContact({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        userType,
+        source,
+        isActive: true,
+        tags: [userType],
+      });
+    }
+  }
+
+  async syncPartnerToMarketingContact(partner: Partner, user: User): Promise<MarketingContact> {
+    // Check if contact already exists
+    const existing = await this.getMarketingContactByEmail(user.email);
+    
+    if (existing) {
+      // Update existing contact with partner info
+      return await this.updateMarketingContact(user.email, {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        company: partner.companyName,
+        website: partner.website,
+        linkedinProfile: partner.linkedinProfile,
+        twitterProfile: partner.twitterProfile,
+        instagramProfile: partner.instagramProfile,
+        facebookProfile: partner.facebookProfile,
+        userType: 'partner',
+        source: 'partner_profile',
+        isActive: true,
+        tags: ['partner', partner.serviceCategory].filter(Boolean),
+      }) || existing;
+    } else {
+      // Create new contact with partner info
+      return await this.createMarketingContact({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        company: partner.companyName,
+        website: partner.website,
+        linkedinProfile: partner.linkedinProfile,
+        twitterProfile: partner.twitterProfile,
+        instagramProfile: partner.instagramProfile,
+        facebookProfile: partner.facebookProfile,
+        userType: 'partner',
+        source: 'partner_profile',
+        isActive: true,
+        tags: ['partner', partner.serviceCategory].filter(Boolean),
+      });
+    }
   }
 }
 

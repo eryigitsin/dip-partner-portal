@@ -244,6 +244,31 @@ export const userEmailPreferences = pgTable("user_email_preferences", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Marketing contacts for comprehensive contact management and Resend integration
+export const marketingContacts = pgTable("marketing_contacts", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  phone: text("phone"),
+  company: text("company"),
+  title: text("title"),
+  address: text("address"),
+  website: text("website"),
+  linkedinProfile: text("linkedin_profile"),
+  twitterProfile: text("twitter_profile"),
+  instagramProfile: text("instagram_profile"),
+  facebookProfile: text("facebook_profile"),
+  userType: text("user_type").notNull(), // 'user', 'partner', 'admin', 'applicant'
+  source: text("source").notNull(), // 'registration', 'partner_application', 'admin_created', etc.
+  resendContactId: text("resend_contact_id"), // Resend API contact ID
+  isActive: boolean("is_active").default(true),
+  tags: text("tags").array().default([]), // For categorizing contacts
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // SMS OTP verification codes
 export const smsOtpCodes = pgTable("sms_otp_codes", {
   id: serial("id").primaryKey(),
@@ -489,3 +514,11 @@ export type EmailSubscriber = typeof emailSubscribers.$inferSelect;
 export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
 export type UserEmailPreferences = typeof userEmailPreferences.$inferSelect;
 export type InsertUserEmailPreferences = z.infer<typeof insertUserEmailPreferencesSchema>;
+
+export const insertMarketingContactSchema = createInsertSchema(marketingContacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMarketingContact = z.infer<typeof insertMarketingContactSchema>;
+export type MarketingContact = typeof marketingContacts.$inferSelect;
