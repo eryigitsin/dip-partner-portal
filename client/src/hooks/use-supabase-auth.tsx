@@ -59,12 +59,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         }
       } else if (event === 'SIGNED_OUT') {
         queryClient.setQueryData(["/api/user"], null);
-        // Also logout from our backend
-        try {
-          await apiRequest("POST", "/api/auth/logout", {});
-        } catch (error) {
-          console.error('Error logging out from backend:', error);
-        }
+        queryClient.clear(); // Clear all cached data
       }
     });
 
@@ -109,9 +104,27 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // First logout from backend
+      try {
+        await apiRequest("POST", "/api/auth/logout", {});
+      } catch (error) {
+        console.error('Error logging out from backend:', error);
+      }
+      
+      // Clear query cache
       queryClient.setQueryData(["/api/user"], null);
-      // Backend logout will be handled by the auth state change listener
+      queryClient.clear(); // Clear all cached data
+      
+      // Sign out from Supabase (this will trigger SIGNED_OUT event)
+      await supabase.auth.signOut();
+      
+      // Force clear local state
+      setSession(null);
+      setSupabaseUser(null);
+      
+      // Clear any session storage
+      sessionStorage.clear();
+      
     } catch (error) {
       console.error('Error signing out:', error);
       toast({

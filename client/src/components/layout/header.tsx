@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/contexts/language-context';
 import { useAuth } from '@/hooks/use-auth';
+import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { t } from '@/lib/i18n';
 import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
@@ -19,6 +20,7 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { user, logoutMutation } = useAuth();
+  const { signOut } = useSupabaseAuth();
   const [location] = useLocation();
 
   const navigation = [
@@ -155,8 +157,7 @@ export function Header() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => logoutMutation.mutate()}
-                        disabled={logoutMutation.isPending}
+                        onClick={() => signOut()}
                         className="text-red-600 focus:text-red-600"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
@@ -200,8 +201,7 @@ export function Header() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => logoutMutation.mutate()}
-                        disabled={logoutMutation.isPending}
+                        onClick={() => signOut()}
                         className="text-red-600 focus:text-red-600"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
@@ -264,8 +264,7 @@ export function Header() {
                           </>
                         )}
                         <DropdownMenuItem
-                          onClick={() => logoutMutation.mutate()}
-                          disabled={logoutMutation.isPending}
+                          onClick={() => signOut()}
                           className="text-red-600 focus:text-red-600"
                         >
                           <LogOut className="h-4 w-4 mr-2" />

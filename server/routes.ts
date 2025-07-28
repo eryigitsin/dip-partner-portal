@@ -131,8 +131,20 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/auth/logout", async (req, res) => {
     req.logout((err) => {
       if (err) {
+        console.error('Logout error:', err);
         return res.status(500).json({ error: 'Logout failed' });
       }
+      
+      // Destroy the session completely
+      req.session?.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error('Session destroy error:', destroyErr);
+        }
+      });
+      
+      // Clear the session cookie
+      res.clearCookie('connect.sid');
+      
       res.json({ success: true });
     });
   });
