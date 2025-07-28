@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import dipLogo from '@assets/dip ince_1753361664425.png';
+import workshopBg from '@assets/dip-workshop-kck_1753705308627.png';
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -376,7 +377,12 @@ export default function AuthPage() {
 
         {/* Right Column - Features Section with Background */}
         <div className="hidden lg:block relative bg-gradient-to-br from-blue-500 to-teal-400">
-          <div className="absolute inset-0 bg-black bg-opacity-10"></div>
+          <img
+            src={workshopBg}
+            alt="DİP Workshop"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/80 to-teal-400/80"></div>
           <div className="relative flex items-center justify-center h-full p-12">
             <div className="text-center text-white">
               <div className="mb-8">

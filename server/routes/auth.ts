@@ -31,76 +31,40 @@ router.post('/sync-supabase-user', async (req, res) => {
     let user = await storage.getUserBySupabaseId(supabaseUser.id);
     
     if (!user) {
-      // Extract name from various sources
-      let firstName = '';
-      let lastName = '';
+      // Check if user exists by email (existing users without supabaseId)
+      const existingUser = await storage.getUserByEmail(supabaseUser.email);
       
-      if (supabaseUser.user_metadata?.full_name) {
-        const nameParts = supabaseUser.user_metadata.full_name.split(' ');
-        firstName = nameParts[0] || '';
-        lastName = nameParts.slice(1).join(' ') || '';
-      }
-      
-      // Check if this is one of the pre-added users and set appropriate user type
-      let userType: 'user' | 'partner' | 'editor_admin' | 'master_admin' = 'user';
-      
-      if (supabaseUser.email === 'sinan@dip.tc') {
-        userType = 'master_admin';
-        firstName = 'Sinan';
-        lastName = 'Ercan';
-      } else if (supabaseUser.email === 'info@dip.tc') {
-        userType = 'editor_admin';
-        firstName = 'DİP';
-        lastName = 'Editör';
-      } else if (supabaseUser.email === 'mutfak@markasef.com') {
-        userType = 'partner';
-        firstName = 'Markaşef';
-        lastName = 'Mutfak';
-      } else if (supabaseUser.email === 'eryigitsin@gmail.com') {
-        userType = 'user';
-        firstName = 'Ersin';
-        lastName = 'Eryiğit';
-      }
-
-      // Create new user
-      const newUserData = {
-        email: supabaseUser.email,
-        supabaseId: supabaseUser.id,
-        firstName: firstName || 'Kullanıcı',
-        lastName: lastName || '',
-        userType,
-        isVerified: true, // Supabase handles email verification
-        language: 'tr' as const,
-      };
-      
-      user = await storage.createUser(newUserData);
-      console.log('Created new user from Supabase:', user.email, 'with type:', user.userType);
-      
-      // If this is the Markaşef partner, create the partner profile
-      if (user.email === 'mutfak@markasef.com' && user.userType === 'partner') {
-        try {
-          const existingPartner = await storage.getPartnerByUserId(user.id);
-          if (!existingPartner) {
-            const partnerData = {
-              userId: user.id,
-              companyName: 'Markaşef',
-              contactPerson: 'Mutfak Departmanı',
-              companyAddress: 'İstanbul, Türkiye',
-              serviceCategory: 'Pazarlama ve Tanıtım',
-              services: 'Mutfak ekipmanları ve çözümleri',
-              description: 'Mutfak sektöründe uzman ekibimizle hizmet veriyoruz.',
-              experienceYears: 10,
-              isApproved: true,
-              isActive: true,
-            };
-            await storage.createPartner(partnerData);
-            console.log('Created partner profile for Markaşef');
-          }
-        } catch (error) {
-          console.error('Error creating partner profile for Markaşef:', error);
+      if (existingUser) {
+        // Update existing user with supabaseId
+        user = await storage.updateUserSupabaseId(existingUser.id, supabaseUser.id);
+      } else {
+        // Extract name from various sources
+        let firstName = '';
+        let lastName = '';
+        
+        if (supabaseUser.user_metadata?.full_name) {
+          const nameParts = supabaseUser.user_metadata.full_name.split(' ');
+          firstName = nameParts[0] || '';
+          lastName = nameParts.slice(1).join(' ') || '';
         }
+        
+        // Create new user
+        const newUserData = {
+          email: supabaseUser.email,
+          supabaseId: supabaseUser.id,
+          firstName: firstName || 'Kullanıcı',
+          lastName: lastName || '',
+          userType: 'user' as const,
+          isVerified: true, // Supabase handles email verification
+          language: 'tr' as const,
+        };
+      
+        user = await storage.createUser(newUserData);
+        console.log('Created new user from Supabase:', user.email, 'with type:', user.userType);
       }
-    } else {
+    }
+    
+    if (user) {
       // Update existing user's verification status
       if (!user.isVerified) {
         await storage.updateUser(user.id, { isVerified: true });

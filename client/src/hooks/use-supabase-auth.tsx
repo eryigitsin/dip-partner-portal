@@ -23,7 +23,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   // Get local user data when we have a Supabase session
-  const { data: localUser } = useQuery<SelectUser | null>({
+  const { data: localUser, refetch } = useQuery<SelectUser | null>({
     queryKey: ["/api/user"],
     enabled: !!session,
     retry: false,
@@ -49,6 +49,8 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       if (session?.user && event === 'SIGNED_IN') {
         await syncWithBackend(session.user);
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        // Force refetch user data
+        setTimeout(() => refetch(), 100);
       } else if (event === 'SIGNED_OUT') {
         queryClient.setQueryData(["/api/user"], null);
         // Also logout from our backend
@@ -81,6 +83,8 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       const result = await response.json();
       if (result.success) {
         queryClient.setQueryData(["/api/user"], result.user);
+        // Force a refetch to ensure UI updates
+        setTimeout(() => refetch(), 100);
       }
     } catch (error) {
       console.error('Error syncing user with backend:', error);
