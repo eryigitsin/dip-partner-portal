@@ -44,29 +44,83 @@ export class NetGsmService {
       // OTP message template
       const message = `DIP doğrulama kodunuz: ${code}`;
 
-      // NetGSM için basit form-data yaklaşımı - çoğu entegrasyonda çalışan yöntem
-      const formData = new URLSearchParams({
-        username: this.config.username,
-        password: this.config.password,
-        gsmno: formattedPhone,
-        message: message,
-        msgheader: this.config.msgheader,
-        dil: 'TR',
-        filter: '0'
-      });
+      // NetGSM resmi API dokümantasyonundaki XML formatı
+      const xmlData = `<mainbody>
+    <header>
+        <usercode>${this.config.username}</usercode>
+        <password>${this.config.password}</password>
+        <msgheader>${this.config.msgheader}</msgheader>
+    </header>
+    <body>
+        <msg>
+            <![CDATA[${message}]]>
+        </msg>
+        <no>${formattedPhone}</no>
+    </body>
+</mainbody>`;
 
       console.log('Sending OTP SMS to:', formattedPhone);
       console.log('Message:', message);
-      console.log('Form Data:', Object.fromEntries(formData));
+      console.log('XML Data:', xmlData);
 
-      // NetGSM standard HTTP POST endpoint
-      const response = await fetch(`${this.baseUrl}/sms/send/xml`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
+      // NetGSM multiple endpoint attempt - resmi dokümanda farklı endpoint'ler mevcut
+      let response;
+      let lastError = '';
+      
+      // 1. Try XML endpoint
+      try {
+        response = await fetch(`${this.baseUrl}/sms/send/xml`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/xml; charset=UTF-8',
+          },
+          body: xmlData,
+        });
+        
+        if (response.status === 404) {
+          throw new Error('XML endpoint not found');
+        }
+      } catch (xmlError) {
+        lastError += `XML endpoint failed: ${xmlError}; `;
+        
+        // 2. Try standard SMS endpoint with XML body
+        try {
+          response = await fetch(`${this.baseUrl}/sms/send/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/xml; charset=UTF-8',
+            },
+            body: xmlData,
+          });
+          
+          if (response.status === 404) {
+            throw new Error('Standard endpoint not found');
+          }
+        } catch (standardError) {
+          lastError += `Standard endpoint failed: ${standardError}; `;
+          
+          // 3. Fallback to bulk HTTP POST with form data
+          const formData = new URLSearchParams({
+            usercode: this.config.username,
+            password: this.config.password,
+            gsmno: formattedPhone,
+            message: message,
+            msgheader: this.config.msgheader,
+            dil: 'TR',
+            filter: '0'
+          });
+          
+          response = await fetch(`${this.baseUrl}/bulkhttppost.asp`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString(),
+          });
+          
+          console.log('Using fallback bulk endpoint with form data');
+        }
+      }
 
       const responseText = await response.text();
       console.log('NetGSM Response:', responseText);
