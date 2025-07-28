@@ -54,10 +54,88 @@ const uploadDocuments = multer({
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
   
-  // Import and setup Supabase auth routes
-  import('./routes/auth').then(authModule => {
-    app.use('/api/auth', authModule.default);
-  }).catch(err => console.error('Failed to load auth routes:', err));
+  // Supabase auth sync endpoint
+  app.post("/api/auth/sync-supabase-user", async (req, res) => {
+    try {
+      const { supabaseUser } = req.body;
+      
+      if (!supabaseUser || !supabaseUser.email) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Invalid user data' 
+        });
+      }
+
+      // Check if user already exists in our database
+      let user = await storage.getUserByEmail(supabaseUser.email);
+      
+      if (!user) {
+        // Create new user from Supabase data
+        const firstName = supabaseUser.user_metadata?.firstName || 
+                         supabaseUser.user_metadata?.first_name || 
+                         supabaseUser.user_metadata?.full_name?.split(' ')[0] || 
+                         'User';
+        const lastName = supabaseUser.user_metadata?.lastName || 
+                        supabaseUser.user_metadata?.last_name || 
+                        supabaseUser.user_metadata?.full_name?.split(' ').slice(1).join(' ') || 
+                        '';
+        
+        user = await storage.createUser({
+          email: supabaseUser.email,
+          firstName,
+          lastName,
+          password: '', // Supabase handles authentication
+          userType: 'user',
+          isVerified: true,
+          supabaseId: supabaseUser.id,
+          language: 'tr'
+        });
+      } else if (!user.supabaseId) {
+        // Update existing user with Supabase ID
+        await storage.updateUser(user.id, { supabaseId: supabaseUser.id });
+        user = await storage.getUserById(user.id);
+      }
+
+      // Set up session for passport
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Login error:', err);
+          return res.status(500).json({ 
+            success: false, 
+            error: 'Failed to establish session' 
+          });
+        }
+        
+        return res.json({ 
+          success: true, 
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            userType: user.userType,
+            isVerified: user.isVerified,
+            language: user.language
+          }
+        });
+      });
+    } catch (error: any) {
+      console.error('Error syncing Supabase user:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Internal server error' 
+      });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Logout failed' });
+      }
+      res.json({ success: true });
+    });
+  });
   
   // Create upload directories and serve static files
   const uploadsDir = path.join(process.cwd(), 'uploads');
