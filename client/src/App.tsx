@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
+import { SupabaseAuthProvider } from "@/hooks/use-supabase-auth";
 import { LanguageProvider } from "@/contexts/language-context";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home";
@@ -61,13 +62,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <InitApp />
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AuthProvider>
+        <SupabaseAuthProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <InitApp />
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </AuthProvider>
+        </SupabaseAuthProvider>
       </LanguageProvider>
     </QueryClientProvider>
   );

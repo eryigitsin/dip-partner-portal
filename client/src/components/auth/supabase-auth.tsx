@@ -1,59 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLocation } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 
 export function SupabaseAuth() {
   const [location, setLocation] = useLocation();
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { localUser, isLoading } = useSupabaseAuth();
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setLocation('/');
-      }
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-      
-      if (event === 'SIGNED_IN' && session) {
-        toast({
-          title: "Başarıyla giriş yapıldı!",
-          description: "Hoş geldiniz.",
-        });
-        setLocation('/');
-      } else if (event === 'SIGNED_UP' && session) {
-        toast({
-          title: "Kayıt başarılı!",
-          description: "E-posta adresinizi doğrulayın.",
-        });
-      } else if (event === 'PASSWORD_RECOVERY') {
-        toast({
-          title: "Şifre sıfırlama",
-          description: "E-posta adresinizi kontrol edin.",
-        });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [setLocation, toast]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-border" />
-      </div>
-    );
-  }
+    if (localUser && !isLoading) {
+      setLocation('/');
+    }
+  }, [localUser, isLoading, setLocation]);
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -136,7 +97,7 @@ export function SupabaseAuth() {
               }
             }
           }}
-          providers={['google']}
+          providers={['google', 'linkedin_oidc']}
           redirectTo={`${window.location.origin}/auth`}
           onlyThirdPartyProviders={false}
           showLinks={true}
