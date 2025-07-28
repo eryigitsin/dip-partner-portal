@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Davetiyesi - Platform Invitation | DİP</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .header-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin: 0;
+        }
+        .content {
+            display: flex;
+            min-height: 400px;
+        }
+        .column {
+            flex: 1;
+            padding: 40px 30px;
+            border-right: 1px solid #e2e8f0;
+        }
+        .column:last-child {
+            border-right: none;
+        }
+        .column h2 {
+            color: #1e293b;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .column p {
+            margin-bottom: 16px;
+            color: #64748b;
+            font-size: 16px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-1px);
+        }
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px 20px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            background-color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .feature-item h4 {
+            margin: 0 0 8px 0;
+            color: #1e293b;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .feature-item p {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            .column {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 30px 20px;
+            }
+            .column:last-child {
+                border-bottom: none;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">dip</div>
+            <p class="header-subtitle">Dijital İhracat Platformu • Digital Export Platform</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Turkish Column -->
+            <div class="column">
+                <h2>🌟 Özel Davetiniz!</h2>
+                <p>DİP - Dijital İhracat Platformu'na katılmaya davet edildiniz!</p>
+                <p>Türkiye'nin en kapsamlı dijital ihracat ekosisteminde yerinizi alın ve iş ağınızı genişletin.</p>
+                
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    🚀 Hesabımı Oluştur
+                </a>
+
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <h4>🤝 İş Ortaklıkları</h4>
+                        <p>16 farklı kategoride güvenilir partnerler</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>💼 Hizmet Talepleri</h4>
+                        <p>Teklifler alın, projeleri başlatın</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>🎯 Özel Avantajlar</h4>
+                        <p>DİP üyelerine özel indirimler</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>🌍 Global Erişim</h4>
+                        <p>Uluslararası pazarlara açılın</p>
+                    </div>
+                </div>
+
+                <p style="margin-top: 30px;"><strong>Platform Özellikleri:</strong></p>
+                <ul style="color: #64748b; padding-left: 20px;">
+                    <li>E-ticaret altyapısı ve entegrasyon çözümleri</li>
+                    <li>Pazaryeri yönetimi ve optimizasyon</li>
+                    <li>Lojistik, gümrük ve finans desteği</li>
+                    <li>Pazarlama, fotoğraf ve hukuki danışmanlık</li>
+                </ul>
+            </div>
+
+            <!-- English Column -->
+            <div class="column">
+                <h2>🌟 Your Special Invitation!</h2>
+                <p>You've been invited to join DİP - Digital Export Platform!</p>
+                <p>Take your place in Turkey's most comprehensive digital export ecosystem and expand your business network.</p>
+                
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    🚀 Create My Account
+                </a>
+
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <h4>🤝 Business Partnerships</h4>
+                        <p>Trusted partners in 16 categories</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>💼 Service Requests</h4>
+                        <p>Get quotes, start projects</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>🎯 Exclusive Benefits</h4>
+                        <p>Special discounts for DİP members</p>
+                    </div>
+                    <div class="feature-item">
+                        <h4>🌍 Global Access</h4>
+                        <p>Expand to international markets</p>
+                    </div>
+                </div>
+
+                <p style="margin-top: 30px;"><strong>Platform Features:</strong></p>
+                <ul style="color: #64748b; padding-left: 20px;">
+                    <li>E-commerce infrastructure and integration solutions</li>
+                    <li>Marketplace management and optimization</li>
+                    <li>Logistics, customs and finance support</li>
+                    <li>Marketing, photography and legal consulting</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>DİP - Dijital İhracat Platformu</strong></p>
+            <p>Ecza Sok. No:4-1 Şişli, İstanbul • <a href="mailto:info@dip.tc">info@dip.tc</a> • 08503071245</p>
+            <p><a href="{{ .SiteURL }}">dip.tc</a> | <a href="{{ .SiteURL }}/hakkimizda">Hakkımızda</a> | <a href="{{ .SiteURL }}/iletisim">İletişim</a></p>
+            <p style="font-size: 12px; margin-top: 20px;">
+                Bu davetiye {{ .Email }} adresine gönderilmiştir. Daveti kabul etmek için yukarıdaki butona tıklayın.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

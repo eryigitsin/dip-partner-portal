@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Güvenli Giriş - Secure Login | DİP</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .header-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin: 0;
+        }
+        .content {
+            display: flex;
+            min-height: 400px;
+        }
+        .column {
+            flex: 1;
+            padding: 40px 30px;
+            border-right: 1px solid #e2e8f0;
+        }
+        .column:last-child {
+            border-right: none;
+        }
+        .column h2 {
+            color: #1e293b;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .column p {
+            margin-bottom: 16px;
+            color: #64748b;
+            font-size: 16px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-1px);
+        }
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px 20px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .security-note {
+            background-color: #f0f9ff;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #1e40af;
+        }
+        .warning-note {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #92400e;
+        }
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            .column {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 30px 20px;
+            }
+            .column:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">dip</div>
+            <p class="header-subtitle">Dijital İhracat Platformu • Digital Export Platform</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Turkish Column -->
+            <div class="column">
+                <h2>🔐 Güvenli Giriş</h2>
+                <p>DİP hesabınıza güvenli bir şekilde giriş yapmak için bu özel link gönderildi.</p>
+                <p>Şifre girmeden tek tıkla hesabınıza erişebilirsiniz. Bu link güvenlik amacıyla 5 dakika sonra geçersiz hale gelecektir.</p>
+                
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    🚀 Hesabıma Giriş Yap
+                </a>
+
+                <div class="security-note">
+                    <strong>Güvenlik Özelliği:</strong> Bu Magic Link sistemi, şifre girme riskini ortadan kaldırır ve hesabınızı daha güvenli hale getirir.
+                </div>
+
+                <div class="warning-note">
+                    <strong>Önemli Hatırlatmalar:</strong>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li>Link sadece 5 dakika geçerlidir</li>
+                        <li>Link sadece bir kez kullanılabilir</li>
+                        <li>Bu giriş talebini siz yapmadıysanız, linke tıklamayın</li>
+                        <li>Linki kimseyle paylaşmayın</li>
+                    </ul>
+                </div>
+
+                <p>Giriş yaptıktan sonra, hesabınızın tüm özelliklerine erişebilir ve güvenle işlemlerinizi gerçekleştirebilirsiniz.</p>
+            </div>
+
+            <!-- English Column -->
+            <div class="column">
+                <h2>🔐 Secure Login</h2>
+                <p>This special link has been sent for secure access to your DİP account.</p>
+                <p>You can access your account with a single click without entering a password. This link will expire in 5 minutes for security purposes.</p>
+                
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    🚀 Login to My Account
+                </a>
+
+                <div class="security-note">
+                    <strong>Security Feature:</strong> This Magic Link system eliminates the risk of password entry and makes your account more secure.
+                </div>
+
+                <div class="warning-note">
+                    <strong>Important Reminders:</strong>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li>Link is valid for 5 minutes only</li>
+                        <li>Link can only be used once</li>
+                        <li>If you didn't request this login, don't click the link</li>
+                        <li>Don't share this link with anyone</li>
+                    </ul>
+                </div>
+
+                <p>After logging in, you can access all features of your account and safely perform your transactions.</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>DİP - Dijital İhracat Platformu</strong></p>
+            <p>Ecza Sok. No:4-1 Şişli, İstanbul • <a href="mailto:info@dip.tc">info@dip.tc</a> • 08503071245</p>
+            <p><a href="{{ .SiteURL }}">dip.tc</a> | <a href="{{ .SiteURL }}/hakkimizda">Hakkımızda</a> | <a href="{{ .SiteURL }}/iletisim">İletişim</a></p>
+            <p style="font-size: 12px; margin-top: 20px;">
+                Bu güvenli giriş linki {{ .Email }} adresine gönderilmiştir. Link güvenliğiniz için kısa sürelidir.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-posta Doğrulama - Email Verification | DİP</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .header-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin: 0;
+        }
+        .content {
+            display: flex;
+            min-height: 400px;
+        }
+        .column {
+            flex: 1;
+            padding: 40px 30px;
+            border-right: 1px solid #e2e8f0;
+        }
+        .column:last-child {
+            border-right: none;
+        }
+        .column h2 {
+            color: #1e293b;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .column p {
+            margin-bottom: 16px;
+            color: #64748b;
+            font-size: 16px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-1px);
+        }
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px 20px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .security-note {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #92400e;
+        }
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            .column {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 30px 20px;
+            }
+            .column:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">dip</div>
+            <p class="header-subtitle">Dijital İhracat Platformu • Digital Export Platform</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Turkish Column -->
+            <div class="column">
+                <h2>🎉 Hoş Geldiniz!</h2>
+                <p>DİP - Dijital İhracat Platformu'na katıldığınız için teşekkür ederiz!</p>
+                <p>Hesabınızı aktif hale getirmek ve platformumuzun tüm özelliklerinden yararlanmaya başlamak için e-posta adresinizi doğrulamanız gerekmektedir.</p>
+                
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    ✓ E-postamı Doğrula
+                </a>
+
+                <div class="security-note">
+                    <strong>Güvenlik Notu:</strong> Bu e-postayı siz talep etmediyseniz, güvenle silebilirsiniz. Hesabınızda herhangi bir değişiklik yapılmayacaktır.
+                </div>
+
+                <p><strong>Neler yapabileceksiniz:</strong></p>
+                <ul style="color: #64748b; padding-left: 20px;">
+                    <li>16 farklı kategoride güvenilir iş ortakları keşfedin</li>
+                    <li>Hizmet talepleri oluşturun ve teklifler alın</li>
+                    <li>DİP üyelerine özel avantajlardan yararlanın</li>
+                    <li>İş ortağı başvurusu yapın ve platformda hizmet verin</li>
+                </ul>
+            </div>
+
+            <!-- English Column -->
+            <div class="column">
+                <h2>🎉 Welcome!</h2>
+                <p>Thank you for joining DİP - Digital Export Platform!</p>
+                <p>To activate your account and start benefiting from all features of our platform, you need to verify your email address.</p>
+                
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    ✓ Verify My Email
+                </a>
+
+                <div class="security-note">
+                    <strong>Security Note:</strong> If you didn't request this email, you can safely delete it. No changes will be made to your account.
+                </div>
+
+                <p><strong>What you can do:</strong></p>
+                <ul style="color: #64748b; padding-left: 20px;">
+                    <li>Discover trusted partners in 16 different categories</li>
+                    <li>Create service requests and receive quotes</li>
+                    <li>Benefit from exclusive advantages for DİP members</li>
+                    <li>Apply to become a partner and provide services on the platform</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>DİP - Dijital İhracat Platformu</strong></p>
+            <p>Ecza Sok. No:4-1 Şişli, İstanbul • <a href="mailto:info@dip.tc">info@dip.tc</a> • 08503071245</p>
+            <p><a href="{{ .SiteURL }}">dip.tc</a> | <a href="{{ .SiteURL }}/hakkimizda">Hakkımızda</a> | <a href="{{ .SiteURL }}/iletisim">İletişim</a></p>
+            <p style="font-size: 12px; margin-top: 20px;">
+                Bu e-posta {{ .Email }} adresine gönderilmiştir. E-posta tercihlerinizi yönetmek için 
+                <a href="{{ .SiteURL }}/unsubscribe?email={{ .Email }}">buraya tıklayın</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

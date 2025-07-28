@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-posta Değişikliği - Email Change | DİP</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .header-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin: 0;
+        }
+        .content {
+            display: flex;
+            min-height: 400px;
+        }
+        .column {
+            flex: 1;
+            padding: 40px 30px;
+            border-right: 1px solid #e2e8f0;
+        }
+        .column:last-child {
+            border-right: none;
+        }
+        .column h2 {
+            color: #1e293b;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .column p {
+            margin-bottom: 16px;
+            color: #64748b;
+            font-size: 16px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .cta-button:hover {
+            transform: translateY(-1px);
+        }
+        .footer {
+            background-color: #f1f5f9;
+            padding: 30px 20px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .info-box {
+            background-color: #f0f9ff;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .info-box .title {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+        .info-box .detail {
+            color: #1e40af;
+        }
+        .security-note {
+            background-color: #fef2f2;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #991b1b;
+        }
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            .column {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 30px 20px;
+            }
+            .column:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">dip</div>
+            <p class="header-subtitle">Dijital İhracat Platformu • Digital Export Platform</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Turkish Column -->
+            <div class="column">
+                <h2>📧 E-posta Değişikliği</h2>
+                <p>DİP hesabınızda e-posta adresinizi değiştirme talebinde bulundunuz.</p>
+                <p>Yeni e-posta adresinizi doğrulamak için aşağıdaki butona tıklayın. Bu işlemi tamamladıktan sonra, yeni e-posta adresinizle giriş yapabilirsiniz.</p>
+                
+                <div class="info-box">
+                    <div class="title">Değişiklik Detayları:</div>
+                    <div class="detail">
+                        <strong>Eski E-posta:</strong> {{ .Email }}<br>
+                        <strong>Yeni E-posta:</strong> {{ .NewEmail }}
+                    </div>
+                </div>
+
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    ✅ Yeni E-postamı Doğrula
+                </a>
+
+                <div class="security-note">
+                    <strong>Güvenlik Uyarısı:</strong> Bu e-posta değişikliği talebini siz yapmadıysanız, derhal <a href="mailto:info@dip.tc">info@dip.tc</a> adresine bilgi verin ve bu işlemi onaylamayın.
+                </div>
+
+                <p><strong>Önemli Bilgiler:</strong></p>
+                <ul style="color: #64748b; padding-left: 20px;">
+                    <li>Doğrulama linki 24 saat geçerlidir</li>
+                    <li>İşlem tamamlandıktan sonra eski e-posta adresi kullanılamaz</li>
+                    <li>Tüm bildirimler yeni e-posta adresinize gelecektir</li>
+                    <li>Hesap güvenliğiniz için güçlü bir şifre kullanmaya devam edin</li>
+                </ul>
+            </div>
+
+            <!-- English Column -->
+            <div class="column">
+                <h2>📧 Email Change</h2>
+                <p>You have requested to change your email address on your DİP account.</p>
+                <p>Click the button below to verify your new email address. After completing this process, you can log in with your new email address.</p>
+                
+                <div class="info-box">
+                    <div class="title">Change Details:</div>
+                    <div class="detail">
+                        <strong>Old Email:</strong> {{ .Email }}<br>
+                        <strong>New Email:</strong> {{ .NewEmail }}
+                    </div>
+                </div>
+
+                <a href="{{ .ConfirmationURL }}" class="cta-button">
+                    ✅ Verify My New Email
+                </a>
+
+                <div class="security-note">
+                    <strong>Security Warning:</strong> If you didn't request this email change, please immediately contact <a href="mailto:info@dip.tc">info@dip.tc</a> and do not confirm this process.
+                </div>
+
+                <p><strong>Important Information:</strong></p>
+                <ul style="color: #64748b; padding-left: 20px;">
+                    <li>Verification link is valid for 24 hours</li>
+                    <li>Old email address cannot be used after completion</li>
+                    <li>All notifications will be sent to your new email address</li>
+                    <li>Continue using a strong password for account security</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>DİP - Dijital İhracat Platformu</strong></p>
+            <p>Ecza Sok. No:4-1 Şişli, İstanbul • <a href="mailto:info@dip.tc">info@dip.tc</a> • 08503071245</p>
+            <p><a href="{{ .SiteURL }}">dip.tc</a> | <a href="{{ .SiteURL }}/hakkimizda">Hakkımızda</a> | <a href="{{ .SiteURL }}/iletisim">İletişim</a></p>
+            <p style="font-size: 12px; margin-top: 20px;">
+                Bu doğrulama e-postası {{ .NewEmail }} adresine gönderilmiştir. E-posta değişikliğini onaylamak için yukarıdaki butona tıklayın.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
