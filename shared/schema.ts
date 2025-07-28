@@ -7,14 +7,14 @@ import { relations } from "drizzle-orm";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  password: text("password"),
+  password: text("password"), // Optional for Google Auth users
   googleId: text("google_id"),
+  supabaseId: text("supabase_id").unique(), // Supabase Auth user ID
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   phone: text("phone"),
   userType: text("user_type").notNull().default("user"), // user, partner, master_admin, editor_admin
-  isVerified: boolean("is_verified").default(false),
-  verificationCode: text("verification_code"),
+  isVerified: boolean("is_verified").default(false), // Email verification status
   language: text("language").default("tr"), // tr, en
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

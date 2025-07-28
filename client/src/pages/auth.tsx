@@ -1,22 +1,6 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useAuth } from "@/hooks/use-auth";
-import { useLanguage } from "@/contexts/language-context";
-import { t } from "@/lib/i18n";
-import { z } from "zod";
-import { Loader2, Mail, Lock, User, Phone, Building, MessageSquare } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { SupabaseAuth } from "@/components/auth/supabase-auth";
 import dipLogo from '@assets/dip ince_1753540745210.png';
 import workshopBg from '@assets/dip-workshop_1753540666527.png';
 
