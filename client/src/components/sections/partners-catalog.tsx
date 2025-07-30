@@ -261,17 +261,17 @@ export function PartnersCatalog({
                   
                   <div className="flex space-x-3">
                     <Button 
-                      onClick={() => window.location.href = `/partner/${partner.username || partner.id}`}
-                      className="flex-1 bg-dip-green hover:bg-green-600"
+                      onClick={() => onQuoteRequest(partner)}
+                      className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold"
                     >
-                      {t('getQuote', language)}
+                      TEKLİF AL
                     </Button>
                     <Button 
-                      onClick={() => window.location.href = `/partner/${partner.username || partner.id}`}
+                      onClick={() => onViewProfile(partner)}
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 border-dip-blue text-dip-blue hover:bg-dip-blue hover:text-white"
                     >
-                      {t('viewProfile', language)}
+                      PROFİL
                     </Button>
                   </div>
                 </CardContent>

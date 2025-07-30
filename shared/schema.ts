@@ -72,7 +72,32 @@ export const partners = pgTable("partners", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Partner services
+// Services table - reusable service definitions
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  category: text("category"),
+  isActive: boolean("is_active").default(true),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Partner offered services - junction table for partners and their offered services
+export const partnerOfferedServices = pgTable("partner_offered_services", {
+  id: serial("id").primaryKey(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  serviceId: integer("service_id").references(() => services.id).notNull(),
+  customDescription: text("custom_description"), // Partner-specific service description
+  price: text("price"), // Optional pricing info
+  deliveryTime: text("delivery_time"), // Optional delivery time
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Partner services - legacy (for backward compatibility)
 export const partnerServices = pgTable("partner_services", {
   id: serial("id").primaryKey(),
   partnerId: integer("partner_id").references(() => partners.id).notNull(),
@@ -244,6 +269,8 @@ export const userEmailPreferences = pgTable("user_email_preferences", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Note: Services and partnerServices tables are already defined above in schema with different structure
+
 // Marketing contacts for comprehensive contact management and Resend integration
 export const marketingContacts = pgTable("marketing_contacts", {
   id: serial("id").primaryKey(),
@@ -341,12 +368,24 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   followedPartners: many(partnerFollowers),
 }));
 
+// Relations for services system
+export const servicesRelations = relations(services, ({ one, many }) => ({
+  createdBy: one(users, { fields: [services.createdBy], references: [users.id] }),
+  partnerOfferedServices: many(partnerOfferedServices),
+}));
+
+export const partnerOfferedServicesRelations = relations(partnerOfferedServices, ({ one }) => ({
+  partner: one(partners, { fields: [partnerOfferedServices.partnerId], references: [partners.id] }),
+  service: one(services, { fields: [partnerOfferedServices.serviceId], references: [services.id] }),
+}));
+
 export const partnersRelations = relations(partners, ({ one, many }) => ({
   user: one(users, {
     fields: [partners.userId],
     references: [users.id],
   }),
   services: many(partnerServices),
+  offeredServices: many(partnerOfferedServices),
   quoteRequests: many(quoteRequests),
   followers: many(partnerFollowers),
 }));
@@ -392,6 +431,10 @@ export const messagesRelations = relations(messages, ({ one }) => ({
     relationName: "receiver",
   }),
 }));
+
+// Insert schemas for services system
+export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPartnerOfferedServiceSchema = createInsertSchema(partnerOfferedServices).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -480,6 +523,12 @@ export const insertUserEmailPreferencesSchema = createInsertSchema(userEmailPref
   createdAt: true,
   updatedAt: true,
 });
+
+// Types for services system
+export type Service = typeof services.$inferSelect;
+export type InsertService = z.infer<typeof insertServiceSchema>;
+export type PartnerOfferedService = typeof partnerOfferedServices.$inferSelect;
+export type InsertPartnerOfferedService = z.infer<typeof insertPartnerOfferedServiceSchema>;
 
 // Types
 export type User = typeof users.$inferSelect;

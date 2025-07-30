@@ -73,6 +73,22 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     quoteRequestMutation.mutate(data);
   };
 
+  // Parse partner services from legacy text field
+  const getPartnerServices = () => {
+    if (!partner.services) return [];
+    
+    // Split by common delimiters and clean up
+    const services = partner.services
+      .split(/[\r\n\*\-•]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && s !== '*' && s !== '-' && s !== '•')
+      .slice(0, 10); // Limit to 10 services for UI
+    
+    return services;
+  };
+
+  const partnerServices = getPartnerServices();
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -147,23 +163,70 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="serviceNeeded"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Hizmet İhtiyacınız *</FormLabel>
-              <FormControl>
-                <Textarea 
-                  {...field} 
-                  rows={4}
-                  placeholder="İhtiyacınız olan hizmeti detaylıca açıklayınız..."
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Service Selection */}
+        {partnerServices.length > 0 && (
+          <FormField
+            control={form.control}
+            name="serviceNeeded" 
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hizmet Seçimi *</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="İhtiyacınız olan hizmeti seçiniz" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {partnerServices.map((service, index) => (
+                      <SelectItem key={index} value={service}>
+                        {service}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="other">Diğer (Açıklama kısmında belirtiniz)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {/* Fallback for partners without structured services */}
+        {partnerServices.length === 0 && (
+          <FormField
+            control={form.control}
+            name="serviceNeeded"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hizmet İhtiyacınız *</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    {...field} 
+                    rows={4}
+                    placeholder="İhtiyacınız olan hizmeti detaylıca açıklayınız..."
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {/* Additional Details Field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Ek Açıklama
+          </label>
+          <Textarea 
+            placeholder={partnerServices.length > 0 
+              ? "Seçtiğiniz hizmet hakkında ek detaylar yazabilirsiniz..." 
+              : "Projeniz hakkında ek bilgiler yazabilirsiniz..."
+            }
+            rows={3}
+            className="w-full"
+          />
+        </div>
 
         <FormField
           control={form.control}
@@ -192,7 +255,7 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
 
         <FormField
           control={form.control}
-          name="projectDate"
+          name="projectDate" 
           render={({ field }) => (
             <FormItem>
               <FormLabel>Proje Tarihi</FormLabel>

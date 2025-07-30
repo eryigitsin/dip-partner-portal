@@ -58,8 +58,7 @@ export default function HomePage() {
   };
 
   const handleViewProfile = (partner: Partner) => {
-    // TODO: Navigate to partner profile page
-    console.log('View profile for partner:', partner.id);
+    window.location.href = `/partner/${partner.username || partner.id}`;
   };
 
   return (
