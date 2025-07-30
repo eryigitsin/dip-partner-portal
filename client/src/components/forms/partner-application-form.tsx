@@ -58,7 +58,7 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
       email: '',
       phone: '',
       company: '',
-      title: '',
+      contactPerson: '',
       website: '',
       companyAddress: '',
       serviceCategory: '',
@@ -106,15 +106,30 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
     }
   };
 
-  // Service management
+  // Service management with intelligent matching
   const addService = (serviceName: string) => {
-    if (serviceName.trim() && !selectedServices.includes(serviceName.trim())) {
-      const newServices = [...selectedServices, serviceName.trim()];
-      setSelectedServices(newServices);
-      form.setValue('servicesList', newServices);
-      form.setValue('services', newServices.join('\n'));
-      setServiceInput('');
-    }
+    const trimmedName = serviceName.trim();
+    if (!trimmedName) return;
+
+    // Check for case-insensitive duplicates in selected services
+    const isDuplicateInSelected = selectedServices.some(service => 
+      service.toLowerCase() === trimmedName.toLowerCase()
+    );
+    
+    if (isDuplicateInSelected) return;
+
+    // Check if exact match exists in existing services and use that format
+    const existingService = existingServices.find(service => 
+      service.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    
+    const serviceToAdd = existingService ? existingService.name : trimmedName;
+    
+    const newServices = [...selectedServices, serviceToAdd];
+    setSelectedServices(newServices);
+    form.setValue('servicesList', newServices);
+    form.setValue('services', newServices.join('\n'));
+    setServiceInput('');
   };
 
   const removeService = (serviceName: string) => {
@@ -124,9 +139,25 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
     form.setValue('services', newServices.join('\n'));
   };
 
-  const filteredServices = existingServices.filter(service =>
-    service.name.toLowerCase().includes(serviceInput.toLowerCase()) &&
-    !selectedServices.includes(service.name)
+  // Enhanced filtering with partial matching
+  const filteredServices = existingServices.filter(service => {
+    const serviceLower = service.name.toLowerCase();
+    const inputLower = serviceInput.toLowerCase();
+    
+    // Check if service matches input and isn't already selected (case-insensitive)
+    const matchesInput = serviceLower.includes(inputLower);
+    const notSelected = !selectedServices.some(selected => 
+      selected.toLowerCase() === serviceLower
+    );
+    
+    return matchesInput && notSelected && serviceInput.length > 0;
+  });
+
+  // Check if exact match exists (case-insensitive)
+  const exactMatchExists = existingServices.some(service => 
+    service.name.toLowerCase() === serviceInput.toLowerCase()
+  ) || selectedServices.some(service => 
+    service.toLowerCase() === serviceInput.toLowerCase()
   );
 
   const applicationMutation = useMutation({
@@ -272,10 +303,10 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
 
         <FormField
           control={form.control}
-          name="title"
+          name="contactPerson"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Ünvan *</FormLabel>
+              <FormLabel>İletişim Kişisi *</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -470,7 +501,7 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
                     )}
                   </div>
                   
-                  {serviceInput && !filteredServices.some(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && (
+                  {serviceInput && !exactMatchExists && (
                     <Button
                       type="button"
                       variant="outline"

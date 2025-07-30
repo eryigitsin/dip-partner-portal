@@ -530,7 +530,12 @@ export class DatabaseStorage implements IStorage {
 
   // Services management
   async getAllServices(): Promise<Service[]> {
-    return await db.select().from(services).where(eq(services.isActive, true)).orderBy(asc(services.name));
+    try {
+      return await db.select().from(services).orderBy(asc(services.name));
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      return [];
+    }
   }
 
   async getServiceByName(name: string): Promise<Service | undefined> {
