@@ -15,7 +15,16 @@ import { insertQuoteRequestSchema, Partner } from '@shared/schema';
 import { z } from 'zod';
 import { useState } from 'react';
 
-const formSchema = insertQuoteRequestSchema.extend({
+const formSchema = z.object({
+  partnerId: z.number(),
+  firstName: z.string().min(1, "Ad zorunludur"),
+  lastName: z.string().min(1, "Soyad zorunludur"),
+  email: z.string().email("Geçerli bir email adresi giriniz"),
+  phone: z.string().min(1, "Telefon numarası zorunludur"),
+  company: z.string().min(1, "Şirket adı zorunludur"),
+  serviceNeeded: z.string().min(1, "Hizmet açıklaması zorunludur"),
+  budget: z.string().optional(),
+  message: z.string().optional(),
   kvkkConsent: z.boolean().refine(val => val === true, {
     message: "KVKK onayı zorunludur",
   }),
@@ -23,7 +32,7 @@ const formSchema = insertQuoteRequestSchema.extend({
   projectEndDate: z.string().optional(),
   workType: z.enum(['project', 'monthly']).optional(),
   selectedServices: z.array(z.string()).optional(),
-}).omit({ userId: true });
+});
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -48,7 +57,7 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       lastName: user?.lastName || '',
       email: user?.email || '',
       phone: user?.phone || '',
-      company: user?.companyName || '',
+      company: '',
       serviceNeeded: '',
       budget: '',
       projectStartDate: '',
@@ -59,8 +68,19 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
 
   const quoteRequestMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const { kvkkConsent, ...requestData } = data;
-      const response = await apiRequest('POST', '/api/quote-requests', requestData);
+      const { kvkkConsent, firstName, lastName, company, projectStartDate, projectEndDate, workType, selectedServices, ...requestData } = data;
+      
+      // Transform data to match backend schema
+      const fullName = `${firstName} ${lastName}`.trim();
+      const companyName = company;
+      
+      const transformedData = {
+        ...requestData,
+        fullName,
+        companyName,
+      };
+      
+      const response = await apiRequest('POST', '/api/quote-requests', transformedData);
       return response.json();
     },
     onSuccess: () => {
@@ -90,18 +110,12 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       return;
     }
 
-    const { kvkkConsent, projectStartDate, projectEndDate, firstName, lastName, company, ...requestData } = data;
-    
-    // Combine firstName and lastName into fullName, and rename company to companyName
-    const fullName = `${firstName || ''} ${lastName || ''}`.trim();
-    const companyName = company;
-    
     // Prepare service information
     let serviceInfo = '';
     if (partnerServices.length > 0) {
       serviceInfo = selectedServices.join(', ');
     } else {
-      serviceInfo = requestData.serviceNeeded;
+      serviceInfo = data.serviceNeeded;
     }
     
     // Add work type information
@@ -109,18 +123,16 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     serviceInfo += `\n\nÇalışma Şekli: ${workTypeText}`;
     
     // Add project dates only if project-based work is selected
-    if (workType === 'project' && projectStartDate && projectEndDate) {
-      serviceInfo += `\nProje Tarihi: ${projectStartDate} - ${projectEndDate}`;
-    } else if (workType === 'project' && projectStartDate) {
-      serviceInfo += `\nBaşlangıç Tarihi: ${projectStartDate}`;
-    } else if (workType === 'project' && projectEndDate) {
-      serviceInfo += `\nBitiş Tarihi: ${projectEndDate}`;
+    if (workType === 'project' && data.projectStartDate && data.projectEndDate) {
+      serviceInfo += `\nProje Tarihi: ${data.projectStartDate} - ${data.projectEndDate}`;
+    } else if (workType === 'project' && data.projectStartDate) {
+      serviceInfo += `\nBaşlangıç Tarihi: ${data.projectStartDate}`;
+    } else if (workType === 'project' && data.projectEndDate) {
+      serviceInfo += `\nBitiş Tarihi: ${data.projectEndDate}`;
     }
     
     quoteRequestMutation.mutate({
-      ...requestData,
-      fullName,
-      companyName,
+      ...data,
       serviceNeeded: serviceInfo,
     });
   };

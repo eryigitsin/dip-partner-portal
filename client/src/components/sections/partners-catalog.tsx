@@ -267,7 +267,7 @@ export function PartnersCatalog({
                     <Button 
                       onClick={() => {
                         if (!user) {
-                          window.location.href = '/auth';
+                          window.location.href = '/auth?from=quote';
                           return;
                         }
                         onQuoteRequest(partner);

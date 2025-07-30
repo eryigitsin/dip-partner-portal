@@ -58,7 +58,7 @@ export default function HomePage() {
 
   const handleQuoteRequest = (partner: Partner) => {
     if (!user) {
-      setLocation('/auth');
+      setLocation('/auth?from=quote');
       return;
     }
     setSelectedPartner(partner);

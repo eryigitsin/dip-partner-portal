@@ -33,7 +33,7 @@ export default function AuthPage() {
     const params = new URLSearchParams(window.location.search);
     const fromQuote = params.get('from') === 'quote';
     
-    if (fromQuote || window.location.pathname === '/auth') {
+    if (fromQuote) {
       toast({
         title: 'Önce giriş yapın',
         description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',

@@ -277,7 +277,7 @@ export default function PartnerProfile() {
 
   const handleQuoteRequest = () => {
     if (!user) {
-      setLocation('/auth');
+      setLocation('/auth?from=quote');
       return;
     }
     setIsQuoteModalOpen(true);
