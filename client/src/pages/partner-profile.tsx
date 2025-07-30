@@ -277,18 +277,10 @@ export default function PartnerProfile() {
 
   const handleQuoteRequest = () => {
     if (!user) {
-      toast({
-        title: 'Önce giriş yapın',
-        description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
-        variant: 'destructive',
-        duration: 5000,
-      });
-      setTimeout(() => {
-        setLocation('/auth');
-      }, 5000);
+      setLocation('/auth');
       return;
     }
-    quoteRequestMutation.mutate();
+    setIsQuoteModalOpen(true);
   };
 
   const handleSendMessage = () => {
@@ -810,7 +802,7 @@ export default function PartnerProfile() {
                 
                 <Button 
                   className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
-                  onClick={() => setIsQuoteModalOpen(true)}
+                  onClick={handleQuoteRequest}
                 >
                   TEKLİF AL
                 </Button>

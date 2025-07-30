@@ -267,15 +267,7 @@ export function PartnersCatalog({
                     <Button 
                       onClick={() => {
                         if (!user) {
-                          toast({
-                            title: 'Önce giriş yapın',
-                            description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
-                            variant: 'destructive',
-                            duration: 5000,
-                          });
-                          setTimeout(() => {
-                            window.location.href = '/auth';
-                          }, 5000);
+                          window.location.href = '/auth';
                           return;
                         }
                         onQuoteRequest(partner);

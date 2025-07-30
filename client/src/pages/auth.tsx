@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,21 @@ export default function AuthPage() {
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const { localUser } = useSupabaseAuth();
   const { toast } = useToast();
+
+  // Show auth warning message when coming from quote request
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuote = params.get('from') === 'quote';
+    
+    if (fromQuote || window.location.pathname === '/auth') {
+      toast({
+        title: 'Önce giriş yapın',
+        description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+  }, [toast]);
 
   if (localUser) {
     window.location.href = '/';
