@@ -36,8 +36,9 @@ interface QuoteRequestFormProps {
 export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [workType, setWorkType] = useState<'project' | 'monthly'>('project');
+  const [workType, setWorkType] = useState<'project' | 'monthly'>('monthly');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [serviceDropdownOpen, setServiceDropdownOpen] = useState(false);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -208,52 +209,82 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
           )}
         />
 
-        {/* Multiple Service Selection */}
+        {/* Multiple Service Selection with Dropdown */}
         {partnerServices.length > 0 && (
           <div className="space-y-3">
             <FormLabel>Hizmet Seçimi * (Birden fazla seçim yapabilirsiniz)</FormLabel>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {partnerServices.map((service, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`service-${index}`}
-                    checked={selectedServices.includes(service)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedServices(prev => [...prev, service]);
-                      } else {
-                        setSelectedServices(prev => prev.filter(s => s !== service));
-                      }
-                    }}
-                  />
-                  <label 
-                    htmlFor={`service-${index}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            <Select open={serviceDropdownOpen} onOpenChange={setServiceDropdownOpen}>
+              <SelectTrigger onClick={() => setServiceDropdownOpen(!serviceDropdownOpen)}>
+                <SelectValue placeholder={
+                  selectedServices.length === 0 
+                    ? "Hizmet seçiniz..." 
+                    : `${selectedServices.length} hizmet seçildi`
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2 space-y-2">
+                  {partnerServices.map((service, index) => (
+                    <div key={index} className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded">
+                      <Checkbox
+                        id={`service-${index}`}
+                        checked={selectedServices.includes(service)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedServices(prev => [...prev, service]);
+                          } else {
+                            setSelectedServices(prev => prev.filter(s => s !== service));
+                          }
+                        }}
+                      />
+                      <label 
+                        htmlFor={`service-${index}`}
+                        className="text-sm font-medium leading-none cursor-pointer flex-1"
+                      >
+                        {service}
+                      </label>
+                    </div>
+                  ))}
+                  <div className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded">
+                    <Checkbox
+                      id="service-other"
+                      checked={selectedServices.includes('Diğer')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedServices(prev => [...prev, 'Diğer']);
+                        } else {
+                          setSelectedServices(prev => prev.filter(s => s !== 'Diğer'));
+                        }
+                      }}
+                    />
+                    <label 
+                      htmlFor="service-other"
+                      className="text-sm font-medium leading-none cursor-pointer flex-1"
+                    >
+                      Diğer (Açıklama kısmında belirtiniz)
+                    </label>
+                  </div>
+                </div>
+              </SelectContent>
+            </Select>
+            {selectedServices.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedServices.map((service, index) => (
+                  <span 
+                    key={index}
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                   >
                     {service}
-                  </label>
-                </div>
-              ))}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="service-other"
-                  checked={selectedServices.includes('Diğer')}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setSelectedServices(prev => [...prev, 'Diğer']);
-                    } else {
-                      setSelectedServices(prev => prev.filter(s => s !== 'Diğer'));
-                    }
-                  }}
-                />
-                <label 
-                  htmlFor="service-other"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Diğer (Açıklama kısmında belirtiniz)
-                </label>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedServices(prev => prev.filter(s => s !== service))}
+                      className="ml-1 text-blue-600 hover:text-blue-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
               </div>
-            </div>
+            )}
             {selectedServices.length === 0 && (
               <p className="text-sm text-red-600">En az bir hizmet seçiniz</p>
             )}
@@ -330,15 +361,15 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
             className="flex flex-col space-y-2"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="project" id="work-project" />
-              <label htmlFor="work-project" className="text-sm font-medium">
-                Proje Bazlı
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
               <RadioGroupItem value="monthly" id="work-monthly" />
               <label htmlFor="work-monthly" className="text-sm font-medium">
                 Aylık Çalışma
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="project" id="work-project" />
+              <label htmlFor="work-project" className="text-sm font-medium">
+                Proje Bazlı
               </label>
             </div>
           </RadioGroup>
