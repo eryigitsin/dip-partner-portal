@@ -278,11 +278,14 @@ export default function PartnerProfile() {
   const handleQuoteRequest = () => {
     if (!user) {
       toast({
-        title: 'Giriş Gerekli',
-        description: 'Teklif almak için giriş yapmalısınız',
+        title: 'Önce giriş yapın',
+        description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
         variant: 'destructive',
+        duration: 5000,
       });
-      setLocation('/auth');
+      setTimeout(() => {
+        setLocation('/auth');
+      }, 5000);
       return;
     }
     quoteRequestMutation.mutate();

@@ -44,10 +44,11 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     resolver: zodResolver(formSchema),
     defaultValues: {
       partnerId: partner.id,
-      fullName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '',
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
       email: user?.email || '',
       phone: user?.phone || '',
-      companyName: user?.companyName || '',
+      company: user?.companyName || '',
       serviceNeeded: '',
       budget: '',
       projectStartDate: '',
@@ -89,7 +90,11 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       return;
     }
 
-    const { kvkkConsent, projectStartDate, projectEndDate, ...requestData } = data;
+    const { kvkkConsent, projectStartDate, projectEndDate, firstName, lastName, company, ...requestData } = data;
+    
+    // Combine firstName and lastName into fullName, and rename company to companyName
+    const fullName = `${firstName || ''} ${lastName || ''}`.trim();
+    const companyName = company;
     
     // Prepare service information
     let serviceInfo = '';
@@ -114,6 +119,8 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     
     quoteRequestMutation.mutate({
       ...requestData,
+      fullName,
+      companyName,
       serviceNeeded: serviceInfo,
     });
   };
@@ -137,19 +144,34 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="fullName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ad Soyad *</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ad *</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Soyad *</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
@@ -181,7 +203,7 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
 
         <FormField
           control={form.control}
-          name="companyName"
+          name="company"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Şirket *</FormLabel>

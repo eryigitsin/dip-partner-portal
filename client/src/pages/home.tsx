@@ -62,8 +62,11 @@ export default function HomePage() {
         title: 'Önce giriş yapın',
         description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
         variant: 'destructive',
+        duration: 5000,
       });
-      setLocation('/auth');
+      setTimeout(() => {
+        setLocation('/auth');
+      }, 5000);
       return;
     }
     setSelectedPartner(partner);

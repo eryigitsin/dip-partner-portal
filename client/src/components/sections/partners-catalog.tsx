@@ -271,8 +271,11 @@ export function PartnersCatalog({
                             title: 'Önce giriş yapın',
                             description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
                             variant: 'destructive',
+                            duration: 5000,
                           });
-                          window.location.href = '/auth';
+                          setTimeout(() => {
+                            window.location.href = '/auth';
+                          }, 5000);
                           return;
                         }
                         onQuoteRequest(partner);
