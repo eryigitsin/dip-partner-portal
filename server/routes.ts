@@ -1280,9 +1280,8 @@ export function registerRoutes(app: Express): Server {
         
         if (user && partner) {
           const quoteResponseTemplate = emailTemplates.serviceRequest.toUser(
-            user.firstName + ' ' + user.lastName,
-            partner.companyName,
-            quoteRequest.serviceNeeded
+            { fullName: user.firstName + ' ' + user.lastName, serviceNeeded: quoteRequest.serviceNeeded, budget: quoteRequest.budget },
+            partner
           );
           
           await sendEmail({

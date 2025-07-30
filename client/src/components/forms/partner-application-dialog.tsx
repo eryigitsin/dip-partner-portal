@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,12 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X, ImageIcon } from "lucide-react";
+import type { Service } from "@shared/schema";
 
 // Service categories will be fetched from API
 
@@ -44,6 +46,7 @@ const partnerApplicationSchema = z.object({
   sectorExperience: z.string().optional(),
   targetMarkets: z.string().optional(),
   services: z.string().min(10, "Sunacağınız hizmetler en az 10 karakter olmalıdır"),
+  servicesList: z.array(z.string()).min(1, "En az bir hizmet seçmelisiniz"),
   dipAdvantages: z.string().min(10, "DİP üyelerine özel fırsat teklifiniz en az 10 karakter olmalıdır"),
   whyPartner: z.string().min(10, "Neden DİP ile iş ortağı olmak istediğiniz en az 10 karakter olmalıdır"),
   references: z.string().optional(),
@@ -52,6 +55,8 @@ const partnerApplicationSchema = z.object({
   instagramProfile: z.string().url("Geçerli bir Instagram profil adresi giriniz").optional().or(z.literal("")),
   facebookProfile: z.string().url("Geçerli bir Facebook sayfa adresi giriniz").optional().or(z.literal("")),
   kvkkAccepted: z.boolean().refine(val => val === true, "KVKK onayı zorunludur"),
+  logoFile: z.any().optional(),
+  coverFile: z.any().optional(),
 });
 
 type PartnerApplicationFormData = z.infer<typeof partnerApplicationSchema>;
@@ -69,17 +74,36 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [serviceInput, setServiceInput] = useState('');
+  
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch service categories
   const { data: categories = [] } = useQuery<Array<{ id: number; name: string }>>({
     queryKey: ["/api/categories"],
   });
 
-  // Logo file handler
+  // Fetch existing services
+  const { data: existingServices = [] } = useQuery<Service[]>({
+    queryKey: ['/api/services'],
+  });
+
+  // File upload handlers
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check if file is image
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: 'Dosya Boyutu Hatası',
+          description: 'Logo dosyası 5MB\'dan küçük olmalıdır.',
+          variant: 'destructive',
+        });
+        return;
+      }
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Hata",
@@ -99,6 +123,60 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
       reader.readAsDataURL(file);
     }
   };
+
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast({
+          title: 'Dosya Boyutu Hatası',
+          description: 'Kapak görseli 10MB\'dan küçük olmalıdır.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Hata",
+          description: "Lütfen sadece resim dosyası seçiniz.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setCoverFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCoverPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Service management
+  const addService = (serviceName: string) => {
+    if (serviceName.trim() && !selectedServices.includes(serviceName.trim())) {
+      const newServices = [...selectedServices, serviceName.trim()];
+      setSelectedServices(newServices);
+      form.setValue('servicesList', newServices);
+      form.setValue('services', newServices.join('\n'));
+      setServiceInput('');
+    }
+  };
+
+  const removeService = (serviceName: string) => {
+    const newServices = selectedServices.filter(s => s !== serviceName);
+    setSelectedServices(newServices);
+    form.setValue('servicesList', newServices);
+    form.setValue('services', newServices.join('\n'));
+  };
+
+  const filteredServices = existingServices.filter(service =>
+    service.name.toLowerCase().includes(serviceInput.toLowerCase()) &&
+    !selectedServices.includes(service.name)
+  );
 
   // Crop image to square
   const cropImageToSquare = (file: File): Promise<File> => {
@@ -147,6 +225,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
       sectorExperience: prefilledData?.sectorExperience || "",
       targetMarkets: prefilledData?.targetMarkets || "",
       services: prefilledData?.services || "",
+      servicesList: [],
       dipAdvantages: prefilledData?.dipAdvantages || "",
       whyPartner: prefilledData?.whyPartner || "",
       references: prefilledData?.references || "",
@@ -190,21 +269,38 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
   }, [open, prefilledData, form]);
 
   const onSubmit = async (data: PartnerApplicationFormData) => {
+    if (selectedServices.length === 0) {
+      toast({
+        title: 'Hizmet Seçimi Gerekli',
+        description: 'En az bir hizmet eklemelisiniz.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const formData = new FormData();
       
       // Add form data
       Object.entries(data).forEach(([key, value]) => {
-        if (key !== 'kvkkAccepted' && value !== undefined && value !== '') {
+        if (key !== 'kvkkAccepted' && key !== 'logoFile' && key !== 'coverFile' && key !== 'servicesList' && value !== undefined && value !== '') {
           formData.append(key, value.toString());
         }
       });
+
+      // Add services as JSON string
+      formData.append('services', JSON.stringify(selectedServices));
 
       // Add logo file if selected
       if (logoFile) {
         const croppedLogo = await cropImageToSquare(logoFile);
         formData.append('logo', croppedLogo);
+      }
+
+      // Add cover file if selected
+      if (coverFile) {
+        formData.append('coverImage', coverFile);
       }
 
       // Add files
@@ -232,6 +328,10 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
       setSelectedFiles([]);
       setLogoFile(null);
       setLogoPreview(null);
+      setCoverFile(null);
+      setCoverPreview(null);
+      setSelectedServices([]);
+      setServiceInput('');
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
@@ -570,19 +670,163 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
             {/* Hizmet Bilgileri */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">Hizmet Bilgileri</h3>
+
+              {/* Logo and Cover Upload */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium">Şirket Logosu</Label>
+                  <div className="mt-2">
+                    <div 
+                      onClick={() => logoInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-dip-blue transition-colors"
+                    >
+                      {logoPreview ? (
+                        <div className="relative">
+                          <img src={logoPreview} alt="Logo Preview" className="max-h-24 mx-auto rounded" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLogoPreview(null);
+                              setLogoFile(null);
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                          <p className="text-sm text-gray-600 mt-2">Logo yükleyin</p>
+                          <p className="text-xs text-gray-400">PNG, JPG (maks. 5MB)</p>
+                          <p className="text-xs text-blue-600 font-medium">Önerilen: 200x200px</p>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Profil Kapak Görseli</Label>
+                  <div className="mt-2">
+                    <div 
+                      onClick={() => coverInputRef.current?.click()}
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-dip-blue transition-colors"
+                    >
+                      {coverPreview ? (
+                        <div className="relative">
+                          <img src={coverPreview} alt="Cover Preview" className="max-h-24 mx-auto rounded" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCoverPreview(null);
+                              setCoverFile(null);
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+                          <p className="text-sm text-gray-600 mt-2">Kapak görseli yükleyin</p>
+                          <p className="text-xs text-gray-400">PNG, JPG (maks. 10MB)</p>
+                          <p className="text-xs text-blue-600 font-medium">Önerilen: 1200x400px</p>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      ref={coverInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverChange}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+              </div>
               
+              {/* Services Management */}
               <FormField
                 control={form.control}
-                name="services"
+                name="servicesList"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sunacağınız Hizmetler *</FormLabel>
+                    <FormLabel>Sunduğunuz Hizmetler *</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="DİP üyelerine sunacağınız hizmetleri detaylıca açıklayınız..."
-                        className="min-h-[100px]"
-                        {...field} 
-                      />
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <Input
+                            value={serviceInput}
+                            onChange={(e) => setServiceInput(e.target.value)}
+                            placeholder="Hizmet adı yazın..."
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (serviceInput.trim()) {
+                                  addService(serviceInput);
+                                }
+                              }
+                            }}
+                          />
+                          {serviceInput && filteredServices.length > 0 && (
+                            <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+                              {filteredServices.map((service) => (
+                                <button
+                                  key={service.id}
+                                  type="button"
+                                  onClick={() => addService(service.name)}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="font-medium">{service.name}</div>
+                                  {service.description && (
+                                    <div className="text-xs text-gray-500">{service.description}</div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {serviceInput && !filteredServices.some(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addService(serviceInput)}
+                            className="w-full"
+                          >
+                            "{serviceInput}" hizmetini ekle
+                          </Button>
+                        )}
+
+                        {selectedServices.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {selectedServices.map((service, index) => (
+                              <Badge key={index} variant="secondary" className="text-sm">
+                                {service}
+                                <button
+                                  type="button"
+                                  onClick={() => removeService(service)}
+                                  className="ml-2 text-red-500 hover:text-red-700"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

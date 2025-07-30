@@ -34,7 +34,9 @@ import {
   Globe,
   Eye,
   Edit,
-  Trash2
+  Trash2,
+  Upload,
+  ImageIcon
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -419,7 +421,7 @@ export default function AdminDashboard() {
                               <div className="font-medium">
                                 {application.firstName} {application.lastName}
                               </div>
-                              <div className="text-sm text-gray-500">{application.title}</div>
+                              <div className="text-sm text-gray-500">{application.contactPerson}</div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -634,11 +636,11 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contactPerson">İletişim Kişisi</Label>
+                  <Label htmlFor="companyAddress">Şirket Adresi</Label>
                   <Input
-                    id="contactPerson"
-                    value={partnerFormData.contactPerson || ''}
-                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                    id="companyAddress"
+                    value={partnerFormData.companyAddress || ''}
+                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, companyAddress: e.target.value }))}
                   />
                 </div>
               </div>
@@ -691,14 +693,57 @@ export default function AdminDashboard() {
                 />
               </div>
               
+              {/* Logo and Cover Upload */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium">Şirket Logosu</Label>
+                  <div className="mt-2">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                      {partnerFormData.logo ? (
+                        <div className="relative">
+                          <img src={partnerFormData.logo} alt="Current Logo" className="max-h-16 mx-auto rounded" />
+                          <p className="text-xs text-gray-500 mt-2">Mevcut logo</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <Upload className="mx-auto h-6 w-6 text-gray-400" />
+                          <p className="text-xs text-gray-600 mt-1">Logo yok</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Kapak Görseli</Label>
+                  <div className="mt-2">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                      {partnerFormData.coverImage ? (
+                        <div className="relative">
+                          <img src={partnerFormData.coverImage} alt="Current Cover" className="max-h-16 mx-auto rounded" />
+                          <p className="text-xs text-gray-500 mt-2">Mevcut kapak</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <ImageIcon className="mx-auto h-6 w-6 text-gray-400" />
+                          <p className="text-xs text-gray-600 mt-1">Kapak yok</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="services">Hizmetler</Label>
                 <Textarea
                   id="services"
-                  value={partnerFormData.services || ''}
+                  value={typeof partnerFormData.services === 'string' ? partnerFormData.services : JSON.stringify(partnerFormData.services || [])}
                   onChange={(e) => setPartnerFormData(prev => ({ ...prev, services: e.target.value }))}
                   rows={3}
+                  placeholder="Hizmetleri JSON array formatında veya her satırda bir hizmet olacak şekilde giriniz"
                 />
+                <p className="text-xs text-gray-500">Not: Hizmetler JSON array formatında olmalıdır: ["Hizmet 1", "Hizmet 2"] veya her satırda bir hizmet</p>
               </div>
               
               <div className="space-y-2">
