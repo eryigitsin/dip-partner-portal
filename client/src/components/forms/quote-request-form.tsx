@@ -17,6 +17,8 @@ const formSchema = insertQuoteRequestSchema.extend({
   kvkkConsent: z.boolean().refine(val => val === true, {
     message: "KVKK onayı zorunludur",
   }),
+  projectStartDate: z.string().optional(),
+  projectEndDate: z.string().optional(),
 }).omit({ userId: true });
 
 type FormData = z.infer<typeof formSchema>;
@@ -42,7 +44,8 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       company: '',
       serviceNeeded: '',
       budget: '',
-      projectDate: undefined,
+      projectStartDate: '',
+      projectEndDate: '',
       kvkkConsent: false,
     },
   });
@@ -70,7 +73,26 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
   });
 
   const onSubmit = (data: FormData) => {
-    quoteRequestMutation.mutate(data);
+    const { kvkkConsent, projectStartDate, projectEndDate, ...requestData } = data;
+    
+    // Convert project dates to single projectDate for backend compatibility
+    let projectDateInfo = '';
+    if (projectStartDate && projectEndDate) {
+      projectDateInfo = `${projectStartDate} - ${projectEndDate}`;
+    } else if (projectStartDate) {
+      projectDateInfo = `Başlangıç: ${projectStartDate}`;
+    } else if (projectEndDate) {
+      projectDateInfo = `Bitiş: ${projectEndDate}`;
+    }
+    
+    // Store project date info in serviceNeeded field for backend compatibility
+    const finalServiceNeeded = requestData.serviceNeeded + 
+      (projectDateInfo ? `\n\nProje Tarihi: ${projectDateInfo}` : '');
+    
+    quoteRequestMutation.mutate({
+      ...requestData,
+      serviceNeeded: finalServiceNeeded,
+    });
   };
 
   // Parse partner services from legacy text field
@@ -253,24 +275,46 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="projectDate" 
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Proje Tarihi</FormLabel>
-              <FormControl>
-                <Input 
-                  type="date" 
-                  {...field}
-                  value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                  onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Project Date Range */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-900">Beklenen Proje Başlangıç & Bitiş Tarihleri</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="projectStartDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Başlangıç Tarihi</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date" 
+                      min={new Date().toISOString().split('T')[0]}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="projectEndDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bitiş Tarihi</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date" 
+                      min={new Date().toISOString().split('T')[0]}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <FormField
           control={form.control}

@@ -464,10 +464,14 @@ export const insertPartnerApplicationSchema = createInsertSchema(partnerApplicat
   notes: true,
 });
 
-export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).omit({
+export const insertQuoteRequestSchema = createInsertSchema(quoteRequests).extend({
+  projectStartDate: z.string().optional(),
+  projectEndDate: z.string().optional(),
+}).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  projectDate: true,
 });
 
 export const insertServiceCategorySchema = createInsertSchema(serviceCategories).omit({

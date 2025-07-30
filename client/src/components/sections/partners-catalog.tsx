@@ -125,7 +125,7 @@ export function PartnersCatalog({
                   <SelectContent>
                     <SelectItem value="all">{t('allCategories', language)}</SelectItem>
                     {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.slug}>
+                      <SelectItem key={`${cat.id}-${cat.slug}`} value={cat.slug}>
                         {language === 'en' ? cat.nameEn : cat.name}
                       </SelectItem>
                     ))}
