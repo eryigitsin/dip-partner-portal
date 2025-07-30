@@ -2049,6 +2049,13 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Register admin API routes
+  (async () => {
+    const adminModule = await import('./admin-routes.js');
+    const adminRoutes = adminModule.createAdminRoutes(storage);
+    app.use("/api/admin", adminRoutes);
+  })();
+
   const httpServer = createServer(app);
   return httpServer;
 }

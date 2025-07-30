@@ -447,48 +447,53 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllQuoteRequestsWithPartners(): Promise<any[]> {
-    const result = await db
-      .select({
-        id: quoteRequests.id,
-        userId: quoteRequests.userId,
-        partnerId: quoteRequests.partnerId,
-        fullName: quoteRequests.fullName,
-        email: quoteRequests.email,
-        phone: quoteRequests.phone,
-        companyName: quoteRequests.companyName,
-        serviceNeeded: quoteRequests.serviceNeeded,
-        budget: quoteRequests.budget,
-        message: quoteRequests.message,
-        status: quoteRequests.status,
-        createdAt: quoteRequests.createdAt,
-        updatedAt: quoteRequests.updatedAt,
-        partnerCompanyName: partners.companyName,
-        partnerLogo: partners.logo,
-      })
-      .from(quoteRequests)
-      .leftJoin(partners, eq(quoteRequests.partnerId, partners.id))
-      .orderBy(desc(quoteRequests.createdAt));
+    try {
+      const result = await db
+        .select({
+          id: quoteRequests.id,
+          userId: quoteRequests.userId,
+          partnerId: quoteRequests.partnerId,
+          fullName: quoteRequests.fullName,
+          email: quoteRequests.email,
+          phone: quoteRequests.phone,
+          companyName: quoteRequests.companyName,
+          serviceNeeded: quoteRequests.serviceNeeded,
+          budget: quoteRequests.budget,
+          message: quoteRequests.message,
+          status: quoteRequests.status,
+          createdAt: quoteRequests.createdAt,
+          updatedAt: quoteRequests.updatedAt,
+          partnerCompanyName: partners.companyName,
+          partnerLogo: partners.logo,
+        })
+        .from(quoteRequests)
+        .leftJoin(partners, eq(quoteRequests.partnerId, partners.id))
+        .orderBy(desc(quoteRequests.createdAt));
 
-    return result.map(row => ({
-      id: row.id,
-      userId: row.userId,
-      partnerId: row.partnerId,
-      fullName: row.fullName,
-      email: row.email,
-      phone: row.phone,
-      companyName: row.companyName,
-      serviceNeeded: row.serviceNeeded,
-      budget: row.budget,
-      message: row.message,
-      status: row.status,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      partner: row.partnerCompanyName ? {
-        id: row.partnerId,
-        companyName: row.partnerCompanyName,
-        logo: row.partnerLogo,
-      } : null,
-    }));
+      return result.map(row => ({
+        id: row.id,
+        userId: row.userId,
+        partnerId: row.partnerId,
+        fullName: row.fullName,
+        email: row.email,
+        phone: row.phone,
+        companyName: row.companyName,
+        serviceNeeded: row.serviceNeeded,
+        budget: row.budget,
+        message: row.message || '',
+        status: row.status || 'pending',
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        partner: row.partnerCompanyName ? {
+          id: row.partnerId,
+          companyName: row.partnerCompanyName,
+          logo: row.partnerLogo,
+        } : null,
+      }));
+    } catch (error) {
+      console.error('Error in getAllQuoteRequestsWithPartners:', error);
+      return [];
+    }
   }
 
   async createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest> {
@@ -734,6 +739,11 @@ export class DatabaseStorage implements IStorage {
   // Admin functions
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users);
+  }
+
+  async getUserById(userId: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    return user || undefined;
   }
 
   async getAllPartnersWithUsers(): Promise<Partner[]> {

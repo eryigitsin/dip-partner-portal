@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ApplicationDetailDialog } from "@/components/forms/application-detail-dialog";
+import { QuoteRequestsEmbedded } from "@/components/admin/quote-requests-embedded";
+import { PartnerInspectionModal } from "@/components/admin/partner-inspection-modal";
 import { PartnerApplication, Partner, QuoteRequest } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -43,6 +45,8 @@ export default function AdminDashboard() {
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [partnerFormData, setPartnerFormData] = useState<Partial<Partner & { email?: string; password?: string }>>({});
+  const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<number | null>(null);
 
   const { data: applications = [] } = useQuery<PartnerApplication[]>({
     queryKey: ["/api/partner-applications"],
@@ -160,6 +164,11 @@ export default function AdminDashboard() {
   const handleEditPartner = (partner: Partner) => {
     setEditingPartner(partner);
     setPartnerFormData(partner);
+  };
+
+  const handleViewPartner = (partnerId: number) => {
+    setSelectedPartnerId(partnerId);
+    setInspectionModalOpen(true);
   };
 
   const handleSavePartner = () => {
@@ -561,7 +570,7 @@ export default function AdminDashboard() {
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => window.open(`/admin/partner-inspection/${partner.id}`, '_blank')}
+                                onClick={() => handleViewPartner(partner.id)}
                               >
                                 <Eye className="h-4 w-4 mr-1" />
                                 Görüntüle
@@ -586,37 +595,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="quotes" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Teklif Talepleri Yönetimi</span>
-                  <Button 
-                    onClick={() => window.open('/admin/quote-requests', '_blank')}
-                    variant="outline"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Detaylı Görünüm
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Teklif Talepleri Yönetimi
-                  </h3>
-                  <p className="text-gray-500 mb-4">
-                    Tüm teklif taleplerini görüntülemek ve yönetmek için detaylı görünüme geçin.
-                  </p>
-                  <Button 
-                    onClick={() => window.open('/admin/quote-requests', '_blank')}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Teklif Talepleri Sayfasına Git
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <QuoteRequestsEmbedded />
           </TabsContent>
         </Tabs>
       </div>
@@ -778,6 +757,13 @@ export default function AdminDashboard() {
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* Partner Inspection Modal */}
+      <PartnerInspectionModal
+        open={inspectionModalOpen}
+        onOpenChange={setInspectionModalOpen}
+        partnerId={selectedPartnerId}
+      />
       
       <Footer />
     </div>
