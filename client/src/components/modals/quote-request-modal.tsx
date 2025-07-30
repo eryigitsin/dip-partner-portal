@@ -18,7 +18,14 @@ export function QuoteRequestModal({ isOpen, onClose, partner }: QuoteRequestModa
           {partner.dipAdvantages && (
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 rounded-lg mb-6 -mx-6 -mt-6">
               <h3 className="text-xl font-bold mb-2 flex items-center">
-                🏷️ DİP'e Özel Avantajlar
+                {partner.logo && (
+                  <img 
+                    src={partner.logo} 
+                    alt={partner.companyName}
+                    className="w-8 h-8 rounded mr-3 bg-white p-1"
+                  />
+                )}
+                {partner.companyName} - DİP'e Özel Avantajlar
               </h3>
               <p className="text-blue-100 leading-relaxed">
                 {partner.dipAdvantages}
@@ -26,7 +33,7 @@ export function QuoteRequestModal({ isOpen, onClose, partner }: QuoteRequestModa
             </div>
           )}
           <DialogTitle className="text-lg font-semibold">
-            {partner.companyName} - Teklif Talep Formu
+            Teklif Talep Formu
           </DialogTitle>
           <DialogDescription className="sr-only">
             {partner.companyName} firmasından teklif almak için formu doldurun
