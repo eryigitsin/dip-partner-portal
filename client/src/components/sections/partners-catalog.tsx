@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +24,8 @@ export function PartnersCatalog({
   selectedCategory 
 }: PartnersCatalogProps) {
   const { language } = useLanguage();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [category, setCategory] = useState(selectedCategory || 'all');
   const [search, setSearch] = useState('');
   const [currentSearch, setCurrentSearch] = useState('');
@@ -261,7 +265,18 @@ export function PartnersCatalog({
                   
                   <div className="flex space-x-3">
                     <Button 
-                      onClick={() => onQuoteRequest(partner)}
+                      onClick={() => {
+                        if (!user) {
+                          toast({
+                            title: 'Önce giriş yapın',
+                            description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
+                            variant: 'destructive',
+                          });
+                          window.location.href = '/auth';
+                          return;
+                        }
+                        onQuoteRequest(partner);
+                      }}
                       className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold"
                     >
                       TEKLİF AL

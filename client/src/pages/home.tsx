@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, useRouter } from 'wouter';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { HeroSection } from '@/components/sections/hero-section';
@@ -11,7 +13,9 @@ import { QuoteRequestModal } from '@/components/modals/quote-request-modal';
 import { Partner } from '@shared/schema';
 
 export default function HomePage() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [isPartnerApplicationOpen, setIsPartnerApplicationOpen] = useState(false);
   const [isQuoteRequestOpen, setIsQuoteRequestOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
@@ -53,6 +57,15 @@ export default function HomePage() {
   };
 
   const handleQuoteRequest = (partner: Partner) => {
+    if (!user) {
+      toast({
+        title: 'Önce giriş yapın',
+        description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
+        variant: 'destructive',
+      });
+      setLocation('/auth');
+      return;
+    }
     setSelectedPartner(partner);
     setIsQuoteRequestOpen(true);
   };

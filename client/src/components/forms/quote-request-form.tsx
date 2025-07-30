@@ -44,11 +44,10 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     resolver: zodResolver(formSchema),
     defaultValues: {
       partnerId: partner.id,
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
+      fullName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '',
       email: user?.email || '',
-      phone: '',
-      company: '',
+      phone: user?.phone || '',
+      companyName: user?.companyName || '',
       serviceNeeded: '',
       budget: '',
       projectStartDate: '',
@@ -138,34 +137,19 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ad *</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Soyad *</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="fullName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Ad Soyad *</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -197,7 +181,7 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
 
         <FormField
           control={form.control}
-          name="company"
+          name="companyName"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Şirket *</FormLabel>
