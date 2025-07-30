@@ -188,7 +188,14 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form 
+        onSubmit={(e) => {
+          console.log('🎯 Form submit event triggered!');
+          console.log('📋 Event details:', e);
+          form.handleSubmit(onSubmit)(e);
+        }} 
+        className="space-y-6"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -503,6 +510,13 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
             type="submit" 
             disabled={quoteRequestMutation.isPending}
             className="flex-1 bg-dip-green hover:bg-green-600"
+            onClick={(e) => {
+              console.log('🔘 Submit button clicked!');
+              console.log('📝 Form state:', form.formState);
+              console.log('🔍 Form errors:', form.formState.errors);
+              console.log('📊 Form values:', form.getValues());
+              // Don't prevent default - let form handle submission
+            }}
           >
             {quoteRequestMutation.isPending ? 'Gönderiliyor...' : 'Teklif Talep Et'}
           </Button>

@@ -15,7 +15,7 @@ export async function apiRequest(
   console.log(`🌐 API Request: ${method} ${url}`);
   console.log('📦 Request data:', data);
   
-  const requestHeaders = data ? { "Content-Type": "application/json" } : {};
+  const requestHeaders: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
   console.log('📋 Request headers:', requestHeaders);
   
   const requestBody = data ? JSON.stringify(data) : undefined;
