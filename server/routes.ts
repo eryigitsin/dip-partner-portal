@@ -14,6 +14,76 @@ import fs from "fs";
 import express from "express";
 import { supabaseStorage } from "./supabase-storage";
 
+// Email templates and functionality
+const emailTemplates = {
+  serviceRequest: {
+    toUser: (request: any, partner: any) => ({
+      subject: `Teklif Talebiniz Alındı - ${partner.companyName}`,
+      html: `
+        <h2>Teklif Talebiniz Alındı</h2>
+        <p>Merhaba ${request.fullName},</p>
+        <p>${partner.companyName} firmasına gönderdiğiniz teklif talebiniz başarıyla alındı.</p>
+        <p><strong>Hizmet:</strong> ${request.serviceNeeded}</p>
+        <p><strong>Bütçe:</strong> ${request.budget || 'Belirtilmemiş'}</p>
+        <p>Kısa süre içinde ${partner.companyName} firması tarafından iletişime geçilecektir.</p>
+      `
+    })
+  },
+  quoteStatus: {
+    approved: {
+      toPartner: (request: any, user: any) => ({
+        subject: `Teklif Onaylandı - ${request.fullName}`,
+        html: `
+          <h2>Teklifiniz Onaylandı</h2>
+          <p>Tebrikler! ${request.fullName} adlı müşteri teklifinizi onayladı.</p>
+          <p><strong>Hizmet:</strong> ${request.serviceNeeded}</p>
+          <p>Müşteri ile iletişime geçerek projeyi başlatabilirsiniz.</p>
+        `
+      }),
+      toUser: (request: any, partner: any) => ({
+        subject: `Teklif Onaylandı - ${partner.companyName}`,
+        html: `
+          <h2>Teklif Onaylandı</h2>
+          <p>Merhaba ${request.fullName},</p>
+          <p>${partner.companyName} firmasından aldığınız teklifi onayladınız.</p>
+          <p><strong>Hizmet:</strong> ${request.serviceNeeded}</p>
+          <p>Firma ile iletişime geçerek projeyi başlatabilirsiniz.</p>
+        `
+      })
+    },
+    rejected: {
+      toPartner: (request: any, user: any) => ({
+        subject: `Teklif Reddedildi - ${request.fullName}`,
+        html: `
+          <h2>Teklif Durumu</h2>
+          <p>${request.fullName} adlı müşteri teklifinizi reddetmiştir.</p>
+          <p><strong>Hizmet:</strong> ${request.serviceNeeded}</p>
+          <p>Başka fırsatlar için platformumuzda aktif kalabilirsiniz.</p>
+        `
+      })
+    }
+  },
+  paymentComplete: (request: any, partner: any) => ({
+    subject: `Ödeme Tamamlandı - ${partner.companyName}`,
+    html: `
+      <h2>Ödeme Tamamlandı</h2>
+      <p>Merhaba ${request.fullName},</p>
+      <p>${partner.companyName} firmasına olan ödemeniz başarıyla tamamlanmıştır.</p>
+      <p><strong>Hizmet:</strong> ${request.serviceNeeded}</p>
+      <p>Proje başlatılabilir.</p>
+    `
+  })
+};
+
+// Email sending function
+async function sendEmail(params: { to: string; subject: string; html: string }) {
+  try {
+    await resendService.sendEmail(params);
+  } catch (error) {
+    console.error('Email sending failed:', error);
+  }
+}
+
 const scryptAsync = promisify(scrypt);
 
 // Hash password function
@@ -89,7 +159,10 @@ export function registerRoutes(app: Express): Server {
       } else if (!user.supabaseId) {
         // Update existing user with Supabase ID
         await storage.updateUser(user.id, { supabaseId: supabaseUser.id });
-        user = await storage.getUserById(user.id);
+        const updatedUser = await storage.getUserById(user.id);
+        if (updatedUser) {
+          user = updatedUser;
+        }
       }
 
       // Set up session for passport
@@ -105,13 +178,13 @@ export function registerRoutes(app: Express): Server {
         return res.json({ 
           success: true, 
           user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            userType: user.userType,
-            isVerified: user.isVerified,
-            language: user.language
+            id: user!.id,
+            email: user!.email,
+            firstName: user!.firstName,
+            lastName: user!.lastName,
+            userType: user!.userType,
+            isVerified: user!.isVerified,
+            language: user!.language
           }
         });
       });
