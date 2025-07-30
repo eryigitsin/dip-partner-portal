@@ -18,6 +18,7 @@ import { Footer } from "@/components/layout/footer";
 import { ApplicationDetailDialog } from "@/components/forms/application-detail-dialog";
 import { QuoteRequestsEmbedded } from "@/components/admin/quote-requests-embedded";
 import { PartnerInspectionModal } from "@/components/admin/partner-inspection-modal";
+import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
 import { PartnerApplication, Partner, QuoteRequest } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -49,6 +50,11 @@ export default function AdminDashboard() {
   const [partnerFormData, setPartnerFormData] = useState<Partial<Partner & { email?: string; password?: string }>>({});
   const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
   const [selectedPartnerId, setSelectedPartnerId] = useState<number | null>(null);
+  const [adminLogoFile, setAdminLogoFile] = useState<File | null>(null);
+  const [adminCoverFile, setAdminCoverFile] = useState<File | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string>('');
+  const [cropType, setCropType] = useState<'logo' | 'cover'>('logo');
 
   const { data: applications = [] } = useQuery<PartnerApplication[]>({
     queryKey: ["/api/partner-applications"],
@@ -166,6 +172,8 @@ export default function AdminDashboard() {
   const handleEditPartner = (partner: Partner) => {
     setEditingPartner(partner);
     setPartnerFormData(partner);
+    setAdminLogoFile(null);
+    setAdminCoverFile(null);
   };
 
   const handleViewPartner = (partnerId: number) => {
@@ -173,9 +181,144 @@ export default function AdminDashboard() {
     setInspectionModalOpen(true);
   };
 
-  const handleSavePartner = () => {
+  // Admin upload handlers
+  const handleAdminLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Dosya Boyutu Hatası',
+          description: 'Logo dosyası 5MB\'dan küçük olmalıdır.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Hata",
+          description: "Lütfen sadece resim dosyası seçiniz.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageSrc = e.target?.result as string;
+        setCropImageSrc(imageSrc);
+        setCropType('logo');
+        setCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAdminCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: 'Dosya Boyutu Hatası',
+          description: 'Kapak görseli 10MB\'dan küçük olmalıdır.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Hata",
+          description: "Lütfen sadece resim dosyası seçiniz.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageSrc = e.target?.result as string;
+        setCropImageSrc(imageSrc);
+        setCropType('cover');
+        setCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAdminCropComplete = (croppedImageBlob: Blob) => {
+    const croppedFile = new File([croppedImageBlob], `${cropType}-cropped.jpg`, {
+      type: 'image/jpeg',
+    });
+
+    if (cropType === 'logo') {
+      setAdminLogoFile(croppedFile);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const newLogoUrl = e.target?.result as string;
+        setPartnerFormData(prev => ({ ...prev, logo: newLogoUrl }));
+      };
+      reader.readAsDataURL(croppedFile);
+    } else {
+      setAdminCoverFile(croppedFile);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const newCoverUrl = e.target?.result as string;
+        setPartnerFormData(prev => ({ ...prev, coverImage: newCoverUrl }));
+      };
+      reader.readAsDataURL(croppedFile);
+    }
+  };
+
+  const handleSavePartner = async () => {
     if (!editingPartner) return;
-    updatePartnerMutation.mutate({ ...partnerFormData, id: editingPartner.id });
+
+    try {
+      const formData = new FormData();
+      
+      // Add partner data
+      Object.entries(partnerFormData).forEach(([key, value]) => {
+        if (key !== 'logo' && key !== 'coverImage' && value !== undefined && value !== null) {
+          formData.append(key, value.toString());
+        }
+      });
+
+      // Add files if selected
+      if (adminLogoFile) {
+        formData.append('logo', adminLogoFile);
+      }
+      if (adminCoverFile) {
+        formData.append('coverImage', adminCoverFile);
+      }
+
+      const response = await fetch(`/api/partners/${editingPartner.id}`, {
+        method: 'PATCH',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Partner güncelleme başarısız');
+      }
+
+      const updatedPartner = await response.json();
+      
+      toast({
+        title: "Başarılı",
+        description: "Partner bilgileri başarıyla güncellendi.",
+      });
+
+      setEditingPartner(null);
+      setPartnerFormData({});
+      setAdminLogoFile(null);
+      setAdminCoverFile(null);
+
+      // Refresh partners list
+      queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Partner güncellenirken bir hata oluştu",
+        variant: "destructive",
+      });
+    }
   };
 
   const togglePartnerStatus = (partnerId: number, isActive: boolean) => {
@@ -698,38 +841,58 @@ export default function AdminDashboard() {
                 <div>
                   <Label className="text-sm font-medium">Şirket Logosu</Label>
                   <div className="mt-2">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <div 
+                      onClick={() => document.getElementById('admin-logo-input')?.click()}
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-dip-blue transition-colors"
+                    >
                       {partnerFormData.logo ? (
                         <div className="relative">
                           <img src={partnerFormData.logo} alt="Current Logo" className="max-h-16 mx-auto rounded" />
-                          <p className="text-xs text-gray-500 mt-2">Mevcut logo</p>
+                          <p className="text-xs text-gray-500 mt-2">Yeni logo yüklemek için tıklayın</p>
                         </div>
                       ) : (
                         <div>
                           <Upload className="mx-auto h-6 w-6 text-gray-400" />
-                          <p className="text-xs text-gray-600 mt-1">Logo yok</p>
+                          <p className="text-xs text-gray-600 mt-1">Logo yükleyin</p>
                         </div>
                       )}
                     </div>
+                    <input
+                      id="admin-logo-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAdminLogoChange}
+                      className="hidden"
+                    />
                   </div>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium">Kapak Görseli</Label>
                   <div className="mt-2">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <div 
+                      onClick={() => document.getElementById('admin-cover-input')?.click()}
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-dip-blue transition-colors"
+                    >
                       {partnerFormData.coverImage ? (
                         <div className="relative">
                           <img src={partnerFormData.coverImage} alt="Current Cover" className="max-h-16 mx-auto rounded" />
-                          <p className="text-xs text-gray-500 mt-2">Mevcut kapak</p>
+                          <p className="text-xs text-gray-500 mt-2">Yeni kapak yüklemek için tıklayın</p>
                         </div>
                       ) : (
                         <div>
                           <ImageIcon className="mx-auto h-6 w-6 text-gray-400" />
-                          <p className="text-xs text-gray-600 mt-1">Kapak yok</p>
+                          <p className="text-xs text-gray-600 mt-1">Kapak yükleyin</p>
                         </div>
                       )}
                     </div>
+                    <input
+                      id="admin-cover-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAdminCoverChange}
+                      className="hidden"
+                    />
                   </div>
                 </div>
               </div>
@@ -808,6 +971,17 @@ export default function AdminDashboard() {
         open={inspectionModalOpen}
         onOpenChange={setInspectionModalOpen}
         partnerId={selectedPartnerId}
+      />
+      
+      {/* Admin Image Crop Dialog */}
+      <ImageCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imageSrc={cropImageSrc}
+        onCropComplete={handleAdminCropComplete}
+        aspectRatio={cropType === 'logo' ? 1 : 3}
+        title={cropType === 'logo' ? 'Logo Kırp' : 'Kapak Görseli Kırp'}
+        description={cropType === 'logo' ? 'Logoyu kare formata kırpın' : 'Kapak görselini 3:1 oranında kırpın'}
       />
       
       <Footer />

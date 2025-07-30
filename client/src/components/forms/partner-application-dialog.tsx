@@ -15,6 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Loader2, Upload, X, ImageIcon } from "lucide-react";
+import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
 import type { Service } from "@shared/schema";
 
 // Service categories will be fetched from API
@@ -73,8 +74,11 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string>('');
+  const [cropType, setCropType] = useState<'logo' | 'cover'>('logo');
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [serviceInput, setServiceInput] = useState('');
@@ -92,7 +96,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
     queryKey: ['/api/services'],
   });
 
-  // File upload handlers
+  // File upload handlers with crop support
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -113,12 +117,13 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
         return;
       }
 
-      setLogoFile(file);
-      
-      // Create preview
+      // Create preview and open crop dialog
       const reader = new FileReader();
       reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string);
+        const imageSrc = e.target?.result as string;
+        setCropImageSrc(imageSrc);
+        setCropType('logo');
+        setCropDialogOpen(true);
       };
       reader.readAsDataURL(file);
     }
@@ -144,14 +149,38 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
         return;
       }
 
-      setCoverFile(file);
-      
-      // Create preview
+      // Create preview and open crop dialog
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageSrc = e.target?.result as string;
+        setCropImageSrc(imageSrc);
+        setCropType('cover');
+        setCropDialogOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Crop completion handler
+  const handleCropComplete = (croppedImageBlob: Blob) => {
+    const croppedFile = new File([croppedImageBlob], `${cropType}-cropped.jpg`, {
+      type: 'image/jpeg',
+    });
+
+    if (cropType === 'logo') {
+      setLogoFile(croppedFile);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(croppedFile);
+    } else {
+      setCoverFile(croppedFile);
       const reader = new FileReader();
       reader.onload = (e) => {
         setCoverPreview(e.target?.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(croppedFile);
     }
   };
 
@@ -368,6 +397,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -1035,5 +1065,16 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
         </Form>
       </DialogContent>
     </Dialog>
+
+    <ImageCropDialog
+      open={cropDialogOpen}
+      onOpenChange={setCropDialogOpen}
+      imageSrc={cropImageSrc}
+      onCropComplete={handleCropComplete}
+      aspectRatio={cropType === 'logo' ? 1 : 3}
+      title={cropType === 'logo' ? 'Logo Kırp' : 'Kapak Görseli Kırp'}
+      description={cropType === 'logo' ? 'Logoyu kare formata kırpın' : 'Kapak görselini 3:1 oranında kırpın'}
+    />
+    </>
   );
 }
