@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { insertQuoteRequestSchema, Partner } from '@shared/schema';
 import { z } from 'zod';
+import { useState } from 'react';
 
 const formSchema = insertQuoteRequestSchema.extend({
   kvkkConsent: z.boolean().refine(val => val === true, {
@@ -19,6 +21,8 @@ const formSchema = insertQuoteRequestSchema.extend({
   }),
   projectStartDate: z.string().optional(),
   projectEndDate: z.string().optional(),
+  workType: z.enum(['project', 'monthly']).optional(),
+  selectedServices: z.array(z.string()).optional(),
 }).omit({ userId: true });
 
 type FormData = z.infer<typeof formSchema>;
@@ -32,6 +36,8 @@ interface QuoteRequestFormProps {
 export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [workType, setWorkType] = useState<'project' | 'monthly'>('project');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -73,25 +79,42 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
   });
 
   const onSubmit = (data: FormData) => {
+    // Validate service selection for structured services
+    if (partnerServices.length > 0 && selectedServices.length === 0) {
+      toast({
+        title: "Hata",
+        description: "En az bir hizmet seçiniz",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { kvkkConsent, projectStartDate, projectEndDate, ...requestData } = data;
     
-    // Convert project dates to single projectDate for backend compatibility
-    let projectDateInfo = '';
-    if (projectStartDate && projectEndDate) {
-      projectDateInfo = `${projectStartDate} - ${projectEndDate}`;
-    } else if (projectStartDate) {
-      projectDateInfo = `Başlangıç: ${projectStartDate}`;
-    } else if (projectEndDate) {
-      projectDateInfo = `Bitiş: ${projectEndDate}`;
+    // Prepare service information
+    let serviceInfo = '';
+    if (partnerServices.length > 0) {
+      serviceInfo = selectedServices.join(', ');
+    } else {
+      serviceInfo = requestData.serviceNeeded;
     }
     
-    // Store project date info in serviceNeeded field for backend compatibility
-    const finalServiceNeeded = requestData.serviceNeeded + 
-      (projectDateInfo ? `\n\nProje Tarihi: ${projectDateInfo}` : '');
+    // Add work type information
+    const workTypeText = workType === 'project' ? 'Proje Bazlı' : 'Aylık Çalışma';
+    serviceInfo += `\n\nÇalışma Şekli: ${workTypeText}`;
+    
+    // Add project dates only if project-based work is selected
+    if (workType === 'project' && projectStartDate && projectEndDate) {
+      serviceInfo += `\nProje Tarihi: ${projectStartDate} - ${projectEndDate}`;
+    } else if (workType === 'project' && projectStartDate) {
+      serviceInfo += `\nBaşlangıç Tarihi: ${projectStartDate}`;
+    } else if (workType === 'project' && projectEndDate) {
+      serviceInfo += `\nBitiş Tarihi: ${projectEndDate}`;
+    }
     
     quoteRequestMutation.mutate({
       ...requestData,
-      serviceNeeded: finalServiceNeeded,
+      serviceNeeded: serviceInfo,
     });
   };
 
@@ -185,33 +208,56 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
           )}
         />
 
-        {/* Service Selection */}
+        {/* Multiple Service Selection */}
         {partnerServices.length > 0 && (
-          <FormField
-            control={form.control}
-            name="serviceNeeded" 
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Hizmet Seçimi *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="İhtiyacınız olan hizmeti seçiniz" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {partnerServices.map((service, index) => (
-                      <SelectItem key={index} value={service}>
-                        {service}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="other">Diğer (Açıklama kısmında belirtiniz)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-3">
+            <FormLabel>Hizmet Seçimi * (Birden fazla seçim yapabilirsiniz)</FormLabel>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {partnerServices.map((service, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`service-${index}`}
+                    checked={selectedServices.includes(service)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedServices(prev => [...prev, service]);
+                      } else {
+                        setSelectedServices(prev => prev.filter(s => s !== service));
+                      }
+                    }}
+                  />
+                  <label 
+                    htmlFor={`service-${index}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {service}
+                  </label>
+                </div>
+              ))}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="service-other"
+                  checked={selectedServices.includes('Diğer')}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedServices(prev => [...prev, 'Diğer']);
+                    } else {
+                      setSelectedServices(prev => prev.filter(s => s !== 'Diğer'));
+                    }
+                  }}
+                />
+                <label 
+                  htmlFor="service-other"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Diğer (Açıklama kısmında belirtiniz)
+                </label>
+              </div>
+            </div>
+            {selectedServices.length === 0 && (
+              <p className="text-sm text-red-600">En az bir hizmet seçiniz</p>
             )}
-          />
+          </div>
         )}
 
         {/* Fallback for partners without structured services */}
@@ -275,46 +321,71 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
           )}
         />
 
-        {/* Project Date Range */}
+        {/* Work Type Selection */}
         <div className="space-y-4">
-          <h4 className="font-medium text-gray-900">Beklenen Proje Başlangıç & Bitiş Tarihleri</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="projectStartDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Başlangıç Tarihi</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="date" 
-                      min={new Date().toISOString().split('T')[0]}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="projectEndDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bitiş Tarihi</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="date" 
-                      min={new Date().toISOString().split('T')[0]}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormLabel>Çalışma Şekli *</FormLabel>
+          <RadioGroup 
+            value={workType} 
+            onValueChange={(value: 'project' | 'monthly') => setWorkType(value)}
+            className="flex flex-col space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="project" id="work-project" />
+              <label htmlFor="work-project" className="text-sm font-medium">
+                Proje Bazlı
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="monthly" id="work-monthly" />
+              <label htmlFor="work-monthly" className="text-sm font-medium">
+                Aylık Çalışma
+              </label>
+            </div>
+          </RadioGroup>
         </div>
+
+        {/* Conditional Project Date Range */}
+        {workType === 'project' && (
+          <div className="space-y-4">
+            <h4 className="font-medium text-gray-900">Beklenen Proje Başlangıç & Bitiş Tarihleri</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="projectStartDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Başlangıç Tarihi</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        min={new Date().toISOString().split('T')[0]}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="projectEndDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bitiş Tarihi</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="date" 
+                        min={new Date().toISOString().split('T')[0]}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        )}
 
         <FormField
           control={form.control}
