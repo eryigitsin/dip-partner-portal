@@ -7,15 +7,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { insertPartnerApplicationSchema, ServiceCategory } from '@shared/schema';
+import { insertPartnerApplicationSchema, ServiceCategory, Service } from '@shared/schema';
 import { z } from 'zod';
+import { useState, useRef } from 'react';
+import { Upload, X, ImageIcon } from 'lucide-react';
 
 const formSchema = insertPartnerApplicationSchema.extend({
   kvkkConsent: z.boolean().refine(val => val === true, {
     message: "KVKK onayı zorunludur",
   }),
+  logoFile: z.any().optional(),
+  coverFile: z.any().optional(),
+  servicesList: z.array(z.string()).min(1, "En az bir hizmet seçmelisiniz"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -27,9 +33,21 @@ interface PartnerApplicationFormProps {
 
 export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicationFormProps) {
   const { toast } = useToast();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const [coverPreview, setCoverPreview] = useState<string>('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [serviceInput, setServiceInput] = useState('');
+  const [serviceDropdownOpen, setServiceDropdownOpen] = useState(false);
   
   const { data: categories = [] } = useQuery<ServiceCategory[]>({
     queryKey: ['/api/categories'],
+  });
+  
+  const { data: existingServices = [] } = useQuery<Service[]>({
+    queryKey: ['/api/services'],
   });
 
   const form = useForm<FormData>({
@@ -47,13 +65,102 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
       services: '',
       dipAdvantages: '',
       kvkkConsent: false,
+      servicesList: [],
     },
   });
 
+  // File upload handlers
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: 'Dosya Boyutu Hatası',
+          description: 'Logo dosyası 5MB\'dan küçük olmalıdır.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      form.setValue('logoFile', file);
+      const reader = new FileReader();
+      reader.onload = (e) => setLogoPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast({
+          title: 'Dosya Boyutu Hatası',
+          description: 'Kapak görseli 10MB\'dan küçük olmalıdır.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      form.setValue('coverFile', file);
+      const reader = new FileReader();
+      reader.onload = (e) => setCoverPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Service management
+  const addService = (serviceName: string) => {
+    if (serviceName.trim() && !selectedServices.includes(serviceName.trim())) {
+      const newServices = [...selectedServices, serviceName.trim()];
+      setSelectedServices(newServices);
+      form.setValue('servicesList', newServices);
+      form.setValue('services', newServices.join('\n'));
+      setServiceInput('');
+    }
+  };
+
+  const removeService = (serviceName: string) => {
+    const newServices = selectedServices.filter(s => s !== serviceName);
+    setSelectedServices(newServices);
+    form.setValue('servicesList', newServices);
+    form.setValue('services', newServices.join('\n'));
+  };
+
+  const filteredServices = existingServices.filter(service =>
+    service.name.toLowerCase().includes(serviceInput.toLowerCase()) &&
+    !selectedServices.includes(service.name)
+  );
+
   const applicationMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const { kvkkConsent, ...applicationData } = data;
-      const response = await apiRequest('POST', '/api/partner-applications', applicationData);
+      const { kvkkConsent, logoFile, coverFile, servicesList, ...applicationData } = data;
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      Object.entries(applicationData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value as string);
+        }
+      });
+      
+      // Add services as JSON string
+      formData.append('services', JSON.stringify(servicesList));
+      
+      if (logoFile) {
+        formData.append('logo', logoFile);
+      }
+      if (coverFile) {
+        formData.append('coverImage', coverFile);
+      }
+      
+      const response = await fetch('/api/partner-applications', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Başvuru gönderilemedi');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -73,6 +180,19 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
   });
 
   const onSubmit = (data: FormData) => {
+    if (selectedServices.length === 0) {
+      toast({
+        title: 'Hizmet Seçimi Gerekli',
+        description: 'En az bir hizmet eklemelisiniz.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Update form data with selected services
+    data.servicesList = selectedServices;
+    data.services = selectedServices.join('\n');
+    
     applicationMutation.mutate(data);
   };
 
@@ -222,18 +342,163 @@ export function PartnerApplicationForm({ onSuccess, onCancel }: PartnerApplicati
           )}
         />
 
+        {/* Logo Upload */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <FormLabel>Şirket Logosu</FormLabel>
+            <div className="mt-2">
+              <div 
+                onClick={() => logoInputRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-dip-blue transition-colors"
+              >
+                {logoPreview ? (
+                  <div className="relative">
+                    <img src={logoPreview} alt="Logo Preview" className="max-h-24 mx-auto rounded" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLogoPreview('');
+                        form.setValue('logoFile', undefined);
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                    <p className="text-sm text-gray-600 mt-2">Logo yükleyin</p>
+                    <p className="text-xs text-gray-400">PNG, JPG (maks. 5MB)</p>
+                    <p className="text-xs text-blue-600 font-medium">Önerilen: 200x200px</p>
+                  </div>
+                )}
+              </div>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
+            </div>
+          </div>
+
+          {/* Cover Image Upload */}
+          <div>
+            <FormLabel>Profil Kapak Görseli</FormLabel>
+            <div className="mt-2">
+              <div 
+                onClick={() => coverInputRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-dip-blue transition-colors"
+              >
+                {coverPreview ? (
+                  <div className="relative">
+                    <img src={coverPreview} alt="Cover Preview" className="max-h-24 mx-auto rounded" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCoverPreview('');
+                        form.setValue('coverFile', undefined);
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+                    <p className="text-sm text-gray-600 mt-2">Kapak görseli yükleyin</p>
+                    <p className="text-xs text-gray-400">PNG, JPG (maks. 10MB)</p>
+                    <p className="text-xs text-blue-600 font-medium">Önerilen: 1200x400px</p>
+                  </div>
+                )}
+              </div>
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCoverUpload}
+                className="hidden"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Services Management */}
         <FormField
           control={form.control}
-          name="services"
+          name="servicesList"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Sunduğunuz Hizmetler *</FormLabel>
               <FormControl>
-                <Textarea 
-                  {...field} 
-                  rows={4}
-                  placeholder="Hizmetlerinizi detaylıca açıklayınız..."
-                />
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Input
+                      value={serviceInput}
+                      onChange={(e) => setServiceInput(e.target.value)}
+                      placeholder="Hizmet adı yazın..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (serviceInput.trim()) {
+                            addService(serviceInput);
+                          }
+                        }
+                      }}
+                    />
+                    {serviceInput && filteredServices.length > 0 && (
+                      <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+                        {filteredServices.map((service) => (
+                          <button
+                            key={service.id}
+                            type="button"
+                            onClick={() => addService(service.name)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="font-medium">{service.name}</div>
+                            {service.description && (
+                              <div className="text-xs text-gray-500">{service.description}</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {serviceInput && !filteredServices.some(s => s.name.toLowerCase() === serviceInput.toLowerCase()) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addService(serviceInput)}
+                      className="w-full"
+                    >
+                      "{serviceInput}" hizmetini ekle
+                    </Button>
+                  )}
+
+                  {selectedServices.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedServices.map((service, index) => (
+                        <Badge key={index} variant="secondary" className="text-sm">
+                          {service}
+                          <button
+                            type="button"
+                            onClick={() => removeService(service)}
+                            className="ml-2 text-red-500 hover:text-red-700"
+                          >
+                            <X size={14} />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

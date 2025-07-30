@@ -6,6 +6,7 @@ import {
   applicationDocuments,
   quoteRequests,
   serviceCategories,
+  services,
   partnerServices,
   partnerPosts,
   partnerFollowers,
@@ -29,6 +30,8 @@ import {
   type InsertQuoteRequest,
   type ServiceCategory,
   type InsertServiceCategory,
+  type Service,
+  type InsertService,
   type SmsOtpCode,
   type InsertSmsOtpCode,
   type TempUserRegistration,
@@ -523,6 +526,58 @@ export class DatabaseStorage implements IStorage {
       .values(category)
       .returning();
     return newCategory;
+  }
+
+  // Services management
+  async getAllServices(): Promise<Service[]> {
+    return await db.select().from(services).where(eq(services.isActive, true)).orderBy(asc(services.name));
+  }
+
+  async getServiceByName(name: string): Promise<Service | undefined> {
+    const [service] = await db.select().from(services).where(eq(services.name, name)).limit(1);
+    return service;
+  }
+
+  async createService(service: InsertService): Promise<Service> {
+    const [newService] = await db
+      .insert(services)
+      .values(service)
+      .returning();
+    return newService;
+  }
+
+  async getPartnerServices(partnerId: number): Promise<string[]> {
+    try {
+      const partner = await db.select().from(partners).where(eq(partners.id, partnerId)).limit(1);
+      if (!partner[0] || !partner[0].services) return [];
+      
+      // Parse services - could be JSON array or newline-separated string
+      let servicesList: string[] = [];
+      try {
+        servicesList = JSON.parse(partner[0].services);
+      } catch {
+        servicesList = partner[0].services.split('\n').filter(s => s.trim());
+      }
+      
+      return servicesList;
+    } catch (error) {
+      console.error('Error getting partner services:', error);
+      return [];
+    }
+  }
+
+  async updatePartnerServices(partnerId: number, services: string[]): Promise<void> {
+    try {
+      await db.update(partners)
+        .set({ 
+          services: JSON.stringify(services),
+          updatedAt: new Date()
+        })
+        .where(eq(partners.id, partnerId));
+    } catch (error) {
+      console.error('Error updating partner services:', error);
+      throw error;
+    }
   }
 
   async followPartner(userId: number, partnerId: number): Promise<void> {

@@ -272,6 +272,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Services endpoints
+  app.get("/api/services", async (req, res) => {
+    try {
+      const services = await storage.getAllServices();
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch services" });
+    }
+  });
+
+  app.post("/api/services", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { name, description, category } = req.body;
+      
+      // Check if service already exists
+      const existingService = await storage.getServiceByName(name);
+      if (existingService) {
+        return res.json(existingService);
+      }
+
+      const service = await storage.createService({
+        name,
+        description,
+        category,
+        createdBy: req.user!.id,
+      });
+
+      res.json(service);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create service" });
+    }
+  });
+
   // Partners
   app.get("/api/partners", async (req, res) => {
     try {
