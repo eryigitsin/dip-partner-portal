@@ -523,30 +523,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
                 />
               </div>
 
-              {/* Logo Upload */}
-              <div className="space-y-2">
-                <Label>Şirket Logosu (Kare Format)</Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    className="flex-1"
-                  />
-                  {logoPreview && (
-                    <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
-                      <img
-                        src={logoPreview}
-                        alt="Logo preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500">
-                  Logo otomatik olarak kare formata dönüştürülecektir. JPG, PNG formatları desteklenir.
-                </p>
-              </div>
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
