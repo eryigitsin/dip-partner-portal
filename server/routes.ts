@@ -566,17 +566,33 @@ export function registerRoutes(app: Express): Server {
   // Quote requests
   app.post("/api/quote-requests", async (req, res) => {
     try {
+      console.log('Quote request received:', req.body);
+      console.log('User authenticated:', req.isAuthenticated());
+      console.log('User info:', req.user);
+
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       const requestData = insertQuoteRequestSchema.parse({
         ...req.body,
-        userId: req.user?.id,
+        userId: req.user.id,
       });
+      
+      console.log('Parsed request data:', requestData);
+      
       const request = await storage.createQuoteRequest(requestData);
+      
+      console.log('Quote request created successfully:', request.id);
+      
       res.status(201).json(request);
     } catch (error) {
+      console.error('Quote request error:', error);
       if (error instanceof z.ZodError) {
+        console.error('Validation errors:', error.errors);
         return res.status(400).json({ message: "Validation failed", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create quote request" });
+      res.status(500).json({ message: "Failed to create quote request", error: (error as Error).message });
     }
   });
 
