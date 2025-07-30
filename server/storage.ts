@@ -531,7 +531,51 @@ export class DatabaseStorage implements IStorage {
   // Services management
   async getAllServices(): Promise<Service[]> {
     try {
-      return await db.select().from(services).orderBy(asc(services.name));
+      // Get all unique services from partners' service lists
+      const partnerData = await db.select({ services: partners.services }).from(partners).where(and(
+        eq(partners.isApproved, true),
+        eq(partners.isActive, true)
+      ));
+      
+      const allServiceNames = new Set<string>();
+      
+      // Extract services from each partner
+      partnerData.forEach(partner => {
+        if (partner.services) {
+          try {
+            const servicesList = JSON.parse(partner.services);
+            if (Array.isArray(servicesList)) {
+              servicesList.forEach(service => {
+                if (typeof service === 'string' && service.trim()) {
+                  allServiceNames.add(service.trim());
+                }
+              });
+            }
+          } catch {
+            // If not JSON, try splitting by newlines
+            const servicesList = partner.services.split('\n');
+            servicesList.forEach(service => {
+              if (service.trim()) {
+                allServiceNames.add(service.trim());
+              }
+            });
+          }
+        }
+      });
+      
+      // Convert to Service objects for consistent API response
+      const servicesList = Array.from(allServiceNames).sort().map((name, index) => ({
+        id: index + 1,
+        name,
+        description: null,
+        category: null,
+        isActive: true,
+        createdBy: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+      
+      return servicesList;
     } catch (error) {
       console.error('Error fetching services:', error);
       return [];
@@ -544,11 +588,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createService(service: InsertService): Promise<Service> {
-    const [newService] = await db
-      .insert(services)
-      .values(service)
-      .returning();
-    return newService;
+    // For now, we don't actually insert into services table since we're using partner services
+    // Return a mock service object to maintain API compatibility
+    return {
+      id: Date.now(),
+      name: service.name,
+      description: service.description || null,
+      category: service.category || null,
+      isActive: true,
+      createdBy: service.createdBy || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
   }
 
   async getPartnerServices(partnerId: number): Promise<string[]> {
