@@ -433,7 +433,7 @@ export default function PartnerProfile() {
 
         console.log('Uploading to:', `/api/partners/${partner?.id}`);
         console.log('FormData entries:');
-        for (let [key, value] of formData.entries()) {
+        for (const [key, value] of Array.from(formData.entries())) {
           console.log(key, value);
         }
 
@@ -848,19 +848,19 @@ export default function PartnerProfile() {
                     <CardTitle>Şirket Bilgileri</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {partner.contactPerson && (
+                    {partner.companyName && (
                       <div className="flex items-center gap-3">
                         <User className="h-5 w-5 text-gray-500" />
-                        <span className="text-gray-700">İletişim Kişisi: {partner.contactPerson}</span>
+                        <span className="text-gray-700">Şirket: {partner.companyName}</span>
                       </div>
                     )}
-                    {partner.companyAddress && (
+                    {partner.address && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="flex items-start gap-3 cursor-help">
                               <MapPin className="h-5 w-5 text-gray-500 mt-1" />
-                              <span className="text-gray-700">Adres: {partner.companyAddress}</span>
+                              <span className="text-gray-700">Adres: {partner.address}</span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>

@@ -436,7 +436,7 @@ export function registerRoutes(app: Express): Server {
         console.error('Validation errors:', error.errors);
         return res.status(400).json({ message: "Validation failed", errors: error.errors });
       }
-      res.status(500).json({ message: "Failed to create application", details: error.message });
+      res.status(500).json({ message: "Failed to create application", details: (error as Error).message });
     }
   });
 
@@ -1213,10 +1213,7 @@ export function registerRoutes(app: Express): Server {
       const { response, amount, notes } = req.body;
 
       const quoteRequest = await storage.updateQuoteRequest(quoteId, {
-        response,
-        amount,
-        responseNotes: notes,
-        respondedAt: new Date(),
+        status: "responded"
       });
 
       if (!quoteRequest) {
@@ -1225,19 +1222,18 @@ export function registerRoutes(app: Express): Server {
 
       // Send email notification to user
       try {
-        const user = await storage.getUser(quoteRequest.userId);
+        const user = await storage.getUser(quoteRequest.userId!);
         const partner = await storage.getPartnerByUserId(req.user!.id);
         
         if (user && partner) {
           const quoteResponseTemplate = emailTemplates.serviceRequest.toUser(
             `${user.firstName} ${user.lastName}`,
             partner.companyName,
-            quoteRequest.serviceName
+            quoteRequest.serviceNeeded
           );
           
           await sendEmail({
             to: user.email,
-            from: 'info@dip.tc',
             subject: quoteResponseTemplate.subject,
             html: quoteResponseTemplate.html,
           });
@@ -1263,9 +1259,7 @@ export function registerRoutes(app: Express): Server {
       const { status, reason } = req.body;
 
       const quoteRequest = await storage.updateQuoteRequest(quoteId, {
-        status,
-        rejectionReason: reason,
-        reviewedAt: new Date(),
+        status
       });
 
       if (!quoteRequest) {
@@ -1276,7 +1270,7 @@ export function registerRoutes(app: Express): Server {
       try {
         const partner = await storage.getPartner(quoteRequest.partnerId);
         const partnerUser = partner ? await storage.getUser(partner.userId) : null;
-        const user = await storage.getUser(quoteRequest.userId);
+        const user = await storage.getUser(quoteRequest.userId!);
         
         if (partner && partnerUser && user) {
           if (status === 'approved') {
@@ -1284,12 +1278,11 @@ export function registerRoutes(app: Express): Server {
             const partnerTemplate = emailTemplates.quoteStatus.approved.toPartner(
               partner.companyName,
               `${user.firstName} ${user.lastName}`,
-              quoteRequest.serviceName
+              quoteRequest.serviceNeeded
             );
             
             await sendEmail({
               to: partnerUser.email,
-              from: 'info@dip.tc',
               subject: partnerTemplate.subject,
               html: partnerTemplate.html,
             });
@@ -1298,12 +1291,11 @@ export function registerRoutes(app: Express): Server {
             const userTemplate = emailTemplates.quoteStatus.approved.toUser(
               `${user.firstName} ${user.lastName}`,
               partner.companyName,
-              quoteRequest.serviceName
+              quoteRequest.serviceNeeded
             );
             
             await sendEmail({
               to: user.email,
-              from: 'info@dip.tc',
               subject: userTemplate.subject,
               html: userTemplate.html,
             });
@@ -1311,13 +1303,11 @@ export function registerRoutes(app: Express): Server {
             const rejectionTemplate = emailTemplates.quoteStatus.rejected.toPartner(
               partner.companyName,
               `${user.firstName} ${user.lastName}`,
-              quoteRequest.serviceName,
-              reason
+              quoteRequest.serviceNeeded
             );
             
             await sendEmail({
               to: partnerUser.email,
-              from: 'info@dip.tc',
               subject: rejectionTemplate.subject,
               html: rejectionTemplate.html,
             });
@@ -1344,8 +1334,7 @@ export function registerRoutes(app: Express): Server {
 
       // Update quote request status to paid
       const quoteRequest = await storage.updateQuoteRequest(quoteRequestId, {
-        status: 'paid',
-        paymentCompletedAt: new Date(),
+        status: 'completed'
       });
 
       if (!quoteRequest) {
@@ -1355,18 +1344,17 @@ export function registerRoutes(app: Express): Server {
       // Send payment completion email
       try {
         const partner = await storage.getPartner(quoteRequest.partnerId);
-        const user = await storage.getUser(quoteRequest.userId);
+        const user = await storage.getUser(quoteRequest.userId!);
         
         if (partner && user) {
           const paymentTemplate = emailTemplates.paymentComplete(
             `${user.firstName} ${user.lastName}`,
             partner.companyName,
-            quoteRequest.serviceName
+            quoteRequest.serviceNeeded
           );
           
           await sendEmail({
             to: user.email,
-            from: 'info@dip.tc',
             subject: paymentTemplate.subject,
             html: paymentTemplate.html,
           });
@@ -1388,7 +1376,6 @@ export function registerRoutes(app: Express): Server {
       
       const result = await sendEmail({
         to,
-        from: 'info@dip.tc',
         subject,
         html: `<p>${message}</p>`,
       });
@@ -1396,7 +1383,7 @@ export function registerRoutes(app: Express): Server {
       res.json({ success: true, message: 'Email sent successfully' });
     } catch (error) {
       console.error('Test email failed:', error);
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: (error as Error).message });
     }
   });
 
@@ -1479,7 +1466,7 @@ export function registerRoutes(app: Express): Server {
       if (file.mimetype.startsWith('image/')) {
         cb(null, true);
       } else {
-        cb(new Error('Only image files are allowed!'), false);
+        cb(new Error('Only image files are allowed!'));
       }
     }
   });
@@ -1746,7 +1733,6 @@ export function registerRoutes(app: Express): Server {
       // Send welcome email
       await sendEmail({
         to: newUser.email,
-        from: 'noreply@dip.tc',
         subject: 'DİP Hesabınız Oluşturuldu',
         html: `
           <h2>Hoş Geldiniz!</h2>
@@ -1803,11 +1789,10 @@ export function registerRoutes(app: Express): Server {
       // Send welcome email
       await sendEmail({
         to: newUser.email,
-        from: 'noreply@dip.tc',
         subject: 'DİP Partner Hesabınız Oluşturuldu',
         html: `
           <h2>Partner Hoş Geldiniz!</h2>
-          <p>Merhaba ${partnerData.contactPerson},</p>
+          <p>Merhaba ${partnerData.contactPerson || `${newUser.firstName} ${newUser.lastName}`},</p>
           <p>${partnerData.companyName} şirketi için DİP Partner hesabınız başarıyla oluşturuldu.</p>
           <p><strong>E-posta:</strong> ${newUser.email}</p>
           <p><strong>Şifre:</strong> ${partnerData.password}</p>
@@ -2072,7 +2057,7 @@ export function registerRoutes(app: Express): Server {
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
-            phone: user.phone,
+            phone: user.phone || undefined,
             userType: userType
           });
           
@@ -2096,9 +2081,9 @@ export function registerRoutes(app: Express): Server {
               email: user.email,
               firstName: user.firstName,
               lastName: user.lastName,
-              phone: user.phone,
+              phone: user.phone || undefined,
               company: partner.companyName,
-              website: partner.website,
+              website: partner.website || undefined,
               userType: 'partner'
             });
             
