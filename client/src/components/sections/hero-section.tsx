@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/language-context';
 import { t } from '@/lib/i18n';
 import { ChevronDown, Handshake, Search } from 'lucide-react';
-import heroVideo from '@assets/diptalks1-yan-2_1753542464192.mp4';
+import { useState, useRef, useEffect } from 'react';
 
 interface HeroSectionProps {
   onBecomePartner: () => void;
@@ -11,20 +11,65 @@ interface HeroSectionProps {
 
 export function HeroSection({ onBecomePartner, onGetService }: HeroSectionProps) {
   const { language } = useLanguage();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  
+  // Supabase Storage URL for hero video - CDN optimized
+  const heroVideoUrl = 'https://fgjuscppjxzznslgtkgu.supabase.co/storage/v1/object/public/hero-assets/hero-background.mp4';
+  
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const handleLoadedData = () => {
+      setVideoLoaded(true);
+      video.play().catch(() => {
+        // Auto-play failed, which is expected in some browsers
+        console.log('Auto-play prevented by browser');
+      });
+    };
+    
+    const handleError = () => {
+      setVideoError(true);
+      console.error('Video failed to load');
+    };
+    
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('error', handleError);
+    
+    return () => {
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('error', handleError);
+    };
+  }, []);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Video */}
       <video
+        ref={videoRef}
         autoPlay
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover"
+        preload="metadata"
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
         style={{ pointerEvents: 'none' }}
       >
-        <source src={heroVideo} type="video/mp4" />
+        <source src={heroVideoUrl} type="video/mp4" />
+        Your browser does not support the video tag.
       </video>
+      
+      {/* Fallback Background Image */}
+      {(!videoLoaded || videoError) && (
+        <div 
+          className="absolute inset-0 w-full h-full bg-gradient-to-br from-dip-blue via-blue-600 to-blue-800"
+          style={{ 
+            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="7" cy="7" r="2"/%3E%3Ccircle cx="53" cy="7" r="2"/%3E%3Ccircle cx="7" cy="53" r="2"/%3E%3Ccircle cx="53" cy="53" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+          }}
+        />
+      )}
       
       {/* Video Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-blue-700/60 z-10"></div>
