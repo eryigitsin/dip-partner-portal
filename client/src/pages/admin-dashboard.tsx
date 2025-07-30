@@ -238,9 +238,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="applications">Başvurular</TabsTrigger>
             <TabsTrigger value="partners">Partnerler</TabsTrigger>
-            {user.userType === "master_admin" && (
-              <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
-            )}
+            <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -560,7 +558,11 @@ export default function AdminDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button size="sm" variant="outline">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => window.open(`/admin/partner-inspection/${partner.id}`, '_blank')}
+                              >
                                 <Eye className="h-4 w-4 mr-1" />
                                 Görüntüle
                               </Button>
@@ -583,41 +585,39 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {user.userType === "master_admin" && (
-            <TabsContent value="quotes" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Teklif Talepleri</CardTitle>
-                  <CardDescription>
-                    Sistemdeki tüm teklif taleplerini görüntüleyin
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {allQuoteRequests.length === 0 ? (
-                    <div className="text-center py-8">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Teklif talebi bulunmuyor
-                      </h3>
-                      <p className="text-gray-600">
-                        Kullanıcılar teklif talep ettiğinde burada görünecekler.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Teklif Talepleri Listesi
-                      </h3>
-                      <p className="text-gray-600">
-                        {allQuoteRequests.length} adet teklif talebi bulunmaktadır.
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
+          <TabsContent value="quotes" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Teklif Talepleri Yönetimi</span>
+                  <Button 
+                    onClick={() => window.open('/admin/quote-requests', '_blank')}
+                    variant="outline"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Detaylı Görünüm
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Teklif Talepleri Yönetimi
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Tüm teklif taleplerini görüntülemek ve yönetmek için detaylı görünüme geçin.
+                  </p>
+                  <Button 
+                    onClick={() => window.open('/admin/quote-requests', '_blank')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Teklif Talepleri Sayfasına Git
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 

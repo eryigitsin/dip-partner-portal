@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { QuoteRequestModal } from '@/components/modals/quote-request-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MapPin, 
@@ -98,7 +99,8 @@ export default function PartnerProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isFollowing, setIsFollowing] = useState(false);
-  const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
+
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
@@ -121,12 +123,7 @@ export default function PartnerProfile() {
   const [crop, setCrop] = useState<Crop>({ x: 0, y: 0, width: 100, height: 100, unit: '%' });
   const [imageSrc, setImageSrc] = useState<string>('');
   const imgRef = useRef<HTMLImageElement>(null);
-  const [quoteRequest, setQuoteRequest] = useState<QuoteRequest>({
-    serviceNeeded: '',
-    budget: '',
-    projectDate: '',
-    message: ''
-  });
+
 
   const identifier = username || '';
 
@@ -186,32 +183,7 @@ export default function PartnerProfile() {
     },
   });
 
-  // Send quote request mutation
-  const quoteRequestMutation = useMutation({
-    mutationFn: async () => {
-      if (!partner?.id) return;
-      const res = await apiRequest('POST', '/api/quote-requests', {
-        partnerId: partner.id,
-        ...quoteRequest
-      });
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Başarılı',
-        description: 'Teklif talebiniz gönderildi',
-      });
-      setIsQuoteDialogOpen(false);
-      setQuoteRequest({ serviceNeeded: '', budget: '', projectDate: '', message: '' });
-    },
-    onError: () => {
-      toast({
-        title: 'Hata',
-        description: 'Teklif talebi gönderilemedi',
-        variant: 'destructive',
-      });
-    },
-  });
+
 
   // Send message mutation
   const messageMutation = useMutation({
@@ -724,48 +696,13 @@ export default function PartnerProfile() {
                     )}
                   </Button>
                   
-                  <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-xs px-3">
-                        TEKLİF
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Teklif Talebi</DialogTitle>
-                        <DialogDescription>
-                          {partner.companyName} firmasından teklif almak için formu doldurun.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <Input
-                          placeholder="İhtiyacınız olan hizmet"
-                          value={quoteRequest.serviceNeeded}
-                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, serviceNeeded: e.target.value }))}
-                        />
-                        <Input
-                          placeholder="Bütçe aralığınız"
-                          value={quoteRequest.budget}
-                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, budget: e.target.value }))}
-                        />
-                        <Input
-                          type="date"
-                          placeholder="Proje tarihi"
-                          value={quoteRequest.projectDate}
-                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, projectDate: e.target.value }))}
-                        />
-                        <Textarea
-                          placeholder="Proje detayları..."
-                          value={quoteRequest.message}
-                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, message: e.target.value }))}
-                          rows={4}
-                        />
-                        <Button onClick={handleQuoteRequest} disabled={quoteRequestMutation.isPending} className="w-full">
-                          Teklif Talebi Gönder
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button 
+                    size="sm" 
+                    className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-xs px-3"
+                    onClick={() => setIsQuoteModalOpen(true)}
+                  >
+                    TEKLİF
+                  </Button>
                 </div>
               </div>
             </div>
@@ -868,48 +805,12 @@ export default function PartnerProfile() {
                    isFollowing ? "TAKİP EDİLİYOR" : "TAKİP ET"}
                 </Button>
                 
-                <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
-                      TEKLİF AL
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Teklif Talebi</DialogTitle>
-                      <DialogDescription>
-                        {partner.companyName} firmasından teklif almak için formu doldurun.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Input
-                        placeholder="İhtiyacınız olan hizmet"
-                        value={quoteRequest.serviceNeeded}
-                        onChange={(e) => setQuoteRequest(prev => ({ ...prev, serviceNeeded: e.target.value }))}
-                      />
-                      <Input
-                        placeholder="Bütçe aralığınız"
-                        value={quoteRequest.budget}
-                        onChange={(e) => setQuoteRequest(prev => ({ ...prev, budget: e.target.value }))}
-                      />
-                      <Input
-                        type="date"
-                        placeholder="Proje tarihi"
-                        value={quoteRequest.projectDate}
-                        onChange={(e) => setQuoteRequest(prev => ({ ...prev, projectDate: e.target.value }))}
-                      />
-                      <Textarea
-                        placeholder="Proje detayları..."
-                        value={quoteRequest.message}
-                        onChange={(e) => setQuoteRequest(prev => ({ ...prev, message: e.target.value }))}
-                        rows={4}
-                      />
-                      <Button onClick={handleQuoteRequest} disabled={quoteRequestMutation.isPending} className="w-full">
-                        Teklif Talebi Gönder
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button 
+                  className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                  onClick={() => setIsQuoteModalOpen(true)}
+                >
+                  TEKLİF AL
+                </Button>
               </div>
             </div>
           </div>
@@ -1312,6 +1213,13 @@ export default function PartnerProfile() {
           </div>
         </div>
       </div>
+
+      {/* Quote Request Modal */}
+      <QuoteRequestModal 
+        isOpen={isQuoteModalOpen} 
+        onClose={() => setIsQuoteModalOpen(false)} 
+        partner={partner} 
+      />
       
       <Footer />
     </div>

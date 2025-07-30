@@ -1,0 +1,984 @@
+<div id="partnerInspectionModal" class="modal" data-partner-id="2" style="display: block;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Partner Activity Inspection</h3>
+                <span class="close" onclick="closePartnerInspectionModal()">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-button" data-target="partnerActivities">Activities</button>
+                    <button class="tab-button active" data-target="partnerStatistics">Statistics</button>
+                </div>
+                
+                <div id="partnerActivities" class="tab-content">
+                <div class="partner-info">
+                    <h4>Markaşef</h4>
+                    <p><strong>Contact:</strong> Emre Sarıkaya (emre@markasef.com)</p>
+                    <p><strong>Business Type:</strong> Dijital Pazarlama</p>
+                </div>
+                
+                <div class="activities-timeline">
+                    <h4>Detailed Activity Timeline</h4>
+                    <div class="activities-legend">
+                        <span class="legend-item"><span class="legend-color login-activity"></span>Login</span>
+                        <span class="legend-item"><span class="legend-color status-activity"></span>Status Changes</span>
+                        <span class="legend-item"><span class="legend-color deal-activity"></span>Deal Updates</span>
+                        <span class="legend-item"><span class="legend-color note-activity"></span>Notes</span>
+                    </div>
+            
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">26.07.2025 18:18:13</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">22.07.2025 11:47:24</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 21:44:40</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 21:40:09</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 21:11:58</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 21:07:53</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 20:45:31</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 20:25:47</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 20:09:58</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 19:16:26</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 19:13:31</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 18:17:03</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 17:34:47</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">19.07.2025 14:47:47</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">17.07.2025 22:23:43</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">17.07.2025 22:17:15</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">17.07.2025 22:16:41</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item note-activity">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Added meeting note: 12 ağustosa toplantı planlanacak</div>
+                                    <div class="activity-time">17.07.2025 19:59:51</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Note Added:</strong>
+                                <br><strong>Lead ID:</strong> #8
+                                <br><strong>Customer:</strong> Integration Test (Test Company)
+                                <br><div class="note-content">"12 ağustosa toplantı planlanacak"</div>
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item general-activity">
+                            <div class="activity-icon">📊</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Deal value updated from  USD to 10000 TRY</div>
+                                    <div class="activity-time">17.07.2025 19:59:21</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Lead ID:</strong> #8<br>
+                                <strong>Customer:</strong> Integration Test (Test Company)<br>
+                                <strong>Details:</strong> 10000 TRY
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item status-activity">
+                            <div class="activity-icon">📋</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Status changed to: contacted</div>
+                                    <div class="activity-time">17.07.2025 19:59:21</div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">17.07.2025 19:58:52</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 16:10:57</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 15:31:27</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 14:24:52</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 14:24:15</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 14:23:21</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 14:17:57</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 13:28:06</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 12:53:51</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 12:28:25</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item note-activity">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Added note to submission</div>
+                                    <div class="activity-time">12.07.2025 11:30:00</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Note Added:</strong>
+                                <br><strong>Lead ID:</strong> #3
+                                <br><strong>Customer:</strong> Mehmet Kaya (Kaya Gıda)
+                                <br><div class="note-content">"Sent proposal document"</div>
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item status-activity">
+                            <div class="activity-icon">📋</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Changed lead status for submission</div>
+                                    <div class="activity-time">12.07.2025 11:00:00</div>
+                                </div>
+                                <div class="activity-details">
+                                    <strong>Status Changed:</strong> New → Contacted
+                                    <br><strong>Lead ID:</strong> #3
+                                    <br><strong>Customer:</strong> Mehmet Kaya (Kaya Gıda)
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 10:00:00</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item general-activity">
+                            <div class="activity-icon">📊</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Deal value updated from  USD to 10000 USD</div>
+                                    <div class="activity-time">12.07.2025 09:09:02</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Lead ID:</strong> #25<br>
+                                <strong>Customer:</strong> Elif Şahin (Şahin Danışmanlık)<br>
+                                <strong>Details:</strong> 10000 USD
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item status-activity">
+                            <div class="activity-icon">📋</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Status changed to: qualified</div>
+                                    <div class="activity-time">12.07.2025 09:09:02</div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item note-activity">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Added general note: temiz</div>
+                                    <div class="activity-time">12.07.2025 09:08:57</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Note Added:</strong>
+                                <br><strong>Lead ID:</strong> #25
+                                <br><strong>Customer:</strong> Elif Şahin (Şahin Danışmanlık)
+                                <br><div class="note-content">"temiz"</div>
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item status-activity">
+                            <div class="activity-icon">📋</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Status changed to: qualified</div>
+                                    <div class="activity-time">12.07.2025 09:05:18</div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item note-activity">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Added general note: asdşalşsdl</div>
+                                    <div class="activity-time">12.07.2025 09:05:14</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Note Added:</strong>
+                                <br><strong>Lead ID:</strong> #23
+                                <br><strong>Customer:</strong> Selin Yıldız (Yıldız Cafe)
+                                <br><div class="note-content">"asdşalşsdl"</div>
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged in</div>
+                                    <div class="activity-time">12.07.2025 09:04:25</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item note-activity">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Note added to lead</div>
+                                    <div class="activity-time">11.07.2025 13:00:00</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Note Added:</strong>
+                                <br><strong>Lead ID:</strong> #2
+                                <br><strong>Customer:</strong> Elif Demir (Demir İnşaat)
+                                <br><div class="note-content">"Customer confirmed budget and timeline. Ready to proceed with proposal."</div>
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item deal-activity">
+                            <div class="activity-icon">💰</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Deal value set</div>
+                                    <div class="activity-time">11.07.2025 12:35:00</div>
+                                </div>
+                                <div class="activity-details">
+                                    <strong>Deal Value Set:</strong> ₺12000
+                                    <br><strong>Lead ID:</strong> #2
+                                    <br><strong>Customer:</strong> Elif Demir (Demir İnşaat)
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item status-activity">
+                            <div class="activity-icon">📋</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Lead status updated</div>
+                                    <div class="activity-time">11.07.2025 12:30:00</div>
+                                </div>
+                                <div class="activity-details">
+                                    <strong>Status Changed:</strong> contacted → qualified
+                                    <br><strong>Lead ID:</strong> #2
+                                    <br><strong>Customer:</strong> Elif Demir (Demir İnşaat)
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item note-activity">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Note added to lead</div>
+                                    <div class="activity-time">11.07.2025 12:00:00</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Note Added:</strong>
+                                <br><strong>Lead ID:</strong> #1
+                                <br><strong>Customer:</strong> Ahmet Yılmaz (Yılmaz Tekstil)
+                                <br><div class="note-content">"Customer showed strong interest in our premium package. Follow up scheduled for next week."</div>
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item deal-activity">
+                            <div class="activity-icon">💰</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Deal value updated</div>
+                                    <div class="activity-time">11.07.2025 11:45:00</div>
+                                </div>
+                                <div class="activity-details">
+                                    <strong>Deal Value Updated:</strong> ₺5000 → ₺7500
+                                    <br><strong>Lead ID:</strong> #1
+                                    <br><strong>Customer:</strong> Ahmet Yılmaz (Yılmaz Tekstil)
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item status-activity">
+                            <div class="activity-icon">📋</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Lead status updated</div>
+                                    <div class="activity-time">11.07.2025 11:15:00</div>
+                                </div>
+                                <div class="activity-details">
+                                    <strong>Status Changed:</strong> new → contacted
+                                    <br><strong>Lead ID:</strong> #1
+                                    <br><strong>Customer:</strong> Ahmet Yılmaz (Yılmaz Tekstil)
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item note-activity">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Müşteri ile görüşme notu eklendi</div>
+                                    <div class="activity-time">11.07.2025 11:00:45</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Note Added:</strong>
+                                <br><strong>Lead ID:</strong> #19
+                                <br><strong>Customer:</strong> Ayşe Demir (XYZ Pazarlama A.Ş.)
+                                <br><div class="note-content">"Müşteri ile telefon görüşmesi yapıldı, talepleri detaylandırıldı"</div>
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item status-activity">
+                            <div class="activity-icon">📋</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Lead durumu güncellendi</div>
+                                    <div class="activity-time">11.07.2025 11:00:45</div>
+                                </div>
+                                <div class="activity-details">
+                                    <strong>Status Changed:</strong> pending → contacted
+                                    <br><strong>Lead ID:</strong> #19
+                                    <br><strong>Customer:</strong> Ayşe Demir (XYZ Pazarlama A.Ş.)
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item general-activity">
+                            <div class="activity-icon">📊</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Updated deal value for submission</div>
+                                    <div class="activity-time">11.07.2025 11:00:00</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Lead ID:</strong> #3<br>
+                                <strong>Customer:</strong> Mehmet Kaya (Kaya Gıda)<br>
+                                <strong>Details:</strong> ₺8,000
+                            </div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item login-activity">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Partner logged into CRM dashboard</div>
+                                    <div class="activity-time">11.07.2025 10:30:00</div>
+                                </div>
+                                <div class="activity-details">Partner logged into CRM dashboard</div>
+                            </div>
+                        </div>
+                    
+                        <div class="activity-item note-activity">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <div class="activity-title">Added note to submission</div>
+                                    <div class="activity-time">11.07.2025 10:30:00</div>
+                                </div>
+                                <div class="activity-details">
+                                <strong>Note Added:</strong>
+                                <br><strong>Lead ID:</strong> #3
+                                <br><strong>Customer:</strong> Mehmet Kaya (Kaya Gıda)
+                                <br><div class="note-content">"Waiting for client response"</div>
+                            </div>
+                            </div>
+                        </div>
+                    </div></div>
+                
+                <div id="partnerStatistics" class="tab-content active">
+                <!-- Performance Summary -->
+                <div class="performance-summary">
+                    <h3>Partner Performance Summary</h3>
+                    <div class="performance-metrics">
+                        <div class="metric-item">
+                            <div class="metric-value">10</div>
+                            <div class="metric-label">Total Leads</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">0%</div>
+                            <div class="metric-label">Conversion Rate</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">₺0</div>
+                            <div class="metric-label">Total Revenue</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">38</div>
+                            <div class="metric-label">Total Logins</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value">₺0</div>
+                            <div class="metric-label">Avg Deal Value</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chart Grid -->
+                <div class="chart-grid">
+                    <div class="chart-container">
+                        <h4>Deal Pipeline Status</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="statusChart" height="600" style="display: block; box-sizing: border-box; height: 300px; width: 315px;" width="630"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h4>Daily Login Activity (Last 30 Days)</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="loginChart" height="600" style="display: block; box-sizing: border-box; height: 300px; width: 315px;" width="630"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Login Patterns Analysis -->
+                <div class="login-patterns">
+                    <h4>Login Patterns Analysis</h4>
+                    <div class="time-analysis">
+                        <div class="time-slot">
+                            <h5>Peak Login Hour</h5>
+                            <div class="time-value">14:00</div>
+                        </div>
+                        <div class="time-slot">
+                            <h5>Last Login</h5>
+                            <div class="time-value">26.07.2025</div>
+                        </div>
+                        <div class="time-slot">
+                            <h5>Login Frequency</h5>
+                            <div class="time-value">4.2/day</div>
+                        </div>
+                        <div class="time-slot">
+                            <h5>Active Days</h5>
+                            <div class="time-value">9</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container" style="margin-top: 20px;">
+                        <h4>Hourly Login Distribution</h4>
+                        <div class="chart-wrapper chart-small">
+                            <canvas id="hourlyChart" height="400" style="display: block; box-sizing: border-box; height: 200px; width: 660px;" width="1320"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Activity Timeline Chart -->
+                <div class="activity-timeline-chart">
+                    <h4>Activity Timeline (Last 30 Days)</h4>
+                    <div class="chart-wrapper">
+                        <canvas id="timelineChart" height="600" style="display: block; box-sizing: border-box; height: 300px; width: 710px;" width="1420"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity Summary -->
+                <div class="partner-recent-leads">
+                    <h4>Recent Activity Summary (Last 7 Days)</h4>
+                    <div class="activity-summary">
+                        
+                            <div class="activity-summary-item">
+                                <strong>LOGIN:</strong> 
+                                1 times
+                            </div>
+                        
+                    </div>
+                </div>
+            </div>
+            </div>
+            
+            <!-- Analytics Panel -->
+            <div class="content-panel" id="analytics-panel" style="display: none;">
+                <div class="panel-header">
+                    <h2>Partner Analytics</h2>
+                    <button class="btn btn-primary" onclick="refreshAnalytics()">Refresh Analytics</button>
+                </div>
+                
+                <div class="loading" id="analyticsLoading" style="display: none;">Loading comprehensive analytics...</div>
+                
+                <div id="analyticsContent" style="display: block;">
+                    <!-- Overall Summary -->
+                    <div class="analytics-summary">
+                        <h3>Overall Performance Summary</h3>
+                        <div class="summary-cards">
+                            <div class="summary-card">
+                                <h4>Active Partners</h4>
+                                <div class="metric" id="totalActivePartners">2</div>
+                            </div>
+                            <div class="summary-card">
+                                <h4>Total Submissions</h4>
+                                <div class="metric" id="totalSubmissions">753</div>
+                            </div>
+                            <div class="summary-card">
+                                <h4>Total Won Deals</h4>
+                                <div class="metric" id="totalWonDeals">0</div>
+                            </div>
+                            <div class="summary-card">
+                                <h4>Total Revenue</h4>
+                                <div class="metric" id="totalRevenue">₺0</div>
+                            </div>
+                            <div class="summary-card">
+                                <h4>Active Pipeline</h4>
+                                <div class="metric" id="activePipeline">336</div>
+                            </div>
+                            <div class="summary-card">
+                                <h4>Total Activities</h4>
+                                <div class="metric" id="totalActivities">737</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Partner Performance Table -->
+                    <div class="analytics-section">
+                        <h3>Partner Performance Analysis</h3>
+                        <div class="table-container">
+                            <table class="analytics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Partner</th>
+                                        <th>Total Leads</th>
+                                        <th>Won Deals</th>
+                                        <th>Active Deals</th>
+                                        <th>Total Revenue</th>
+                                        <th>Avg Deal Value</th>
+                                        <th>Conversion Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="partnerPerformanceTable"><tr>
+                    <td><strong>Markaşef</strong></td>
+                    <td class="metric-value">16</td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">1</td>
+                    <td class="revenue">₺0</td>
+                    <td class="revenue">₺0</td>
+                    <td class="percentage">0.0%</td>
+                </tr><tr>
+                    <td><strong>Test Teknoloji A.Ş.</strong></td>
+                    <td class="metric-value">11</td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">5</td>
+                    <td class="revenue">₺0</td>
+                    <td class="revenue">₺0</td>
+                    <td class="percentage">0.0%</td>
+                </tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Login Activity Analysis -->
+                    <div class="analytics-section">
+                        <h3>Login Activity Analytics</h3>
+                        <div class="table-container">
+                            <table class="analytics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Partner</th>
+                                        <th>Total Logins</th>
+                                        <th>Recent Logins (7d)</th>
+                                        <th>Monthly Logins</th>
+                                        <th>Last Login</th>
+                                        <th>First Login</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="loginAnalyticsTable"><tr>
+                    <td><strong>Test Teknoloji A.Ş.</strong></td>
+                    <td class="metric-value">38</td>
+                    <td class="metric-value">1</td>
+                    <td class="metric-value">38</td>
+                    <td>26.07.2025</td>
+                    <td>05.07.2025</td>
+                </tr><tr>
+                    <td><strong>Markaşef</strong></td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">0</td>
+                    <td>Never</td>
+                    <td>Never</td>
+                </tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Activity Count Analysis -->
+                    <div class="analytics-section">
+                        <h3>Partner Activity Analysis</h3>
+                        <div class="table-container">
+                            <table class="analytics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Partner</th>
+                                        <th>Total Activities</th>
+                                        <th>Status Changes</th>
+                                        <th>Notes Added</th>
+                                        <th>Deal Updates</th>
+                                        <th>Recent Activities (7d)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activityAnalyticsTable"><tr>
+                    <td><strong>Test Teknoloji A.Ş.</strong></td>
+                    <td class="metric-value">67</td>
+                    <td class="metric-value">12</td>
+                    <td class="metric-value">10</td>
+                    <td class="metric-value">2</td>
+                    <td class="metric-value">1</td>
+                </tr><tr>
+                    <td><strong>Markaşef</strong></td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">0</td>
+                </tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Communication Analytics -->
+                    <div class="analytics-section">
+                        <h3>Communication to Deals Analysis</h3>
+                        <div class="table-container">
+                            <table class="analytics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Partner</th>
+                                        <th>Total Submissions</th>
+                                        <th>Contacted Leads</th>
+                                        <th>Qualified/Won</th>
+                                        <th>Total Notes</th>
+                                        <th>Communication Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="communicationAnalyticsTable"><tr>
+                    <td><strong>Test Teknoloji A.Ş.</strong></td>
+                    <td class="metric-value">18</td>
+                    <td class="metric-value">6</td>
+                    <td class="metric-value">6</td>
+                    <td class="metric-value">12</td>
+                    <td class="percentage">33.3%</td>
+                </tr><tr>
+                    <td><strong>Markaşef</strong></td>
+                    <td class="metric-value">16</td>
+                    <td class="metric-value">1</td>
+                    <td class="metric-value">0</td>
+                    <td class="metric-value">0</td>
+                    <td class="percentage">6.3%</td>
+                </tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Performers -->
+                    <div class="analytics-section">
+                        <h3>Top Performing Partners</h3>
+                        <div class="top-performers">
+                            <div id="topPerformersCards"><div class="performer-card">
+                    <h4>Markaşef</h4>
+                    <div class="performance-stats">
+                        <div class="stat">
+                            <div class="stat-value">16</div>
+                            <div class="stat-label">Leads</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Won</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">₺0</div>
+                            <div class="stat-label">Revenue</div>
+                        </div>
+                    </div>
+                </div><div class="performer-card">
+                    <h4>Test Teknoloji A.Ş.</h4>
+                    <div class="performance-stats">
+                        <div class="stat">
+                            <div class="stat-value">11</div>
+                            <div class="stat-label">Leads</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Won</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">₺0</div>
+                            <div class="stat-label">Revenue</div>
+                        </div>
+                    </div>
+                </div></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Activity Trends -->
+                    <div class="analytics-section">
+                        <h3>Recent Activity Trends (Last 30 Days)</h3>
+                        <div class="chart-container">
+                            <canvas id="activityTrendsChart" height="0" style="display: block; box-sizing: border-box; height: 0px; width: 0px;" width="0"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

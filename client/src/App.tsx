@@ -12,6 +12,8 @@ import AuthPage from "@/pages/auth";
 import PartnerDashboard from "@/pages/partner-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import MarketingListPage from "@/pages/admin/marketing-list";
+import PartnerInspectionPage from "@/pages/admin/partner-inspection";
+import QuoteRequestsPage from "@/pages/admin/quote-requests";
 import UserPanel from "@/pages/user-panel";
 import ServiceRequests from "@/pages/service-requests";
 import Messages from "@/pages/messages";
@@ -56,6 +58,8 @@ function Router() {
       <ProtectedRoute path="/email-preferences" component={EmailPreferences} />
       <ProtectedRoute path="/email-subscribers" component={EmailSubscribers} />
       <ProtectedRoute path="/marketing-list" component={MarketingListPage} />
+      <ProtectedRoute path="/admin/partner-inspection/:partnerId" component={PartnerInspectionPage} />
+      <ProtectedRoute path="/admin/quote-requests" component={QuoteRequestsPage} />
       <Route path="/application-status/:id" component={ApplicationStatus} />
       <Route path="/partner/:username" component={PartnerProfile} />
       <Route path="/test-upload" component={TestUpload} />

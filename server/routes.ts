@@ -1524,6 +1524,124 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get partner details for admin inspection
+  app.get("/api/admin/partners/:partnerId", async (req, res) => {
+    if (!req.isAuthenticated() || !['master_admin', 'editor_admin'].includes(req.user.userType)) {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const partnerId = parseInt(req.params.partnerId);
+      const partner = await storage.getPartner(partnerId);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+      
+      // Get additional partner details
+      const user = await storage.getUserById(partner.userId);
+      const partnerWithUser = {
+        ...partner,
+        email: user?.email,
+        contactPerson: user?.firstName + ' ' + user?.lastName,
+      };
+      
+      res.json(partnerWithUser);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get partner activities for admin inspection
+  app.get("/api/admin/partner-activities/:partnerId", async (req, res) => {
+    if (!req.isAuthenticated() || !['master_admin', 'editor_admin'].includes(req.user.userType)) {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const partnerId = parseInt(req.params.partnerId);
+      
+      // Mock activity data for demonstration
+      // In a real application, you would store and retrieve actual activity logs
+      const activities = [
+        {
+          id: 1,
+          type: 'login',
+          description: 'Partner paneline giriş yaptı',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 2,
+          type: 'profile_update',
+          description: 'Profil bilgilerini güncelledi',
+          details: 'Şirket açıklaması ve hizmet listesi güncellendi',
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+        },
+        {
+          id: 3,
+          type: 'quote_response',
+          description: 'Teklif talebine yanıt verdi',
+          details: 'Teklif ID: #12 - Müşteri: Test Şirketi',
+          createdAt: new Date(Date.now() - 172800000).toISOString(),
+        },
+      ];
+      
+      res.json(activities);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get partner's quote requests for admin inspection
+  app.get("/api/admin/partner-quotes/:partnerId", async (req, res) => {
+    if (!req.isAuthenticated() || !['master_admin', 'editor_admin'].includes(req.user.userType)) {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const partnerId = parseInt(req.params.partnerId);
+      const quoteRequests = await storage.getQuoteRequestsByPartnerId(partnerId);
+      res.json(quoteRequests);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get all quote requests for admin
+  app.get("/api/admin/quote-requests", async (req, res) => {
+    if (!req.isAuthenticated() || !['master_admin', 'editor_admin'].includes(req.user.userType)) {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const quoteRequestsWithPartners = await storage.getAllQuoteRequestsWithPartners();
+      res.json(quoteRequestsWithPartners);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Update quote request status
+  app.patch("/api/admin/quote-requests/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !['master_admin', 'editor_admin'].includes(req.user.userType)) {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!['pending', 'responded', 'accepted', 'completed', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: 'Geçersiz durum' });
+      }
+      
+      const updatedRequest = await storage.updateQuoteRequest(id, { status });
+      res.json(updatedRequest);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/admin/partners", async (req, res) => {
     if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
       return res.sendStatus(403);

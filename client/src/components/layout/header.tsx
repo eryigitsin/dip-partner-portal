@@ -255,6 +255,12 @@ export function Header() {
                                 Pazarlama & CRM
                               </Link>
                             </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Link href="/admin/quote-requests" className="flex items-center gap-2 w-full">
+                                <FileText className="h-4 w-4" />
+                                Teklif Talepleri
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                           </>
                         )}

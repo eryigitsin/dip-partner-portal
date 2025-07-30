@@ -440,6 +440,57 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getQuoteRequestsByPartnerId(partnerId: number): Promise<QuoteRequest[]> {
+    return await db.select().from(quoteRequests)
+      .where(eq(quoteRequests.partnerId, partnerId))
+      .orderBy(desc(quoteRequests.createdAt));
+  }
+
+  async getAllQuoteRequestsWithPartners(): Promise<any[]> {
+    const result = await db
+      .select({
+        id: quoteRequests.id,
+        userId: quoteRequests.userId,
+        partnerId: quoteRequests.partnerId,
+        fullName: quoteRequests.fullName,
+        email: quoteRequests.email,
+        phone: quoteRequests.phone,
+        companyName: quoteRequests.companyName,
+        serviceNeeded: quoteRequests.serviceNeeded,
+        budget: quoteRequests.budget,
+        message: quoteRequests.message,
+        status: quoteRequests.status,
+        createdAt: quoteRequests.createdAt,
+        updatedAt: quoteRequests.updatedAt,
+        partnerCompanyName: partners.companyName,
+        partnerLogo: partners.logo,
+      })
+      .from(quoteRequests)
+      .leftJoin(partners, eq(quoteRequests.partnerId, partners.id))
+      .orderBy(desc(quoteRequests.createdAt));
+
+    return result.map(row => ({
+      id: row.id,
+      userId: row.userId,
+      partnerId: row.partnerId,
+      fullName: row.fullName,
+      email: row.email,
+      phone: row.phone,
+      companyName: row.companyName,
+      serviceNeeded: row.serviceNeeded,
+      budget: row.budget,
+      message: row.message,
+      status: row.status,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      partner: row.partnerCompanyName ? {
+        id: row.partnerId,
+        companyName: row.partnerCompanyName,
+        logo: row.partnerLogo,
+      } : null,
+    }));
+  }
+
   async createQuoteRequest(request: InsertQuoteRequest): Promise<QuoteRequest> {
     const [newRequest] = await db
       .insert(quoteRequests)
