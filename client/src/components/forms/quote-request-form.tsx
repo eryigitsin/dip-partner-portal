@@ -60,6 +60,7 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       company: '',
       serviceNeeded: '',
       budget: '',
+      message: '',
       projectStartDate: '',
       projectEndDate: '',
       kvkkConsent: false,
@@ -80,6 +81,7 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
         ...requestData,
         fullName,
         companyName,
+        message: data.message || '', // Ensure message field is included
       };
       
       console.log('🔄 Transformed data being sent:', transformedData);
@@ -175,6 +177,7 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     const finalData = {
       ...data,
       serviceNeeded: serviceInfo,
+      message: data.message || '', // Ensure message is included
     };
     
     console.log('🚀 Triggering mutation with:', finalData);
@@ -382,19 +385,26 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
         )}
 
         {/* Additional Details Field */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Ek Açıklama
-          </label>
-          <Textarea 
-            placeholder={partnerServices.length > 0 
-              ? "Seçtiğiniz hizmet hakkında ek detaylar yazabilirsiniz..." 
-              : "Projeniz hakkında ek bilgiler yazabilirsiniz..."
-            }
-            rows={3}
-            className="w-full"
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="message"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Ek Açıklama</FormLabel>
+              <FormControl>
+                <Textarea 
+                  {...field}
+                  placeholder={partnerServices.length > 0 
+                    ? "Seçtiğiniz hizmet hakkında ek detaylar yazabilirsiniz..." 
+                    : "Projeniz hakkında ek bilgiler yazabilirsiniz..."
+                  }
+                  rows={3}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
