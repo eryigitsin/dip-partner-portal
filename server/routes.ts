@@ -1243,9 +1243,8 @@ export function registerRoutes(app: Express): Server {
         
         if (user && partner) {
           const quoteResponseTemplate = emailTemplates.serviceRequest.toUser(
-            `${user.firstName} ${user.lastName}`,
-            partner.companyName,
-            quoteRequest.serviceNeeded
+            quoteRequest,
+            partner
           );
           
           await sendEmail({
@@ -1292,9 +1291,8 @@ export function registerRoutes(app: Express): Server {
           if (status === 'approved') {
             // Send to partner
             const partnerTemplate = emailTemplates.quoteStatus.approved.toPartner(
-              partner.companyName,
-              `${user.firstName} ${user.lastName}`,
-              quoteRequest.serviceNeeded
+              quoteRequest,
+              user
             );
             
             await sendEmail({
@@ -1305,9 +1303,8 @@ export function registerRoutes(app: Express): Server {
 
             // Send to user
             const userTemplate = emailTemplates.quoteStatus.approved.toUser(
-              `${user.firstName} ${user.lastName}`,
-              partner.companyName,
-              quoteRequest.serviceNeeded
+              quoteRequest,
+              partner
             );
             
             await sendEmail({
@@ -1317,9 +1314,8 @@ export function registerRoutes(app: Express): Server {
             });
           } else if (status === 'rejected') {
             const rejectionTemplate = emailTemplates.quoteStatus.rejected.toPartner(
-              partner.companyName,
-              `${user.firstName} ${user.lastName}`,
-              quoteRequest.serviceNeeded
+              quoteRequest,
+              user
             );
             
             await sendEmail({
@@ -1364,9 +1360,8 @@ export function registerRoutes(app: Express): Server {
         
         if (partner && user) {
           const paymentTemplate = emailTemplates.paymentComplete(
-            `${user.firstName} ${user.lastName}`,
-            partner.companyName,
-            quoteRequest.serviceNeeded
+            quoteRequest,
+            partner
           );
           
           await sendEmail({

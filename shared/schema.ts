@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -138,6 +138,8 @@ export const serviceCategories = pgTable("service_categories", {
   isActive: boolean("is_active").default(true),
   sortOrder: integer("sort_order").default(0),
 });
+
+
 
 // Quote requests
 export const quoteRequests = pgTable("quote_requests", {
