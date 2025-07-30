@@ -68,6 +68,8 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
 
   const quoteRequestMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      console.log('🚀 Quote request form data:', data);
+      
       const { kvkkConsent, firstName, lastName, company, projectStartDate, projectEndDate, workType, selectedServices, ...requestData } = data;
       
       // Transform data to match backend schema
@@ -80,8 +82,26 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
         companyName,
       };
       
-      const response = await apiRequest('POST', '/api/quote-requests', transformedData);
-      return response.json();
+      console.log('🔄 Transformed data being sent:', transformedData);
+      console.log('🔐 Current user:', user);
+      
+      try {
+        const response = await apiRequest('POST', '/api/quote-requests', transformedData);
+        console.log('✅ Quote request response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Quote request failed:', response.status, errorText);
+          throw new Error(`Server error ${response.status}: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Quote request success:', result);
+        return result;
+      } catch (error) {
+        console.error('💥 Quote request error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -91,17 +111,23 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       onSuccess();
     },
     onError: (error: Error) => {
+      console.error('💥 Quote request mutation error:', error);
       toast({
         title: 'Teklif Talebi Gönderilemedi',
-        description: error.message,
+        description: error.message || 'Bilinmeyen bir hata oluştu',
         variant: 'destructive',
       });
     },
   });
 
   const onSubmit = (data: FormData) => {
+    console.log('📋 Form submission started with data:', data);
+    console.log('👤 Current user:', user);
+    console.log('🏢 Partner:', partner);
+    
     // Validate service selection for structured services
     if (partnerServices.length > 0 && selectedServices.length === 0) {
+      console.warn('⚠️ Service validation failed: No services selected');
       toast({
         title: "Hata",
         description: "En az bir hizmet seçiniz",
@@ -114,8 +140,10 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     let serviceInfo = '';
     if (partnerServices.length > 0) {
       serviceInfo = selectedServices.join(', ');
+      console.log('🔧 Using structured services:', selectedServices);
     } else {
       serviceInfo = data.serviceNeeded;
+      console.log('📝 Using manual service input:', data.serviceNeeded);
     }
     
     // Add work type information
@@ -131,10 +159,15 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       serviceInfo += `\nBitiş Tarihi: ${data.projectEndDate}`;
     }
     
-    quoteRequestMutation.mutate({
+    console.log('📤 Final service info:', serviceInfo);
+    
+    const finalData = {
       ...data,
       serviceNeeded: serviceInfo,
-    });
+    };
+    
+    console.log('🚀 Triggering mutation with:', finalData);
+    quoteRequestMutation.mutate(finalData);
   };
 
   // Parse partner services from legacy text field
