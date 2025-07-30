@@ -22,7 +22,7 @@ const formSchema = z.object({
   email: z.string().email("Geçerli bir email adresi giriniz"),
   phone: z.string().min(1, "Telefon numarası zorunludur"),
   company: z.string().min(1, "Şirket adı zorunludur"),
-  serviceNeeded: z.string().min(1, "Hizmet açıklaması zorunludur"),
+  serviceNeeded: z.string().optional(), // Made optional since it can be populated from selectedServices
   budget: z.string().optional(),
   message: z.string().optional(),
   kvkkConsent: z.boolean().refine(val => val === true, {
@@ -131,6 +131,17 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       toast({
         title: "Hata",
         description: "En az bir hizmet seçiniz",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // For partners without structured services, check serviceNeeded field
+    if (partnerServices.length === 0 && (!data.serviceNeeded || data.serviceNeeded.trim() === '')) {
+      console.warn('⚠️ Service description validation failed');
+      toast({
+        title: "Hata",
+        description: "Hizmet açıklaması zorunludur",
         variant: "destructive",
       });
       return;
