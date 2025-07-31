@@ -13,6 +13,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import { supabaseStorage } from "./supabase-storage";
+import { supabaseAdmin } from "./supabase";
 
 // Email templates and functionality
 const emailTemplates = {
@@ -573,21 +574,81 @@ export function registerRoutes(app: Express): Server {
 
       // If application is approved, create or update partner profile
       if (status === 'approved') {
-        // Check if user exists
+        // Check if user exists in our database
         let user = await storage.getUserByEmail(application.email);
         
         if (!user) {
-          // Create user account for the partner
-          const tempPassword = Math.random().toString(36).slice(-8);
-          user = await storage.createUser({
-            email: application.email,
-            password: tempPassword, // Partner should reset this
-            firstName: application.firstName,
-            lastName: application.lastName,
-            phone: application.phone,
-            userType: 'partner',
-            isVerified: true,
-          });
+          try {
+            // Create Supabase user account with email/password flow
+            const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
+              email: application.email,
+              email_confirm: true, // Skip email confirmation since this is admin-approved
+              user_metadata: {
+                firstName: application.firstName,
+                lastName: application.lastName,
+                phone: application.phone,
+                userType: 'partner',
+                companyName: application.company
+              }
+            });
+
+            if (supabaseError) {
+              console.error('Supabase user creation error:', supabaseError);
+              throw new Error(`Supabase kullanıcı hesabı oluşturulamadı: ${supabaseError.message}`);
+            }
+
+            console.log('Supabase user created:', supabaseUser.user?.id);
+
+            // Create local user record
+            user = await storage.createUser({
+              email: application.email,
+              password: 'supabase-managed', // Password is managed by Supabase
+              firstName: application.firstName,
+              lastName: application.lastName,
+              phone: application.phone,
+              userType: 'partner',
+              isVerified: true,
+              supabaseId: supabaseUser.user?.id, // Link to Supabase user
+            });
+
+            // Send password setup email via Supabase
+            const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+              type: 'recovery',
+              email: application.email,
+              options: {
+                redirectTo: `${process.env.VITE_APP_URL || 'https://partner.dip.tc'}/partner-login?setup=true`
+              }
+            });
+
+            if (resetError) {
+              console.error('Password setup email error:', resetError);
+            } else {
+              console.log('Password setup email sent to:', application.email);
+            }
+
+            // Send partner approval email via Resend
+            const approvalEmailTemplate = resendService.createPartnerApprovalEmail(
+              application.firstName,
+              application.company,
+              `${process.env.VITE_APP_URL || 'https://partner.dip.tc'}/partner-login?setup=true`
+            );
+
+            const emailResult = await resendService.sendEmail({
+              to: application.email,
+              subject: approvalEmailTemplate.subject,
+              html: approvalEmailTemplate.html
+            });
+
+            if (emailResult.success) {
+              console.log('Partner approval email sent via Resend');
+            } else {
+              console.error('Failed to send partner approval email:', emailResult.error);
+            }
+
+          } catch (error) {
+            console.error('Error creating partner account:', error);
+            throw error;
+          }
         }
 
         // Create or update partner profile with all the application data

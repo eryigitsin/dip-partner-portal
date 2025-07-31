@@ -595,11 +595,9 @@ export class ResendService {
   }
 
   // Partner Approval Email
-  createPartnerApprovalEmail(partnerName: string, username: string, tempPassword: string): EmailTemplate {
-    const loginUrl = `https://partner.dip.tc/auth`;
-    
+  createPartnerApprovalEmail(partnerName: string, companyName: string, setupUrl: string): EmailTemplate {
     return {
-      subject: 'Partner Başvurunuz Onaylandı - DİP İş Ortakları Platformu',
+      subject: 'Partner Başvurunuz Onaylandı - Hesap Kurulumu Gerekli',
       html: `
         <!DOCTYPE html>
         <html lang="tr">
@@ -615,7 +613,7 @@ export class ResendService {
             .header p { margin: 10px 0 0; opacity: 0.9; font-size: 16px; }
             .content { padding: 40px 30px; }
             .approval-box { background: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0; }
-            .credentials-box { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0; }
+            .setup-box { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 20px; margin: 20px 0; }
             .cta-button { display: inline-block; background: #059669; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; transition: background 0.3s; }
             .cta-button:hover { background: #047857; }
             .footer { background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b; }
@@ -633,22 +631,32 @@ export class ResendService {
               <p>Sayın <strong>${partnerName}</strong>,</p>
               
               <div class="approval-box">
-                <p><strong>Harika haber! Partner başvurunuz onaylandı!</strong></p>
+                <p><strong>Harika haber! ${companyName} şirketi için yaptığınız partner başvurusu onaylandı!</strong></p>
                 <p>Artık DİP İş Ortakları Platformu'nun resmi bir partnerisiniz ve müşterilerden teklif talepleri almaya başlayabilirsiniz.</p>
               </div>
               
-              <div class="credentials-box">
-                <h3>🔐 Giriş Bilgileriniz:</h3>
-                <p><strong>Kullanıcı Adı:</strong> ${username}</p>
-                <p><strong>Geçici Şifre:</strong> <code style="background: #374151; color: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${tempPassword}</code></p>
-                <p><strong>⚠️ Önemli:</strong> Güvenliğiniz için ilk girişte şifrenizi değiştirmenizi öneriyoruz.</p>
+              <div class="setup-box">
+                <h3>🔐 Hesap Kurulumu:</h3>
+                <p>Partner paneline erişim için önce hesabınızı kurmanız gerekmektedir:</p>
+                <ol>
+                  <li>Aşağıdaki bağlantıya tıklayın</li>
+                  <li>Güvenli bir şifre oluşturun</li>
+                  <li>Partner panelinize giriş yapın</li>
+                </ol>
+                <p><strong>⚠️ Önemli:</strong> Bu hesap kurulum bağlantısı güvenlik nedeniyle sınırlı sürelidir.</p>
               </div>
               
               <div style="text-align: center;">
-                <a href="${loginUrl}" class="cta-button">Partner Paneline Giriş Yap</a>
+                <a href="${setupUrl}" class="cta-button">Hesabımı Kur ve Partner Paneline Giriş Yap</a>
               </div>
               
-              <p>Partner panelinizde profilinizi tamamlayabilir, hizmetlerinizi tanıtabilir ve müşterilerden gelen teklif taleplerini yönetebilirsiniz.</p>
+              <p>Hesabınızı kurduktan sonra partner panelinizde:</p>
+              <ul>
+                <li>Profilinizi tamamlayabilir</li>
+                <li>Hizmetlerinizi detaylandırabilir</li>
+                <li>Logo ve kapak resmi yükleyebilir</li>
+                <li>Müşterilerden gelen teklif taleplerini yönetebilirsiniz</li>
+              </ul>
               
               <p>DİP ailesine hoş geldiniz!</p>
               
