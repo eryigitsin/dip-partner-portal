@@ -1,6 +1,20 @@
 import { jsPDF } from 'jspdf';
 import type { QuoteRequest, Partner } from '@shared/schema';
 
+// Add Turkish character support
+const turkishCharMap: { [key: string]: string } = {
+  'ş': 's', 'Ş': 'S',
+  'ğ': 'g', 'Ğ': 'G', 
+  'ı': 'i', 'I': 'I',
+  'ü': 'u', 'Ü': 'U',
+  'ö': 'o', 'Ö': 'O',
+  'ç': 'c', 'Ç': 'C'
+};
+
+function fixTurkishChars(text: string): string {
+  return text.replace(/[şŞğĞıüÜöÖçÇ]/g, (match) => turkishCharMap[match] || match);
+}
+
 export class PDFGenerator {
   static async generateQuoteRequestPDF(quoteRequest: QuoteRequest, partner?: Partner): Promise<Buffer> {
     const doc = new jsPDF();
@@ -20,10 +34,10 @@ export class PDFGenerator {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text('DİP - Dijital İhracat Platformu', pageWidth / 2, 20, { align: 'center' });
+    doc.text(fixTurkishChars('DİP - Dijital İhracat Platformu'), pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(16);
-    doc.text(`Teklif Talebi #${quoteRequest.id}`, pageWidth / 2, 35, { align: 'center' });
+    doc.text(fixTurkishChars(`Teklif Talebi #${quoteRequest.id}`), pageWidth / 2, 35, { align: 'center' });
     
     yPosition = 70;
     
@@ -31,29 +45,29 @@ export class PDFGenerator {
     doc.setTextColor(0, 0, 0);
     
     // Section: Customer Information
-    yPosition = this.addSection(doc, 'Müşteri Bilgileri', yPosition, margin, contentWidth);
+    yPosition = this.addSection(doc, fixTurkishChars('Müşteri Bilgileri'), yPosition, margin, contentWidth);
     
     const customerInfo: [string, string][] = [
-      ['Ad Soyad:', quoteRequest.fullName || 'Belirtilmemiş'],
-      ['E-posta:', quoteRequest.email || 'Belirtilmemiş'],
-      ['Telefon:', quoteRequest.phone || 'Belirtilmemiş'],
-      ['Şirket:', quoteRequest.companyName || 'Belirtilmemiş']
+      [fixTurkishChars('Ad Soyad:'), fixTurkishChars(quoteRequest.fullName || 'Belirtilmemiş')],
+      ['E-posta:', quoteRequest.email || fixTurkishChars('Belirtilmemiş')],
+      ['Telefon:', quoteRequest.phone || fixTurkishChars('Belirtilmemiş')],
+      [fixTurkishChars('Şirket:'), fixTurkishChars(quoteRequest.companyName || 'Belirtilmemiş')]
     ];
     
     yPosition = this.addInfoRows(doc, customerInfo, yPosition, margin);
     yPosition += 10;
     
     // Section: Service Details
-    yPosition = this.addSection(doc, 'Hizmet Detayları', yPosition, margin, contentWidth);
+    yPosition = this.addSection(doc, fixTurkishChars('Hizmet Detayları'), yPosition, margin, contentWidth);
     
     // Service needed (with proper text wrapping)
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text('İhtiyaç Duyulan Hizmet:', margin, yPosition);
+    doc.text(fixTurkishChars('İhtiyaç Duyulan Hizmet:'), margin, yPosition);
     yPosition += 6;
     
     doc.setFont("helvetica", "normal");
-    const serviceText = quoteRequest.serviceNeeded || 'Belirtilmemiş';
+    const serviceText = fixTurkishChars(quoteRequest.serviceNeeded || 'Belirtilmemiş');
     const serviceLines = doc.splitTextToSize(serviceText, contentWidth - 20);
     doc.text(serviceLines, margin + 10, yPosition);
     yPosition += serviceLines.length * 5 + 10;
@@ -61,15 +75,15 @@ export class PDFGenerator {
     // Working style if exists - using message field instead
     if (quoteRequest.message) {
       doc.setFont("helvetica", "bold");
-      doc.text('Çalışma Şekli:', margin, yPosition);
+      doc.text(fixTurkishChars('Çalışma Şekli:'), margin, yPosition);
       doc.setFont("helvetica", "normal");
-      doc.text(quoteRequest.message, margin + 40, yPosition);
+      doc.text(fixTurkishChars(quoteRequest.message), margin + 40, yPosition);
       yPosition += 8;
     }
     
     const serviceInfo: [string, string][] = [
-      ['Bütçe:', quoteRequest.budget || 'Belirtilmemiş'],
-      ['Durum:', getStatusText(quoteRequest.status || 'pending')]
+      [fixTurkishChars('Bütçe:'), fixTurkishChars(quoteRequest.budget || 'Belirtilmemiş')],
+      [fixTurkishChars('Durum:'), fixTurkishChars(getStatusText(quoteRequest.status || 'pending'))]
     ];
     
     yPosition = this.addInfoRows(doc, serviceInfo, yPosition, margin);
@@ -77,21 +91,21 @@ export class PDFGenerator {
     
     // Section: Customer Message (if exists) - using message field
     if (quoteRequest.message) {
-      yPosition = this.addSection(doc, 'Müşteri Mesajı', yPosition, margin, contentWidth);
+      yPosition = this.addSection(doc, fixTurkishChars('Müşteri Mesajı'), yPosition, margin, contentWidth);
       
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      const messageLines = doc.splitTextToSize(quoteRequest.message, contentWidth - 20);
+      const messageLines = doc.splitTextToSize(fixTurkishChars(quoteRequest.message), contentWidth - 20);
       doc.text(messageLines, margin + 10, yPosition);
       yPosition += messageLines.length * 5 + 15;
     }
     
     // Section: Request Information
-    yPosition = this.addSection(doc, 'Talep Bilgileri', yPosition, margin, contentWidth);
+    yPosition = this.addSection(doc, fixTurkishChars('Talep Bilgileri'), yPosition, margin, contentWidth);
     
     const requestInfo: [string, string][] = [
-      ['Talep Tarihi:', quoteRequest.createdAt ? new Date(quoteRequest.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'],
-      ['Son Güncelleme:', quoteRequest.updatedAt ? new Date(quoteRequest.updatedAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş']
+      [fixTurkishChars('Talep Tarihi:'), quoteRequest.createdAt ? new Date(quoteRequest.createdAt).toLocaleDateString('tr-TR') : fixTurkishChars('Belirtilmemiş')],
+      [fixTurkishChars('Son Güncelleme:'), quoteRequest.updatedAt ? new Date(quoteRequest.updatedAt).toLocaleDateString('tr-TR') : fixTurkishChars('Belirtilmemiş')]
     ];
     
     yPosition = this.addInfoRows(doc, requestInfo, yPosition, margin);
@@ -100,7 +114,7 @@ export class PDFGenerator {
     const footerY = doc.internal.pageSize.getHeight() - 20;
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text('DİP - Digital İhracat Platformu | https://partner.dip.tc', pageWidth / 2, footerY, { align: 'center' });
+    doc.text(fixTurkishChars('DİP - Digital İhracat Platformu | https://partner.dip.tc'), pageWidth / 2, footerY, { align: 'center' });
     
     return Buffer.from(doc.output('arraybuffer'));
   }
@@ -156,10 +170,10 @@ export class PDFGenerator {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text('DİP - Dijital İhracat Platformu', pageWidth / 2, 20, { align: 'center' });
+    doc.text(fixTurkishChars('DİP - Dijital İhracat Platformu'), pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(16);
-    doc.text(`Teklif Yanıtı #${quoteResponse.id}`, pageWidth / 2, 35, { align: 'center' });
+    doc.text(fixTurkishChars(`Teklif Yanıtı #${quoteResponse.id}`), pageWidth / 2, 35, { align: 'center' });
     
     yPosition = 70;
     
@@ -167,13 +181,13 @@ export class PDFGenerator {
     doc.setTextColor(0, 0, 0);
     
     // Section: Quote Details
-    yPosition = this.addSection(doc, 'Teklif Detayları', yPosition, margin, contentWidth);
+    yPosition = this.addSection(doc, fixTurkishChars('Teklif Detayları'), yPosition, margin, contentWidth);
     
     const quoteInfo: [string, string][] = [
-      ['Başlık:', quoteResponse.title || 'Belirtilmemiş'],
-      ['Açıklama:', quoteResponse.description || 'Belirtilmemiş'],
-      ['Fiyat:', `${quoteResponse.price} ${quoteResponse.currency}`],
-      ['Teslimat Süresi:', quoteResponse.deliveryTime || 'Belirtilmemiş']
+      [fixTurkishChars('Başlık:'), fixTurkishChars(quoteResponse.title || 'Belirtilmemiş')],
+      [fixTurkishChars('Açıklama:'), fixTurkishChars(quoteResponse.description || 'Belirtilmemiş')],
+      [fixTurkishChars('Fiyat:'), fixTurkishChars(`${quoteResponse.price} ${quoteResponse.currency}`)],
+      [fixTurkishChars('Teslimat Süresi:'), fixTurkishChars(quoteResponse.deliveryTime || 'Belirtilmemiş')]
     ];
     
     yPosition = this.addInfoRows(doc, quoteInfo, yPosition, margin);
@@ -182,7 +196,7 @@ export class PDFGenerator {
     const footerY = doc.internal.pageSize.getHeight() - 20;
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text('DİP - Digital İhracat Platformu | https://partner.dip.tc', pageWidth / 2, footerY, { align: 'center' });
+    doc.text(fixTurkishChars('DİP - Digital İhracat Platformu | https://partner.dip.tc'), pageWidth / 2, footerY, { align: 'center' });
     
     return Buffer.from(doc.output('arraybuffer'));
   }
