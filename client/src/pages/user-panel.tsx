@@ -177,7 +177,7 @@ export default function UserPanel() {
         email: user.email || '',
         phone: user.phone || '',
         company: userProfile.company || '',
-        contactPerson: `${user.firstName} ${user.lastName}` || '',
+        contactPerson: `${user.firstName || ''} ${user.lastName || ''}`.trim() || '',
         website: userProfile.website || '',
         linkedinProfile: userProfile.linkedinProfile || '',
         businessDescription: userProfile.sector || '',

@@ -38,6 +38,10 @@ export default function HomePage() {
   }, [location]);
 
   const handleBecomePartner = () => {
+    if (!user) {
+      setLocation('/auth?from=partner');
+      return;
+    }
     setIsPartnerApplicationOpen(true);
   };
 

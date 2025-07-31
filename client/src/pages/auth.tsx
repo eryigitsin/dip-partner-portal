@@ -28,15 +28,25 @@ export default function AuthPage() {
   const { localUser } = useSupabaseAuth();
   const { toast } = useToast();
 
-  // Show auth warning message when coming from quote request
+  // Show auth warning message when coming from quote request or partner application
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const fromQuote = params.get('from') === 'quote';
+    const fromPartner = params.get('from') === 'partner';
     
     if (fromQuote) {
       toast({
         title: 'Önce giriş yapın',
         description: 'Teklif talep etmek için üye olmanız gerekiyor. Üyeliğiniz yoksa kaydolun.',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+    
+    if (fromPartner) {
+      toast({
+        title: 'Giriş Gerekli',
+        description: 'İş ortağı başvurusu yapabilmek için giriş yapmış olmanız gerekmektedir. Lütfen giriş yapın; üyeliğiniz yoksa üye olup tekrar deneyin.',
         variant: 'destructive',
         duration: 3000,
       });
