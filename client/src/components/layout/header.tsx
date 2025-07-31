@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { AccountTypeSelector } from '@/components/account-type-selector';
 import { t } from '@/lib/i18n';
-import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight } from 'lucide-react';
+import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2 } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 
@@ -242,73 +242,70 @@ export function Header() {
 
                 {/* Admin users */}
                 {['master_admin', 'editor_admin'].includes(user.activeUserType || user.userType) && (
-                  <div className="flex items-center space-x-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
-                          <User className="h-4 w-4" />
-                          <span>{user.firstName} {user.lastName}</span>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        {user.userType === 'master_admin' && (
-                          <>
-                            <DropdownMenuItem>
-                              <Link href="/admin-dashboard" className="flex items-center gap-2 w-full">
-                                <Shield className="h-4 w-4" />
-                                Admin Paneli
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Link href="/user-management" className="flex items-center gap-2 w-full">
-                                <Users className="h-4 w-4" />
-                                Kullanıcı Yönetimi
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Link href="/statistics" className="flex items-center gap-2 w-full">
-                                <BarChart3 className="h-4 w-4" />
-                                İstatistikler
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Link href="/system-status" className="flex items-center gap-2 w-full">
-                                <Activity className="h-4 w-4" />
-                                Sistem Durumu
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Link href="/marketing-list" className="flex items-center gap-2 w-full">
-                                <Database className="h-4 w-4" />
-                                Pazarlama & CRM
-                              </Link>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuSeparator />
-                          </>
-                        )}
-                        {user.userType === 'editor_admin' && (
-                          <>
-                            <DropdownMenuItem>
-                              <Link href="/admin-dashboard" className="flex items-center gap-2 w-full">
-                                <Shield className="h-4 w-4" />
-                                Admin Paneli
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                          </>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => signOut()}
-                          className="text-red-600 focus:text-red-600"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Çıkış Yap
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                      >
+                        <span>{user.firstName} {user.lastName}</span>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin-dashboard" className="flex items-center">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Yönetici Paneli</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/partner-applications" className="flex items-center">
+                          <FileText className="mr-2 h-4 w-4" />
+                          <span>Partner Başvuruları</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/user-management" className="flex items-center">
+                          <Users className="mr-2 h-4 w-4" />
+                          <span>Kullanıcı Yönetimi</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/partner-management" className="flex items-center">
+                          <Building2 className="mr-2 h-4 w-4" />
+                          <span>Partner Yönetimi</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/system-settings" className="flex items-center">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Sistem Ayarları</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      {hasMultipleAccountTypes && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => setAccountSelectorOpen(true)}
+                            className="flex items-center"
+                          >
+                            <ArrowLeftRight className="mr-2 h-4 w-4" />
+                            <span>Hesap Türü Değiştir</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => signOut()}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Çıkış Yap</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             ) : (
