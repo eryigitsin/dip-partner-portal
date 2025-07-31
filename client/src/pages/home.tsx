@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useRouter } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
+import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -10,7 +11,7 @@ import { PartnersCatalog } from '@/components/sections/partners-catalog';
 import { PartnershipCta } from '@/components/sections/partnership-cta';
 import { PartnerApplicationDialog } from '@/components/forms/partner-application-dialog';
 import { QuoteRequestModal } from '@/components/modals/quote-request-modal';
-import { Partner } from '@shared/schema';
+import { Partner, UserProfile } from '@shared/schema';
 
 export default function HomePage() {
   const [location, setLocation] = useLocation();
@@ -20,6 +21,30 @@ export default function HomePage() {
   const [isQuoteRequestOpen, setIsQuoteRequestOpen] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+
+  // Fetch user profile data for pre-filling partner application
+  const { data: userProfile } = useQuery<UserProfile>({
+    queryKey: ['/api/user/profile'],
+    enabled: !!user,
+  });
+
+  // Partner application pre-filled data
+  const getPrefilledData = () => {
+    if (user && userProfile) {
+      return {
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        company: userProfile.company || '',
+        contactPerson: `${user.firstName || ''} ${user.lastName || ''}`.trim() || '',
+        website: userProfile.website || '',
+        linkedinProfile: userProfile.linkedinProfile || '',
+        businessDescription: userProfile.sector || '',
+      };
+    }
+    return {};
+  };
 
   // Check URL parameters on mount and when location changes
   useEffect(() => {
@@ -99,6 +124,14 @@ export default function HomePage() {
       <PartnerApplicationDialog 
         open={isPartnerApplicationOpen}
         onOpenChange={setIsPartnerApplicationOpen}
+        prefilledData={getPrefilledData()}
+        onSuccess={() => {
+          setIsPartnerApplicationOpen(false);
+          toast({
+            title: 'Başarılı',
+            description: 'İş ortağı başvurunuz alındı. İncelendikten sonra bilgilendirileceksiniz.',
+          });
+        }}
       />
 
       <QuoteRequestModal 
