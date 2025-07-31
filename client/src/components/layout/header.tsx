@@ -260,30 +260,44 @@ export function Header() {
                           <span>Yönetici Paneli</span>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/partner-applications" className="flex items-center">
-                          <FileText className="mr-2 h-4 w-4" />
-                          <span>Partner Başvuruları</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/user-management" className="flex items-center">
-                          <Users className="mr-2 h-4 w-4" />
-                          <span>Kullanıcı Yönetimi</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/partner-management" className="flex items-center">
-                          <Building2 className="mr-2 h-4 w-4" />
-                          <span>Partner Yönetimi</span>
-                        </Link>
-                      </DropdownMenuItem>
+                      
+                      {/* Master Admin only items */}
+                      {(user.activeUserType === 'master_admin' || user.userType === 'master_admin') && (
+                        <>
+                          <DropdownMenuItem asChild>
+                            <Link href="/user-management" className="flex items-center">
+                              <Users className="mr-2 h-4 w-4" />
+                              <span>Kullanıcı Yönetimi</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/statistics" className="flex items-center">
+                              <BarChart3 className="mr-2 h-4 w-4" />
+                              <span>İstatistikler</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/system-status" className="flex items-center">
+                              <Activity className="mr-2 h-4 w-4" />
+                              <span>Sistem Durumu</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/marketing-list" className="flex items-center">
+                              <Database className="mr-2 h-4 w-4" />
+                              <span>Pazarlama & CRM</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      
                       <DropdownMenuItem asChild>
                         <Link href="/system-settings" className="flex items-center">
                           <Settings className="mr-2 h-4 w-4" />
                           <span>Sistem Ayarları</span>
                         </Link>
                       </DropdownMenuItem>
+                      
                       {hasMultipleAccountTypes && (
                         <>
                           <DropdownMenuSeparator />
