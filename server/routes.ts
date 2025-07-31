@@ -2155,6 +2155,124 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Quote Response Management Routes
+  app.post('/api/quote-responses', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user;
+      if (!user || user.userType !== 'partner') {
+        return res.status(403).json({ error: 'Only partners can create quote responses' });
+      }
+
+      const partner = await storage.getPartnerByUserId(user.id);
+      if (!partner) {
+        return res.status(404).json({ error: 'Partner profile not found' });
+      }
+
+      const responseData = req.body;
+      
+      // Validate required fields
+      if (!responseData.quoteRequestId || !responseData.title || !responseData.items || responseData.items.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Ensure the quote request belongs to this partner
+      const quoteRequest = await storage.getQuoteRequestById(responseData.quoteRequestId);
+      if (!quoteRequest || quoteRequest.partnerId !== partner.id) {
+        return res.status(403).json({ error: 'Unauthorized to respond to this quote request' });
+      }
+
+      // Create the quote response
+      const quoteResponse = await storage.createQuoteResponse({
+        ...responseData,
+        partnerId: partner.id,
+      });
+
+      // Update the quote request status
+      await storage.updateQuoteRequest(responseData.quoteRequestId, {
+        status: 'quote_sent',
+      });
+
+      res.status(201).json(quoteResponse);
+    } catch (error) {
+      console.error('Error creating quote response:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/quote-responses/:requestId', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const requestId = parseInt(req.params.requestId);
+      const quoteRequest = await storage.getQuoteRequestById(requestId);
+      
+      if (!quoteRequest) {
+        return res.status(404).json({ error: 'Quote request not found' });
+      }
+
+      // Check if user has permission to view responses
+      const partner = await storage.getPartnerByUserId(user.id);
+      const canView = 
+        (user.userType === 'partner' && partner && partner.id === quoteRequest.partnerId) ||
+        (user.userType === 'user' && quoteRequest.userId === user.id) ||
+        (user.userType === 'master_admin' || user.userType === 'editor_admin');
+
+      if (!canView) {
+        return res.status(403).json({ error: 'Unauthorized to view quote responses' });
+      }
+
+      const responses = await storage.getQuoteResponsesByRequestId(requestId);
+      res.json(responses);
+    } catch (error) {
+      console.error('Error fetching quote responses:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/quote-responses/:id/status', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const responseId = parseInt(req.params.id);
+      const { status } = req.body;
+
+      if (!['accepted', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const quoteResponse = await storage.getQuoteResponseById(responseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ error: 'Quote response not found' });
+      }
+
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest || quoteRequest.userId !== user.id) {
+        return res.status(403).json({ error: 'Unauthorized to update this quote response' });
+      }
+
+      // Update quote response status
+      const updatedResponse = await storage.updateQuoteResponse(responseId, { status });
+
+      // Update quote request status based on response status
+      const requestStatus = status === 'accepted' ? 'accepted' : 'rejected';
+      await storage.updateQuoteRequest(quoteResponse.quoteRequestId, { status: requestStatus });
+
+      res.json(updatedResponse);
+    } catch (error) {
+      console.error('Error updating quote response status:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Register admin API routes
   (async () => {
     const adminModule = await import('./admin-routes.js');

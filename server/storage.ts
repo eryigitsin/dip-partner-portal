@@ -11,6 +11,7 @@ import {
   partnerPosts,
   partnerFollowers,
   messages,
+  quoteResponses,
   smsOtpCodes,
   tempUserRegistrations,
   emailSubscribers,
@@ -28,6 +29,8 @@ import {
   type InsertApplicationDocument,
   type QuoteRequest,
   type InsertQuoteRequest,
+  type QuoteResponse,
+  type InsertQuoteResponse,
   type ServiceCategory,
   type InsertServiceCategory,
   type Service,
@@ -165,6 +168,12 @@ export interface IStorage {
   deleteMarketingContact(email: string): Promise<void>;
   syncUserToMarketingContact(user: User, userType: string, source: string): Promise<MarketingContact>;
   syncPartnerToMarketingContact(partner: Partner, user: User): Promise<MarketingContact>;
+
+  // Quote Response methods
+  createQuoteResponse(responseData: InsertQuoteResponse): Promise<QuoteResponse>;
+  getQuoteResponseById(id: number): Promise<QuoteResponse | null>;
+  getQuoteResponsesByRequestId(requestId: number): Promise<QuoteResponse[]>;
+  updateQuoteResponse(id: number, updates: Partial<QuoteResponse>): Promise<QuoteResponse | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -674,6 +683,37 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
+  // Quote Responses Management
+  async createQuoteResponse(response: InsertQuoteResponse): Promise<QuoteResponse> {
+    const [newResponse] = await db
+      .insert(quoteResponses)
+      .values(response)
+      .returning();
+    return newResponse;
+  }
+
+  async getQuoteResponsesByRequestId(requestId: number): Promise<QuoteResponse[]> {
+    return await db.select().from(quoteResponses)
+      .where(eq(quoteResponses.quoteRequestId, requestId))
+      .orderBy(desc(quoteResponses.createdAt));
+  }
+
+  async getQuoteResponseById(id: number): Promise<QuoteResponse | undefined> {
+    const [response] = await db.select().from(quoteResponses)
+      .where(eq(quoteResponses.id, id))
+      .limit(1);
+    return response || undefined;
+  }
+
+  async updateQuoteResponse(id: number, updates: Partial<QuoteResponse>): Promise<QuoteResponse | undefined> {
+    const [response] = await db
+      .update(quoteResponses)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(quoteResponses.id, id))
+      .returning();
+    return response || undefined;
+  }
+
 
 
   // OTP methods
@@ -1086,6 +1126,46 @@ export class DatabaseStorage implements IStorage {
     return null;
   }
 
+  // Quote Response Methods
+  async createQuoteResponse(responseData: InsertQuoteResponse): Promise<QuoteResponse> {
+    try {
+      const [response] = await db.insert(quoteResponses).values(responseData).returning();
+      return response;
+    } catch (error) {
+      console.error('Error creating quote response:', error);
+      throw error;
+    }
+  }
+
+  async getQuoteResponseById(id: number): Promise<QuoteResponse | null> {
+    try {
+      const [response] = await db.select().from(quoteResponses).where(eq(quoteResponses.id, id));
+      return response || null;
+    } catch (error) {
+      console.error('Error fetching quote response:', error);
+      return null;
+    }
+  }
+
+  async getQuoteResponsesByRequestId(requestId: number): Promise<QuoteResponse[]> {
+    try {
+      const responses = await db.select().from(quoteResponses).where(eq(quoteResponses.quoteRequestId, requestId));
+      return responses;
+    } catch (error) {
+      console.error('Error fetching quote responses:', error);
+      return [];
+    }
+  }
+
+  async updateQuoteResponse(id: number, updates: Partial<QuoteResponse>): Promise<QuoteResponse | null> {
+    try {
+      const [response] = await db.update(quoteResponses).set(updates).where(eq(quoteResponses.id, id)).returning();
+      return response || null;
+    } catch (error) {
+      console.error('Error updating quote response:', error);
+      return null;
+    }
+  }
 
 }
 

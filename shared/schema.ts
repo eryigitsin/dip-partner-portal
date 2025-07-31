@@ -154,7 +154,7 @@ export const quoteRequests = pgTable("quote_requests", {
   budget: text("budget"),
   message: text("message"),
   projectDate: timestamp("project_date"),
-  status: text("status").default("pending"), // pending, responded, accepted, rejected, completed
+  status: text("status").default("pending"), // pending, under_review, quote_sent, accepted, rejected, completed
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -212,19 +212,25 @@ export const companyBillingInfo = pgTable("company_billing_info", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Quote responses from partners
+// Quote responses from partners - formal quote documents
 export const quoteResponses = pgTable("quote_responses", {
   id: serial("id").primaryKey(),
   quoteRequestId: integer("quote_request_id").references(() => quoteRequests.id).notNull(),
   partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  quoteNumber: text("quote_number").notNull().unique(), // Random quote number like DP2025000000010
   title: text("title").notNull(),
-  description: text("description").notNull(),
-  price: text("price").notNull(),
+  description: text("description"),
+  items: jsonb("items").notNull(), // Array of quote items with description, quantity, unitPrice, total
+  subtotal: integer("subtotal").notNull(), // Amount in cents
+  discountAmount: integer("discount_amount").default(0), // Discount in cents
+  discountPercent: integer("discount_percent").default(0), // Discount percentage
+  taxRate: integer("tax_rate").default(2000), // Tax rate in basis points (2000 = 20%)
+  taxAmount: integer("tax_amount").notNull(), // Tax amount in cents
+  totalAmount: integer("total_amount").notNull(), // Final total in cents
   currency: text("currency").default("TRY"),
-  deliveryTime: text("delivery_time"),
-  terms: text("terms"),
-  status: text("status").default("sent"), // sent, accepted, rejected
-  validUntil: timestamp("valid_until"),
+  notes: text("notes"),
+  validUntil: timestamp("valid_until"), // Quote expiration date
+  status: text("status").default("sent"), // sent, accepted, rejected, expired
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -569,6 +575,15 @@ export type EmailSubscriber = typeof emailSubscribers.$inferSelect;
 export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
 export type UserEmailPreferences = typeof userEmailPreferences.$inferSelect;
 export type InsertUserEmailPreferences = z.infer<typeof insertUserEmailPreferencesSchema>;
+
+// Quote item interface for the formal quote system
+export interface QuoteItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number; // In cents
+  total: number; // In cents
+}
 
 export const insertMarketingContactSchema = createInsertSchema(marketingContacts).omit({
   id: true,
