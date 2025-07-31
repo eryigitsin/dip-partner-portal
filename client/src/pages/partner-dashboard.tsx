@@ -71,40 +71,7 @@ export default function PartnerDashboard() {
     setIsResponseDialogOpen(true);
   };
 
-  const handleDownloadPDF = (request: QuoteRequest) => {
-    // Generate and download PDF for the quote request
-    const element = document.createElement('a');
-    const pdfContent = generateQuoteRequestPDF(request);
-    const file = new Blob([pdfContent], { type: 'application/pdf' });
-    element.href = URL.createObjectURL(file);
-    element.download = `teklif-talebi-${request.id}.pdf`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
 
-  const generateQuoteRequestPDF = (request: QuoteRequest) => {
-    // Simple HTML to PDF conversion - in production, use a proper PDF library
-    return `
-      <html>
-        <head><title>Teklif Talebi #${request.id}</title></head>
-        <body>
-          <h1>DİP - Teklif Talebi</h1>
-          <h2>Müşteri Bilgileri</h2>
-          <p><strong>Ad Soyad:</strong> ${request.fullName}</p>
-          <p><strong>E-posta:</strong> ${request.email}</p>
-          <p><strong>Telefon:</strong> ${request.phone}</p>
-          <p><strong>Şirket:</strong> ${request.companyName}</p>
-          <h2>Hizmet Detayları</h2>
-          <p><strong>İhtiyaç Duyulan Hizmet:</strong> ${request.serviceNeeded}</p>
-          <p><strong>Bütçe:</strong> ${request.budget || 'Belirtilmedi'}</p>
-          <p><strong>Mesaj:</strong> ${request.message || 'Mesaj yok'}</p>
-          <h2>Talep Tarihi</h2>
-          <p>${request.createdAt ? new Date(request.createdAt).toLocaleDateString('tr-TR') : 'Tarih belirtilmemiş'}</p>
-        </body>
-      </html>
-    `;
-  };
 
   if (!user || user.userType !== "partner") {
     return (
