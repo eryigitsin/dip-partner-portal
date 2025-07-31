@@ -91,7 +91,11 @@ export function QuoteResponseDialog({
   const parseServiceItems = (serviceNeeded: string) => {
     // Split services by common separators and create initial items
     const services = serviceNeeded.split(/[,\n\r;]+/).map(s => s.trim()).filter(s => s.length > 0);
-    return services.map(service => ({
+    
+    // Filter out "Çalışma Şekli" items as they should go to notes
+    const filteredServices = services.filter(service => !service.includes('Çalışma Şekli:'));
+    
+    return filteredServices.map(service => ({
       description: service,
       quantity: 1,
       unitPrice: 0,
@@ -107,10 +111,20 @@ export function QuoteResponseDialog({
   // Reset items when dialog opens
   useEffect(() => {
     if (isOpen) {
-      const newInitialItems = parseServiceItems(quoteRequest.serviceNeeded || "");
+      // Check for working style in service needed and add to notes
+      const serviceNeeded = quoteRequest.serviceNeeded || "";
+      const services = serviceNeeded.split(/[,\n\r;]+/).map(s => s.trim()).filter(s => s.length > 0);
+      const workingStyle = services.find(service => service.includes('Çalışma Şekli:'));
+      
+      if (workingStyle) {
+        const workingStyleNote = workingStyle.replace('Çalışma Şekli: ', '');
+        form.setValue('notes', workingStyleNote);
+      }
+      
+      const newInitialItems = parseServiceItems(serviceNeeded);
       setItems(newInitialItems.length > 0 ? newInitialItems : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
     }
-  }, [isOpen, quoteRequest.serviceNeeded]);
+  }, [isOpen, quoteRequest.serviceNeeded, form]);
 
   // Generate a random quote number
   const quoteNumber = `DIP${new Date().getFullYear()}${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`;

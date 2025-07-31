@@ -73,15 +73,8 @@ export default function PartnerDashboard() {
   };
 
   const handleDownloadPDF = (request: QuoteRequest) => {
-    // Generate and download PDF for the quote request
-    const element = document.createElement('a');
-    const pdfContent = generateQuoteRequestPDF(request);
-    const file = new Blob([pdfContent], { type: 'application/pdf' });
-    element.href = URL.createObjectURL(file);
-    element.download = `teklif-talebi-${request.id}.pdf`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    // Use the server-side PDF generation endpoint
+    window.open(`/api/quote-requests/${request.id}/pdf`, '_blank');
   };
 
   const generateQuoteRequestPDF = (request: QuoteRequest) => {
@@ -492,7 +485,7 @@ export default function PartnerDashboard() {
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-700">İletişim Kişisi</Label>
-                      <p className="mt-1 text-gray-900">{partner?.fullName || "Belirtilmemiş"}</p>
+                      <p className="mt-1 text-gray-900">{partner?.contactPerson || "Belirtilmemiş"}</p>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Hizmet Kategorisi</Label>

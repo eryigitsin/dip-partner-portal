@@ -190,7 +190,7 @@ export default function ServiceRequests() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Building className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">Şirket: {request.company}</span>
+                          <span className="text-sm">Şirket: {request.companyName}</span>
                         </div>
                       </div>
 
@@ -269,6 +269,14 @@ export default function ServiceRequests() {
                                     >
                                       <MessageCircle className="h-4 w-4" />
                                       Mesaj Gönder
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      className="flex items-center gap-2"
+                                      onClick={() => window.open(`/api/quote-responses/${response.id}/pdf`, '_blank')}
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                      PDF İndir
                                     </Button>
                                   </div>
                                 )}

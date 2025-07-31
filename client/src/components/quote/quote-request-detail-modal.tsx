@@ -67,17 +67,8 @@ export function QuoteRequestDetailModal({
   };
 
   const handleDownloadPDF = () => {
-    // Generate and download proper PDF for the quote request
-    const pdfContent = generateQuoteRequestPDF(quoteRequest);
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(pdfContent);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
-    }
+    // Use the server-side PDF generation endpoint
+    window.open(`/api/quote-requests/${quoteRequest.id}/pdf`, '_blank');
   };
 
   const generateQuoteRequestPDF = (request: QuoteRequest) => {
