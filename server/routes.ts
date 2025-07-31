@@ -2537,6 +2537,145 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Auth middleware functions
+  const requireAuth = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    next();
+  };
+
+  const requireMasterAdmin = (req: any, res: any, next: any) => {
+    if (req.user?.userType !== 'master_admin' && req.user?.activeUserType !== 'master_admin') {
+      return res.status(403).json({ message: 'Master admin access required' });
+    }
+    next();
+  };
+
+  // System settings endpoints
+  app.get("/api/admin/system-config", requireAuth, requireMasterAdmin, async (req, res) => {
+    try {
+      const configs = await storage.getSystemConfigs();
+      
+      // Organize configs into a structured object
+      const configObject = {
+        siteName: configs.find(c => c.key === 'siteName')?.value || 'DİP Platform',
+        defaultLanguage: configs.find(c => c.key === 'defaultLanguage')?.value || 'tr',
+        maintenanceMode: configs.find(c => c.key === 'maintenanceMode')?.value || false,
+        autoApprovalEnabled: configs.find(c => c.key === 'autoApprovalEnabled')?.value || false,
+        sessionTimeout: configs.find(c => c.key === 'sessionTimeout')?.value || 60,
+        passwordMinLength: configs.find(c => c.key === 'passwordMinLength')?.value || 8,
+        require2FA: configs.find(c => c.key === 'require2FA')?.value || false,
+        heroVideoUrl: configs.find(c => c.key === 'heroVideoUrl')?.value || '',
+        emailSettings: configs.find(c => c.key === 'emailSettings')?.value || {
+          resendApiKey: '',
+          fromEmail: '',
+          fromName: 'DİP Platform'
+        },
+        smsSettings: configs.find(c => c.key === 'smsSettings')?.value || {
+          netgsmUsername: '',
+          netgsmPassword: '',
+          netgsmMsgHeader: ''
+        }
+      };
+      
+      res.json(configObject);
+    } catch (error) {
+      console.error('Error fetching system config:', error);
+      res.status(500).json({ error: 'Failed to fetch system config' });
+    }
+  });
+
+  app.patch("/api/admin/system-config", requireAuth, requireMasterAdmin, async (req, res) => {
+    try {
+      const updates = req.body;
+      
+      // Update each config key
+      for (const [key, value] of Object.entries(updates)) {
+        await storage.updateSystemConfig(key, value);
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating system config:', error);
+      res.status(500).json({ error: 'Failed to update system config' });
+    }
+  });
+
+  // Admin categories management
+  app.get("/api/admin/categories", requireAuth, requireMasterAdmin, async (req, res) => {
+    try {
+      const categories = await storage.getAllCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+  });
+
+  app.post("/api/admin/categories", requireAuth, requireMasterAdmin, async (req, res) => {
+    try {
+      const { name, description } = req.body;
+      const category = await storage.createCategory({ name, description, isActive: true });
+      res.json(category);
+    } catch (error) {
+      console.error('Error creating category:', error);
+      res.status(500).json({ error: 'Failed to create category' });
+    }
+  });
+
+  app.patch("/api/admin/categories/:id", requireAuth, requireMasterAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const category = await storage.updateCategory(parseInt(id), updates);
+      res.json(category);
+    } catch (error) {
+      console.error('Error updating category:', error);
+      res.status(500).json({ error: 'Failed to update category' });
+    }
+  });
+
+  // Admin services management
+  app.get("/api/admin/services", requireAuth, requireMasterAdmin, async (req, res) => {
+    try {
+      const services = await storage.getAllServicesWithCategories();
+      res.json(services);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      res.status(500).json({ error: 'Failed to fetch services' });
+    }
+  });
+
+  app.post("/api/admin/services", requireAuth, requireMasterAdmin, async (req, res) => {
+    try {
+      const { name, description, categoryId } = req.body;
+      const service = await storage.createService({ 
+        name, 
+        description, 
+        categoryId, 
+        isActive: true, 
+        createdBy: req.user.id 
+      });
+      res.json(service);
+    } catch (error) {
+      console.error('Error creating service:', error);
+      res.status(500).json({ error: 'Failed to create service' });
+    }
+  });
+
+  app.patch("/api/admin/services/:id", requireAuth, requireMasterAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      const service = await storage.updateService(parseInt(id), updates);
+      res.json(service);
+    } catch (error) {
+      console.error('Error updating service:', error);
+      res.status(500).json({ error: 'Failed to update service' });
+    }
+  });
+
   // Register admin API routes
   (async () => {
     const adminModule = await import('./admin-routes.js');

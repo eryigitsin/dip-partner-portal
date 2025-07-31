@@ -291,6 +291,13 @@ export function Header() {
                         </>
                       )}
                       
+                      <DropdownMenuItem asChild>
+                        <Link href="/system-settings" className="flex items-center">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Sistem Ayarları</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      
                       {hasMultipleAccountTypes && (
                         <>
                           <DropdownMenuSeparator />

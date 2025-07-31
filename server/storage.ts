@@ -17,6 +17,7 @@ import {
   emailSubscribers,
   userEmailPreferences,
   marketingContacts,
+  systemConfig,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -175,6 +176,20 @@ export interface IStorage {
   getQuoteResponseById(id: number): Promise<QuoteResponse | null>;
   getQuoteResponsesByRequestId(requestId: number): Promise<QuoteResponse[]>;
   updateQuoteResponse(id: number, updates: Partial<QuoteResponse>): Promise<QuoteResponse | null>;
+
+  // System configuration methods
+  getSystemConfigs(): Promise<Array<{ key: string; value: any }>>;
+  updateSystemConfig(key: string, value: any): Promise<void>;
+  
+  // Category management
+  getAllCategories(): Promise<Array<{ id: number; name: string; description?: string; isActive: boolean }>>;
+  createCategory(data: { name: string; description?: string; isActive: boolean }): Promise<any>;
+  updateCategory(id: number, updates: any): Promise<any>;
+  
+  // Service management with categories
+  getAllServicesWithCategories(): Promise<Array<{ id: number; name: string; description: string; categoryId: number; isActive: boolean }>>;
+  createService(data: { name: string; description: string; categoryId: number; isActive: boolean; createdBy: number }): Promise<any>;
+  updateService(id: number, updates: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -709,20 +724,7 @@ export class DatabaseStorage implements IStorage {
     return service;
   }
 
-  async createService(service: InsertService): Promise<Service> {
-    // For now, we don't actually insert into services table since we're using partner services
-    // Return a mock service object to maintain API compatibility
-    return {
-      id: Date.now(),
-      name: service.name,
-      description: service.description || null,
-      category: service.category || null,
-      isActive: true,
-      createdBy: service.createdBy || null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-  }
+
 
   async getPartnerServices(partnerId: number): Promise<string[]> {
     try {
@@ -1207,6 +1209,113 @@ export class DatabaseStorage implements IStorage {
     return null;
   }
 
+  // System configuration methods implementation
+  async getSystemConfigs(): Promise<Array<{ key: string; value: any }>> {
+    const configs = await db.select().from(systemConfig);
+    return configs;
+  }
+
+  async updateSystemConfig(key: string, value: any): Promise<void> {
+    const existing = await db.select().from(systemConfig).where(eq(systemConfig.key, key));
+    
+    if (existing.length > 0) {
+      await db
+        .update(systemConfig)
+        .set({ value, updatedAt: new Date() })
+        .where(eq(systemConfig.key, key));
+    } else {
+      await db.insert(systemConfig).values({ key, value });
+    }
+  }
+
+  // Category management methods
+  async getAllCategories(): Promise<Array<{ id: number; name: string; description?: string; isActive: boolean }>> {
+    const categories = await db.select().from(serviceCategories);
+    return categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      description: cat.nameEn, // Use nameEn as description since there's no description field
+      isActive: cat.isActive !== null ? cat.isActive : true
+    }));
+  }
+
+  async createCategory(data: { name: string; description?: string; isActive: boolean }): Promise<any> {
+    const [category] = await db
+      .insert(serviceCategories)
+      .values({
+        name: data.name,
+        nameEn: data.description || data.name,
+        slug: data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        icon: 'default-icon',
+        isActive: data.isActive
+      })
+      .returning();
+    return {
+      id: category.id,
+      name: category.name,
+      description: category.nameEn,
+      isActive: category.isActive !== null ? category.isActive : true
+    };
+  }
+
+  async updateCategory(id: number, updates: any): Promise<any> {
+    const [category] = await db
+      .update(serviceCategories)
+      .set({
+        name: updates.name,
+        nameEn: updates.description,
+        slug: updates.name ? updates.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : undefined,
+        isActive: updates.isActive
+      })
+      .where(eq(serviceCategories.id, id))
+      .returning();
+    return {
+      id: category.id,
+      name: category.name,
+      description: category.nameEn,
+      isActive: category.isActive !== null ? category.isActive : true
+    };
+  }
+
+  // Service management methods
+  async getAllServicesWithCategories(): Promise<Array<{ id: number; name: string; description: string; categoryId: number; isActive: boolean }>> {
+    const allServices = await db.select().from(services);
+    return allServices.map(service => ({
+      id: service.id,
+      name: service.name,
+      description: service.description || '',
+      categoryId: 1, // Services use category text field, default to 1 for UI compatibility
+      isActive: service.isActive !== null ? service.isActive : true
+    }));
+  }
+
+  async createService(data: { name: string; description: string; categoryId: number; isActive: boolean; createdBy: number }): Promise<any> {
+    const [service] = await db
+      .insert(services)
+      .values({
+        name: data.name,
+        description: data.description,
+        category: 'general', // Services table uses category string field
+        isActive: data.isActive,
+        createdBy: data.createdBy
+      })
+      .returning();
+    return service;
+  }
+
+  async updateService(id: number, updates: any): Promise<any> {
+    const [service] = await db
+      .update(services)
+      .set({
+        name: updates.name,
+        description: updates.description,
+        category: updates.category || 'general',
+        isActive: updates.isActive
+      })
+      .where(eq(services.id, id))
+      .returning();
+    return service;
+  }
 
 }
 

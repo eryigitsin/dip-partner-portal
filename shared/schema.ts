@@ -331,6 +331,16 @@ export const tempUserRegistrations = pgTable("temp_user_registrations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// System configuration table
+export const systemConfig = pgTable("system_config", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: jsonb("value").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Application documents for file uploads
 export const applicationDocuments = pgTable("application_documents", {
   id: serial("id").primaryKey(),

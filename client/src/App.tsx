@@ -21,6 +21,7 @@ import ApplicationStatus from "@/pages/application-status";
 import UserManagement from "@/pages/user-management";
 import Statistics from "@/pages/statistics";
 import SystemStatus from "@/pages/system-status";
+import SystemSettings from "@/pages/system-settings";
 import EmailPreferences from "@/pages/email-preferences";
 import EmailSubscribers from "@/pages/admin/email-subscribers";
 import PartnerProfile from "@/pages/partner-profile";
@@ -55,6 +56,7 @@ function Router() {
       <ProtectedRoute path="/user-management" component={UserManagement} />
       <ProtectedRoute path="/statistics" component={Statistics} />
       <ProtectedRoute path="/system-status" component={SystemStatus} />
+      <ProtectedRoute path="/system-settings" component={SystemSettings} />
       <ProtectedRoute path="/email-preferences" component={EmailPreferences} />
       <ProtectedRoute path="/email-subscribers" component={EmailSubscribers} />
       <ProtectedRoute path="/marketing-list" component={MarketingListPage} />
