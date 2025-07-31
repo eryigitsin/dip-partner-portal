@@ -27,6 +27,10 @@ export function Header() {
 
   // Check if user has multiple account types available
   const hasMultipleAccountTypes = user?.availableUserTypes && user.availableUserTypes.length > 1;
+  
+  // For partners, always show account type switching if they have both user and partner types
+  const showAccountTypeSwitching = hasMultipleAccountTypes || 
+    (user?.userType === 'partner' && user?.availableUserTypes?.includes('user'));
 
   const navigation = [
     { name: t('about', language), href: 'https://dip.tc/hakkimizda/', external: true },
@@ -216,7 +220,7 @@ export function Header() {
                           <span>İstatistikler</span>
                         </Link>
                       </DropdownMenuItem>
-                      {hasMultipleAccountTypes && (
+                      {showAccountTypeSwitching && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
@@ -298,7 +302,7 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                       
-                      {hasMultipleAccountTypes && (
+                      {showAccountTypeSwitching && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
@@ -406,11 +410,11 @@ export function Header() {
       )}
 
       {/* Account Type Selector Modal */}
-      {user && hasMultipleAccountTypes && (
+      {user && showAccountTypeSwitching && (
         <AccountTypeSelector
           isOpen={accountSelectorOpen}
           onClose={() => setAccountSelectorOpen(false)}
-          availableTypes={user.availableUserTypes || []}
+          availableTypes={user.availableUserTypes || [user.userType]}
           currentType={user.activeUserType || user.userType}
         />
       )}

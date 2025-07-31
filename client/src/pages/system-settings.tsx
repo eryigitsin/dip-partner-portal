@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { Trash2, Plus, Edit2, Save, X, Upload, Settings, Mail, MessageSquare, Shield, Database, Video, Eye } from 'lucide-react';
+import { EmailPreviewDialog } from '@/components/email-preview-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -67,14 +68,11 @@ interface SystemConfig {
 export default function SystemSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [emailPreview, setEmailPreview] = useState<{subject: string; content: string} | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
-  const [newService, setNewService] = useState({
-    name: '',
-    description: '',
-    category: ''
-  });
+  const [newService, setNewService] = useState({ name: '', description: '', category: '' });
   
   // Local state for form fields
   const [platformSettings, setPlatformSettings] = useState({
@@ -968,7 +966,22 @@ export default function SystemSettings() {
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEmailPreview({
+                          subject: "DİP Platformuna Hoşgeldiniz!",
+                          content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">DİP Platformuna Hoşgeldiniz!</h2>
+  <p>Merhaba Test Partner,</p>
+  <p>Partner başvurunuz onaylandı ve artık DİP platformunun bir üyesisiniz.</p>
+  <p><strong>Şirket:</strong> Test Şirketi</p>
+  <p>Platform üzerinden profil bilgilerinizi güncelleyebilir ve hizmetlerinizi tanıtabilirsiniz.</p>
+  <p>Başarılı işbirlikleri dileriz!</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`
+                        })}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         Önizle
                       </Button>
@@ -1004,7 +1017,22 @@ export default function SystemSettings() {
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEmailPreview({
+                          subject: "Teklif Talebiniz Alındı",
+                          content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">Teklif Talebiniz Alındı</h2>
+  <p>Merhaba Test Müşteri,</p>
+  <p>Test Şirketi firmasına gönderdiğiniz teklif talebiniz başarıyla alındı.</p>
+  <p><strong>Hizmet:</strong> Dijital Pazarlama</p>
+  <p><strong>Bütçe:</strong> 10.000 TL</p>
+  <p>Kısa süre içinde firma tarafından iletişime geçilecektir.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`
+                        })}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         Önizle
                       </Button>
@@ -1040,7 +1068,22 @@ export default function SystemSettings() {
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEmailPreview({
+                          subject: "Teklifiniz Onaylandı!",
+                          content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #16a34a;">Teklifiniz Onaylandı!</h2>
+  <p>Tebrikler!</p>
+  <p>Test Müşteri adlı müşteri teklifinizi onayladı.</p>
+  <p><strong>Hizmet:</strong> Dijital Pazarlama</p>
+  <p><strong>Müşteri:</strong> Test Müşteri</p>
+  <p>Müşteri ile iletişime geçerek projeyi başlatabilirsiniz.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`
+                        })}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         Önizle
                       </Button>
@@ -1074,7 +1117,20 @@ export default function SystemSettings() {
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEmailPreview({
+                          subject: "Teklif Durumu Hakkında",
+                          content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #dc2626;">Teklif Durumu</h2>
+  <p>Test Müşteri adlı müşteri teklifinizi reddetmiştir.</p>
+  <p><strong>Hizmet:</strong> Dijital Pazarlama</p>
+  <p>Başka fırsatlar için platformumuzda aktif kalabilirsiniz.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`
+                        })}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         Önizle
                       </Button>
@@ -1174,6 +1230,16 @@ export default function SystemSettings() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Email Preview Dialog */}
+      {emailPreview && (
+        <EmailPreviewDialog
+          isOpen={!!emailPreview}
+          onClose={() => setEmailPreview(null)}
+          subject={emailPreview.subject}
+          htmlContent={emailPreview.content}
+        />
+      )}
     </div>
   );
 }

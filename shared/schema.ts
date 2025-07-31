@@ -86,6 +86,14 @@ export const services = pgTable("services", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Partner selected services - many-to-many relationship between partners and services
+export const partnerSelectedServices = pgTable("partner_selected_services", {
+  id: serial("id").primaryKey(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  serviceId: integer("service_id").references(() => services.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Partner offered services - junction table for partners and their offered services
 export const partnerOfferedServices = pgTable("partner_offered_services", {
   id: serial("id").primaryKey(),
