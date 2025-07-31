@@ -131,6 +131,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes: Latest modifications with dates
 
+### January 31, 2025
+- **Direct PDF Download System**: Implemented PDFKit-based PDF generation with direct download functionality, replacing browser print dialogs
+- **Turkish Character Encoding**: Fixed UTF-8 encoding issues in PDF generation with proper character support for Turkish text
+- **Professional PDF Templates**: Created grey header design with partner logos and company names, matching specified requirements
+- **Quote Request PDF Workflow**: "Teklif Hazırla" button now generates instant PDF downloads without opening detail modals
+- **Working Method Classification**: "Çalışma Şekli" automatically moves to Notes section instead of appearing as service items
+- **Company Name Population**: Fixed "Belirtilmemiş" issue by properly populating company names from quote request forms
+- **Resend Email Integration**: Completely replaced SendGrid with Resend email service for all notifications and communications
+- **Quote Response Email**: Implemented comprehensive email workflow when partners send quotes to customers
+- **PDF Generator Service**: Created robust PDF generation service with page management, proper spacing, and footer positioning
+- **Email Template Updates**: All email templates now use Resend API with proper error handling and delivery confirmation
+
 ### January 30, 2025
 - **Enhanced Service Autocomplete System**: Implemented intelligent service autocomplete with partial text matching ("Uçt" suggests "Uçtan Uca eTicaret Yönetimi")
 - **Case-insensitive Duplicate Prevention**: Added smart duplicate detection that treats case-insensitive matches as identical services

@@ -13,20 +13,42 @@ interface PDFGeneratorOptions {
 
 export class PDFGenerator {
   private doc: PDFKit.PDFDocument;
+  private logoPath: string;
 
   constructor() {
+    // Logo dosyasının yolu (assets klasörüne indirin)
+    this.logoPath = path.join(__dirname, '../assets/dip-logo-beyaz.png');
+    
+    // Not: Önce Türkçe destekli bir font dosyası indirmeniz gerekiyor
+    // Örnek: fonts/Roboto-Regular.ttf veya NotoSans-Regular.ttf
     this.doc = new PDFDocument({
-      margin: 40,
+      margin: 40, // Margin'i azalttım
       size: 'A4',
       autoFirstPage: true,
-      bufferPages: true
+      bufferPages: true // Sayfa kontrolü için
     });
   }
 
   async generateQuoteRequestPDF(options: PDFGeneratorOptions, res: Response): Promise<void> {
     const { quoteRequest, partner } = options;
     
-    // Set response headers for PDF download with UTF-8 encoding
+    // Türkçe font dosyasını kaydet (fonts klasörüne Roboto veya benzeri bir font koyun)
+    try {
+      // Font dosyalarınızın yolunu belirtin
+      const fontPath = path.join(__dirname, '../fonts/Roboto-Regular.ttf');
+      const fontBoldPath = path.join(__dirname, '../fonts/Roboto-Bold.ttf');
+      
+      // Fontları kaydet
+      this.doc.registerFont('Turkish', fontPath);
+      this.doc.registerFont('Turkish-Bold', fontBoldPath);
+      
+      // Varsayılan fontu ayarla
+      this.doc.font('Turkish');
+    } catch (error) {
+      console.warn('Font yüklenemedi, varsayılan font kullanılacak:', error);
+    }
+    
+    // Set response headers for PDF download
     const filename = `Teklif_Talebi_${quoteRequest.id}.pdf`;
     res.setHeader('Content-Type', 'application/pdf; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
@@ -51,7 +73,7 @@ export class PDFGenerator {
     // Add request information
     this.addRequestInfoSection(quoteRequest);
     
-    // Add footer at bottom
+    // Footer'ı sayfa sonuna yerleştir
     this.addFooterAtBottom();
     
     // Finalize PDF
@@ -61,7 +83,19 @@ export class PDFGenerator {
   async generateQuoteResponsePDF(options: PDFGeneratorOptions, res: Response): Promise<void> {
     const { quoteRequest, partner, quoteResponse } = options;
     
-    // Set response headers for PDF download with UTF-8 encoding
+    // Türkçe font ayarları
+    try {
+      const fontPath = path.join(__dirname, '../fonts/Roboto-Regular.ttf');
+      const fontBoldPath = path.join(__dirname, '../fonts/Roboto-Bold.ttf');
+      
+      this.doc.registerFont('Turkish', fontPath);
+      this.doc.registerFont('Turkish-Bold', fontBoldPath);
+      this.doc.font('Turkish');
+    } catch (error) {
+      console.warn('Font yüklenemedi:', error);
+    }
+    
+    // Set response headers for PDF download
     const filename = `Teklif_${quoteResponse.id}_${partner?.companyName || 'Partner'}.pdf`;
     res.setHeader('Content-Type', 'application/pdf; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
@@ -84,7 +118,7 @@ export class PDFGenerator {
     // Add terms and conditions
     this.addTermsAndConditions(quoteResponse);
     
-    // Add footer at bottom
+    // Footer'ı sayfa sonuna yerleştir
     this.addFooterAtBottom();
     
     // Finalize PDF
@@ -92,6 +126,7 @@ export class PDFGenerator {
   }
 
   private addHeader(quoteRequest: QuoteRequest, partner?: Partner): void {
+    // Header yüksekliğini azalt
     const headerHeight = 100;
     
     // Gray header background
@@ -104,18 +139,22 @@ export class PDFGenerator {
     // Add partner logo and name if available
     if (partner) {
       this.doc.fontSize(16)
+        .font('Turkish-Bold')
         .text(partner.companyName, 50, 25, { align: 'left' });
       
       this.doc.fontSize(20)
+        .font('Turkish-Bold')
         .text(`Teklif Talebi #${quoteRequest.id}`, 50, 50, { align: 'left' });
     } else {
       this.doc.fontSize(18)
+        .font('Turkish-Bold')
         .text('DİP - Dijital İhracat Platformu', 50, 25, { 
           align: 'center', 
           width: this.doc.page.width - 100 
         });
       
       this.doc.fontSize(20)
+        .font('Turkish-Bold')
         .text(`Teklif Talebi #${quoteRequest.id}`, 50, 55, { 
           align: 'center', 
           width: this.doc.page.width - 100 
@@ -136,12 +175,14 @@ export class PDFGenerator {
     
     this.doc.fillColor('white')
       .fontSize(18)
+      .font('Turkish-Bold')
       .text(partner?.companyName || 'Teklif', 50, 25, { 
         align: 'center', 
         width: this.doc.page.width - 100 
       });
     
     this.doc.fontSize(20)
+      .font('Turkish-Bold')
       .text(quoteResponse.title, 50, 55, { 
         align: 'center', 
         width: this.doc.page.width - 100 
@@ -152,7 +193,7 @@ export class PDFGenerator {
   }
 
   private addCustomerSection(quoteRequest: QuoteRequest): void {
-    this.checkPageSpace(150);
+    this.checkPageSpace(150); // Bu bölüm için gereken alan
     this.addSectionTitle('Müşteri Bilgileri');
     
     const customerInfo = [
@@ -164,7 +205,9 @@ export class PDFGenerator {
     
     customerInfo.forEach(info => {
       this.doc.fontSize(10)
+        .font('Turkish-Bold')
         .text(info.label, 50, this.doc.y, { continued: true })
+        .font('Turkish')
         .text(` ${info.value}`);
       this.doc.y += 18;
     });
@@ -188,7 +231,9 @@ export class PDFGenerator {
     
     serviceInfo.forEach(info => {
       this.doc.fontSize(10)
+        .font('Turkish-Bold')
         .text(info.label, 50, this.doc.y, { continued: true })
+        .font('Turkish')
         .text(` ${info.value}`, { width: 480 });
       this.doc.y += 18;
     });
@@ -203,6 +248,7 @@ export class PDFGenerator {
     this.addSectionTitle('Müşteri Mesajı');
     
     this.doc.fontSize(10)
+      .font('Turkish')
       .text(message, 50, this.doc.y, { width: 480 });
     
     this.doc.y += 20;
@@ -225,7 +271,9 @@ export class PDFGenerator {
     
     requestInfo.forEach(info => {
       this.doc.fontSize(10)
+        .font('Turkish-Bold')
         .text(info.label, 50, this.doc.y, { continued: true })
+        .font('Turkish')
         .text(` ${info.value}`);
       this.doc.y += 18;
     });
@@ -244,7 +292,9 @@ export class PDFGenerator {
     
     details.forEach(detail => {
       this.doc.fontSize(10)
+        .font('Turkish-Bold')
         .text(detail.label, 50, this.doc.y, { continued: true })
+        .font('Turkish')
         .text(` ${detail.value}`);
       this.doc.y += 18;
     });
@@ -266,6 +316,7 @@ export class PDFGenerator {
     
     tableHeaders.forEach((header, i) => {
       this.doc.fontSize(9)
+        .font('Turkish-Bold')
         .text(header, x, tableTop, { width: columnWidths[i] });
       x += columnWidths[i];
     });
@@ -286,6 +337,7 @@ export class PDFGenerator {
       
       rowData.forEach((data, i) => {
         this.doc.fontSize(9)
+          .font('Turkish')
           .text(data, x, rowY, { width: columnWidths[i] });
         x += columnWidths[i];
       });
@@ -311,7 +363,9 @@ export class PDFGenerator {
     
     totals.forEach(total => {
       this.doc.fontSize(10)
+        .font(total.bold ? 'Turkish-Bold' : 'Turkish-Bold')
         .text(total.label, totalsX, this.doc.y, { width: labelWidth, align: 'right' })
+        .font(total.bold ? 'Turkish-Bold' : 'Turkish')
         .text(total.value, totalsX + labelWidth + 10, this.doc.y, { width: valueWidth, align: 'right' });
       this.doc.y += 20;
     });
@@ -327,6 +381,7 @@ export class PDFGenerator {
     this.addSectionTitle('Şartlar ve Koşullar');
     
     this.doc.fontSize(9)
+      .font('Turkish')
       .text(termsText, 50, this.doc.y, { width: 480 });
   }
 
@@ -347,34 +402,94 @@ export class PDFGenerator {
   }
 
   private addSectionTitle(title: string): void {
-    this.doc.rect(40, this.doc.y - 5, this.doc.page.width - 80, 25)
+    // Arka plan rengi
+    this.doc.rect(40, this.doc.y - 5, this.doc.page.width - 80, 22)
       .fill('#f3f4f6');
     
     this.doc.fillColor('black')
-      .fontSize(12)
+      .fontSize(11)
+      .font('Turkish-Bold')
       .text(title, 50, this.doc.y, { align: 'left' });
     
     this.doc.y += 25;
   }
 
   private addFooterAtBottom(): void {
-    const footerY = this.doc.page.height - 80;
+    const footerHeight = 70;
+    const footerY = this.doc.page.height - footerHeight - 20;
     
-    // Footer background
-    this.doc.rect(0, footerY, this.doc.page.width, 80)
-      .fill('#ffffff')
-      .stroke('#e5e7eb');
+    // Footer arka planı - DİP marka rengi veya koyu gri
+    this.doc.rect(0, footerY, this.doc.page.width, footerHeight)
+      .fill('#1f2937'); // Koyu gri arka plan (beyaz logo için)
     
-    // DİP Logo text (since we can't easily embed the image)
-    this.doc.fillColor('#6b7280')
-      .fontSize(10)
-      .text('DİP - Dijital İhracat Platformu', 50, footerY + 20, { align: 'center', width: this.doc.page.width - 100 })
-      .text('https://partner.dip.tc', 50, footerY + 35, { align: 'center', width: this.doc.page.width - 100 });
+    try {
+      // Logo'yu yükle
+      const logoWidth = 140; // Logo genişliği biraz daha büyük
+      const logoHeight = 35; // Logo yüksekliği
+      const logoX = (this.doc.page.width - logoWidth) / 2; // Ortala
+      const logoY = footerY + 12;
+      
+      // Önce local dosyadan yüklemeyi dene
+      if (fs.existsSync(this.logoPath)) {
+        this.doc.image(this.logoPath, logoX, logoY, {
+          width: logoWidth,
+          height: logoHeight,
+          align: 'center',
+          valign: 'center'
+        });
+      } else {
+        // Local dosya yoksa URL'den yükle
+        const logoUrl = 'https://partner.dip.tc/assets/dip-beyaz-yan_1753361664424-ClyMo0YY.png';
+        this.doc.image(logoUrl, logoX, logoY, {
+          width: logoWidth,
+          height: logoHeight,
+          align: 'center',
+          valign: 'center'
+        });
+      }
+      
+      // Web sitesi linkini logo'nun altına ekle
+      this.doc.fillColor('#d1d5db') // Açık gri metin
+        .fontSize(9)
+        .font('Turkish')
+        .text('https://partner.dip.tc', 0, footerY + 48, { 
+          align: 'center', 
+          width: this.doc.page.width
+        });
+        
+    } catch (error) {
+      // Logo yüklenemezse metin göster
+      console.warn('Logo yüklenemedi:', error);
+      
+      this.doc.fillColor('#ffffff') // Beyaz metin
+        .fontSize(11)
+        .font('Turkish-Bold')
+        .text('DİP - Dijital İhracat Platformu', 0, footerY + 20, { 
+          align: 'center', 
+          width: this.doc.page.width
+        })
+        .fontSize(9)
+        .font('Turkish')
+        .fillColor('#d1d5db')
+        .text('https://partner.dip.tc', 0, footerY + 40, { 
+          align: 'center', 
+          width: this.doc.page.width
+        });
+    }
+  }
+
+  private addFooter(): void {
+    // Bu metod artık kullanılmıyor, yerine addFooterAtBottom kullanıyoruz
+    this.addFooterAtBottom();
   }
 
   private checkPageSpace(requiredSpace: number): void {
-    if (this.doc.y + requiredSpace > this.doc.page.height - 100) {
+    const footerSpace = 110; // Footer için daha fazla alan bırak
+    const availableSpace = this.doc.page.height - this.doc.y - footerSpace;
+    
+    if (availableSpace < requiredSpace) {
       this.doc.addPage();
+      this.doc.y = 50;
     }
   }
 
