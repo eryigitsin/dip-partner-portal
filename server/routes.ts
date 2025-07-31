@@ -354,7 +354,11 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Partner applications
-  app.post("/api/partner-applications", uploadDocuments.array('documents', 10), async (req, res) => {
+  app.post("/api/partner-applications", uploadDocuments.fields([
+    { name: 'documents', maxCount: 10 },
+    { name: 'logo', maxCount: 1 },
+    { name: 'coverImage', maxCount: 1 }
+  ]), async (req, res) => {
     try {
       console.log('Request body:', req.body);
       // Temporary bypass validation for testing
@@ -387,10 +391,35 @@ export function registerRoutes(app: Express): Server {
       const application = await storage.createPartnerApplication(applicationData);
       
       // Upload files to Supabase Storage and store document info
-      const files = req.files as Express.Multer.File[];
-      if (files && files.length > 0) {
-        console.log(`Uploading ${files.length} documents to Supabase Storage...`);
-        for (const file of files) {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      // Handle logo upload
+      if (files?.logo && files.logo[0]) {
+        const logoFile = files.logo[0];
+        const logoUploadResult = await supabaseStorage.uploadPartnerLogo(logoFile, application.id.toString());
+        if (logoUploadResult.success && logoUploadResult.url) {
+          console.log('Logo uploaded:', logoUploadResult.url);
+          await storage.updatePartnerApplicationLogo(application.id, logoUploadResult.url);
+        } else {
+          console.error('Logo upload failed:', logoUploadResult.error);
+        }
+      }
+      
+      // Handle cover image upload
+      if (files?.coverImage && files.coverImage[0]) {
+        const coverFile = files.coverImage[0];
+        const coverUploadResult = await supabaseStorage.uploadPartnerCover(coverFile, application.id.toString());
+        if (coverUploadResult.success && coverUploadResult.url) {
+          console.log('Cover image uploaded:', coverUploadResult.url);
+        } else {
+          console.error('Cover image upload failed:', coverUploadResult.error);
+        }
+      }
+      
+      // Handle document uploads
+      if (files?.documents && files.documents.length > 0) {
+        console.log(`Uploading ${files.documents.length} documents to Supabase Storage...`);
+        for (const file of files.documents) {
           const uploadResult = await supabaseStorage.uploadPartnerDocument(file, application.id.toString());
           if (uploadResult.success && uploadResult.url) {
             console.log('Document uploaded:', uploadResult.url);
@@ -917,107 +946,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Partner application endpoint with file upload
-  app.post('/api/partner-applications', uploadDocuments.fields([
-    { name: 'documents', maxCount: 10 },
-    { name: 'logo', maxCount: 1 }
-  ]), async (req, res) => {
-    try {
-      const {
-        firstName,
-        lastName,
-        email,
-        phone,
-        company,
-        contactPerson,
-        website,
-        serviceCategory,
-        businessDescription,
-        companySize,
-        foundingYear,
-        sectorExperience,
-        targetMarkets,
-        services,
-        dipAdvantages,
-        whyPartner,
-        references,
-        linkedinProfile,
-        twitterProfile,
-        instagramProfile,
-        facebookProfile,
-        username,
-      } = req.body;
 
-      // Validate required fields
-      if (!firstName || !lastName || !email || !phone || !company || !contactPerson || !username || !serviceCategory || !businessDescription || !companySize || !foundingYear || !services || !dipAdvantages || !whyPartner) {
-        return res.status(400).json({ message: 'Zorunlu alanlar eksik' });
-      }
-      
-      // Check if username is already taken
-      const existingPartner = await storage.getPartnerByUsername(username);
-      if (existingPartner) {
-        return res.status(400).json({ message: 'Bu kullanıcı adı zaten kullanılıyor' });
-      }
-
-      const applicationData = {
-        firstName,
-        lastName,
-        email,
-        phone,
-        company,
-        contactPerson,
-        website,
-        serviceCategory,
-        businessDescription,
-        companySize,
-        foundingYear,
-        sectorExperience,
-        targetMarkets,
-        services,
-        dipAdvantages,
-        whyPartner,
-        references,
-        linkedinProfile,
-        twitterProfile,
-        instagramProfile,
-        facebookProfile,
-        logoPath: null as string | null,
-        username,
-        status: 'pending' as const,
-      };
-      
-      const application = await storage.createPartnerApplication(applicationData);
-
-      // Handle logo upload
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      if (files?.logo && files.logo[0]) {
-        const logoFile = files.logo[0];
-        // Update application with logo path
-        await storage.updatePartnerApplicationLogo(application.id, logoFile.path);
-      }
-
-      // Handle document uploads if any
-      if (files?.documents && files.documents.length > 0) {
-        for (const file of files.documents) {
-          const documentData = {
-            applicationId: application.id,
-            fileName: file.filename,
-            originalName: file.originalname,
-            fileSize: file.size,
-            mimeType: file.mimetype,
-            filePath: file.path,
-          };
-          
-          await storage.addApplicationDocument(documentData);
-        }
-      }
-
-      res.status(201).json({ ...application, message: 'Başvurunuz başarıyla alındı' });
-    } catch (error: any) {
-      console.error('Error creating partner application:', error);
-      res.status(500).json({ message: "Failed to create application", error: error.message });
-    }
-  });
 
   // Get application with documents
   app.get("/api/partner-applications/:id/details", async (req, res) => {
