@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
-import { Trash2, Plus, Edit2, Save, X, Upload, Settings, Mail, MessageSquare, Shield, Database, Video } from 'lucide-react';
+import { Trash2, Plus, Edit2, Save, X, Upload, Settings, Mail, MessageSquare, Shield, Database, Video, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -27,7 +27,7 @@ interface Service {
   id: number;
   name: string;
   description: string;
-  categoryId: number;
+  category: string;
   isActive: boolean;
 }
 
@@ -70,7 +70,11 @@ export default function SystemSettings() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
-  const [newService, setNewService] = useState({ name: '', description: '', categoryId: 0 });
+  const [newService, setNewService] = useState({
+    name: '',
+    description: '',
+    category: ''
+  });
   
   // Local state for form fields
   const [platformSettings, setPlatformSettings] = useState({
@@ -233,7 +237,7 @@ export default function SystemSettings() {
 
   // Create service mutation
   const createServiceMutation = useMutation({
-    mutationFn: async (service: { name: string; description: string; categoryId: number }) => {
+    mutationFn: async (service: { name: string; description: string; category: string }) => {
       const response = await fetch('/api/admin/services', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -245,7 +249,7 @@ export default function SystemSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/services'] });
       toast({ title: 'Hizmet oluşturuldu' });
-      setNewService({ name: '', description: '', categoryId: 0 });
+      setNewService({ name: '', description: '', category: '' });
     },
   });
 
@@ -777,21 +781,11 @@ export default function SystemSettings() {
                       value={newService.name}
                       onChange={(e) => setNewService({ ...newService, name: e.target.value })}
                     />
-                    <Select
-                      value={newService.categoryId.toString()}
-                      onValueChange={(value) => setNewService({ ...newService, categoryId: parseInt(value) })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Kategori seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id.toString()}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      placeholder="Kategori"
+                      value={newService.category}
+                      onChange={(e) => setNewService({ ...newService, category: e.target.value })}
+                    />
                     <Input
                       placeholder="Açıklama"
                       value={newService.description}
@@ -801,7 +795,7 @@ export default function SystemSettings() {
                   <Button
                     className="mt-3"
                     onClick={() => createServiceMutation.mutate(newService)}
-                    disabled={!newService.name || !newService.categoryId || createServiceMutation.isPending}
+                    disabled={!newService.name || createServiceMutation.isPending}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Hizmet Ekle
@@ -811,7 +805,6 @@ export default function SystemSettings() {
                 {/* Services list */}
                 <div className="space-y-3">
                   {services.map((service) => {
-                    const category = categories.find(c => c.id === service.categoryId);
                     return (
                       <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg">
                         {editingService?.id === service.id ? (
@@ -820,21 +813,10 @@ export default function SystemSettings() {
                               value={editingService.name}
                               onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
                             />
-                            <Select
-                              value={editingService.categoryId.toString()}
-                              onValueChange={(value) => setEditingService({ ...editingService, categoryId: parseInt(value) })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((cat) => (
-                                  <SelectItem key={cat.id} value={cat.id.toString()}>
-                                    {cat.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              value={editingService.category}
+                              onChange={(e) => setEditingService({ ...editingService, category: e.target.value })}
+                            />
                             <Input
                               value={editingService.description}
                               onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
@@ -844,7 +826,7 @@ export default function SystemSettings() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3">
                               <span className="font-medium">{service.name}</span>
-                              <Badge variant="outline">{category?.name}</Badge>
+                              <Badge variant="outline">{service.category}</Badge>
                               <Badge variant={service.isActive ? 'default' : 'secondary'}>
                                 {service.isActive ? 'Aktif' : 'Pasif'}
                               </Badge>
@@ -943,6 +925,166 @@ export default function SystemSettings() {
                     {saveEmailSettingsMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Email Templates */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Email Şablonları</CardTitle>
+                <CardDescription>Sistem email şablonlarını düzenleyin</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Tabs defaultValue="partner-welcome" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="partner-welcome">Partner Hoşgeldin</TabsTrigger>
+                    <TabsTrigger value="quote-received">Teklif Alındı</TabsTrigger>
+                    <TabsTrigger value="quote-approved">Teklif Onaylandı</TabsTrigger>
+                    <TabsTrigger value="quote-rejected">Teklif Reddedildi</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="partner-welcome" className="space-y-4">
+                    <div>
+                      <Label>Konu</Label>
+                      <Input 
+                        placeholder="Email konusu"
+                        defaultValue="DİP Platformuna Hoşgeldiniz!"
+                      />
+                    </div>
+                    <div>
+                      <Label>HTML İçerik</Label>
+                      <Textarea 
+                        className="min-h-[200px] font-mono"
+                        placeholder="HTML email içeriği..."
+                        defaultValue={`<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">DİP Platformuna Hoşgeldiniz!</h2>
+  <p>Merhaba {{partnerName}},</p>
+  <p>Partner başvurunuz onaylandı ve artık DİP platformunun bir üyesisiniz.</p>
+  <p><strong>Şirket:</strong> {{companyName}}</p>
+  <p>Platform üzerinden profil bilgilerinizi güncelleyebilir ve hizmetlerinizi tanıtabilirsiniz.</p>
+  <p>Başarılı işbirlikleri dileriz!</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Önizle
+                      </Button>
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="quote-received" className="space-y-4">
+                    <div>
+                      <Label>Konu</Label>
+                      <Input 
+                        placeholder="Email konusu"
+                        defaultValue="Teklif Talebiniz Alındı"
+                      />
+                    </div>
+                    <div>
+                      <Label>HTML İçerik</Label>
+                      <Textarea 
+                        className="min-h-[200px] font-mono"
+                        placeholder="HTML email içeriği..."
+                        defaultValue={`<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">Teklif Talebiniz Alındı</h2>
+  <p>Merhaba {{customerName}},</p>
+  <p>{{partnerCompany}} firmasına gönderdiğiniz teklif talebiniz başarıyla alındı.</p>
+  <p><strong>Hizmet:</strong> {{serviceNeeded}}</p>
+  <p><strong>Bütçe:</strong> {{budget}}</p>
+  <p>Kısa süre içinde firma tarafından iletişime geçilecektir.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Önizle
+                      </Button>
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="quote-approved" className="space-y-4">
+                    <div>
+                      <Label>Konu</Label>
+                      <Input 
+                        placeholder="Email konusu"
+                        defaultValue="Teklifiniz Onaylandı!"
+                      />
+                    </div>
+                    <div>
+                      <Label>HTML İçerik</Label>
+                      <Textarea 
+                        className="min-h-[200px] font-mono"
+                        placeholder="HTML email içeriği..."
+                        defaultValue={`<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #16a34a;">Teklifiniz Onaylandı!</h2>
+  <p>Tebrikler!</p>
+  <p>{{customerName}} adlı müşteri teklifinizi onayladı.</p>
+  <p><strong>Hizmet:</strong> {{serviceNeeded}}</p>
+  <p><strong>Müşteri:</strong> {{customerName}}</p>
+  <p>Müşteri ile iletişime geçerek projeyi başlatabilirsiniz.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Önizle
+                      </Button>
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="quote-rejected" className="space-y-4">
+                    <div>
+                      <Label>Konu</Label>
+                      <Input 
+                        placeholder="Email konusu"
+                        defaultValue="Teklif Durumu Hakkında"
+                      />
+                    </div>
+                    <div>
+                      <Label>HTML İçerik</Label>
+                      <Textarea 
+                        className="min-h-[200px] font-mono"
+                        placeholder="HTML email içeriği..."
+                        defaultValue={`<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #dc2626;">Teklif Durumu</h2>
+  <p>{{customerName}} adlı müşteri teklifinizi reddetmiştir.</p>
+  <p><strong>Hizmet:</strong> {{serviceNeeded}}</p>
+  <p>Başka fırsatlar için platformumuzda aktif kalabilirsiniz.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Önizle
+                      </Button>
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>

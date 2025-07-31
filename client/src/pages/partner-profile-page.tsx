@@ -134,8 +134,8 @@ export default function PartnerProfilePage() {
                   <p className="mt-1 text-gray-900">@{partner?.username || partner?.id}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">İletişim Kişisi</Label>
-                  <p className="mt-1 text-gray-900">{partner?.contactPerson || "Belirtilmemiş"}</p>
+                  <Label className="text-sm font-medium text-gray-700">Yetkili Kişi</Label>
+                  <p className="mt-1 text-gray-900">{(partner as any)?.contactPerson || "Belirtilmemiş"}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Hizmet Kategorisi</Label>
