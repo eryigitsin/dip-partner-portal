@@ -417,7 +417,7 @@ export default function PartnerDashboard() {
                                   onClick={() => handleSendQuote(quote)}
                                 >
                                   <Send className="h-4 w-4 mr-2" />
-                                  Teklif Gönder
+                                  Teklif Hazırla
                                 </Button>
                               )}
                             </div>

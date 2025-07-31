@@ -103,6 +103,26 @@ export function QuoteResponseDialog({
     }));
   };
 
+  // Generate a random quote number
+  const quoteNumber = `DIP${new Date().getFullYear()}${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`;
+
+  const form = useForm<z.infer<typeof quoteResponseSchema>>({
+    resolver: zodResolver(quoteResponseSchema),
+    defaultValues: {
+      title: generateQuoteTitle(),
+      description: "",
+      items: [],
+      subtotal: 0,
+      taxRate: 20,
+      taxAmount: 0,
+      total: 0,
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+      notes: "",
+      paymentTerms: "Hizmet teslimi sonrası 30 gün içinde ödeme",
+      deliveryTime: "15 iş günü",
+    },
+  });
+
   const initialItems = parseServiceItems(quoteRequest.serviceNeeded || "");
   const [items, setItems] = useState<QuoteItem[]>(
     initialItems.length > 0 ? initialItems : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]
@@ -125,26 +145,6 @@ export function QuoteResponseDialog({
       setItems(newInitialItems.length > 0 ? newInitialItems : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
     }
   }, [isOpen, quoteRequest.serviceNeeded, form]);
-
-  // Generate a random quote number
-  const quoteNumber = `DIP${new Date().getFullYear()}${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`;
-
-  const form = useForm<z.infer<typeof quoteResponseSchema>>({
-    resolver: zodResolver(quoteResponseSchema),
-    defaultValues: {
-      title: generateQuoteTitle(),
-      description: "",
-      items: [],
-      subtotal: 0,
-      taxRate: 20,
-      taxAmount: 0,
-      total: 0,
-      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-      notes: "",
-      paymentTerms: "Hizmet teslimi sonrası 30 gün içinde ödeme",
-      deliveryTime: "15 iş günü",
-    },
-  });
 
   const addItem = () => {
     setItems([...items, { description: "", quantity: 1, unitPrice: 0, total: 0 }]);
