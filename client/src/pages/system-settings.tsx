@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { Header } from '@/components/layout/header';
@@ -59,6 +59,36 @@ export default function SystemSettings() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [newService, setNewService] = useState({ name: '', description: '', categoryId: 0 });
+  
+  // Local state for form fields
+  const [platformSettings, setPlatformSettings] = useState({
+    siteName: '',
+    defaultLanguage: 'tr',
+    maintenanceMode: false,
+    autoApprovalEnabled: false,
+  });
+  
+  const [securitySettings, setSecuritySettings] = useState({
+    sessionTimeout: 60,
+    passwordMinLength: 8,
+    require2FA: false,
+  });
+  
+  const [emailSettings, setEmailSettings] = useState({
+    resendApiKey: '',
+    fromEmail: '',
+    fromName: 'DİP Platform',
+  });
+  
+  const [smsSettings, setSmsSettings] = useState({
+    netgsmUsername: '',
+    netgsmPassword: '',
+    netgsmMsgHeader: '',
+  });
+  
+  const [mediaSettings, setMediaSettings] = useState({
+    heroVideoUrl: '',
+  });
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
@@ -74,6 +104,40 @@ export default function SystemSettings() {
   const { data: systemConfig } = useQuery<SystemConfig>({
     queryKey: ['/api/admin/system-config'],
   });
+
+  // Update local state when systemConfig loads
+  React.useEffect(() => {
+    if (systemConfig) {
+      setPlatformSettings({
+        siteName: systemConfig.siteName || '',
+        defaultLanguage: systemConfig.defaultLanguage || 'tr',
+        maintenanceMode: systemConfig.maintenanceMode || false,
+        autoApprovalEnabled: systemConfig.autoApprovalEnabled || false,
+      });
+      
+      setSecuritySettings({
+        sessionTimeout: systemConfig.sessionTimeout || 60,
+        passwordMinLength: systemConfig.passwordMinLength || 8,
+        require2FA: systemConfig.require2FA || false,
+      });
+      
+      setEmailSettings({
+        resendApiKey: systemConfig.emailSettings?.resendApiKey || '',
+        fromEmail: systemConfig.emailSettings?.fromEmail || '',
+        fromName: systemConfig.emailSettings?.fromName || 'DİP Platform',
+      });
+      
+      setSmsSettings({
+        netgsmUsername: systemConfig.smsSettings?.netgsmUsername || '',
+        netgsmPassword: systemConfig.smsSettings?.netgsmPassword || '',
+        netgsmMsgHeader: systemConfig.smsSettings?.netgsmMsgHeader || '',
+      });
+      
+      setMediaSettings({
+        heroVideoUrl: systemConfig.heroVideoUrl || '',
+      });
+    }
+  }, [systemConfig]);
 
   // Update category mutation
   const updateCategoryMutation = useMutation({
@@ -147,20 +211,84 @@ export default function SystemSettings() {
     },
   });
 
-  // Update system config mutation
-  const updateConfigMutation = useMutation({
-    mutationFn: async (config: Partial<SystemConfig>) => {
+  // Save mutations for different settings sections
+  const savePlatformSettingsMutation = useMutation({
+    mutationFn: async () => {
       const response = await fetch('/api/admin/system-config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
+        body: JSON.stringify(platformSettings),
       });
-      if (!response.ok) throw new Error('Failed to update system config');
+      if (!response.ok) throw new Error('Failed to update platform settings');
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/system-config'] });
-      toast({ title: 'Sistem ayarları güncellendi' });
+      toast({ title: 'Platform ayarları kaydedildi' });
+    },
+  });
+
+  const saveSecuritySettingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/system-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(securitySettings),
+      });
+      if (!response.ok) throw new Error('Failed to update security settings');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/system-config'] });
+      toast({ title: 'Güvenlik ayarları kaydedildi' });
+    },
+  });
+
+  const saveEmailSettingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/system-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailSettings }),
+      });
+      if (!response.ok) throw new Error('Failed to update email settings');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/system-config'] });
+      toast({ title: 'E-posta ayarları kaydedildi' });
+    },
+  });
+
+  const saveSmsSettingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/system-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ smsSettings }),
+      });
+      if (!response.ok) throw new Error('Failed to update SMS settings');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/system-config'] });
+      toast({ title: 'SMS ayarları kaydedildi' });
+    },
+  });
+
+  const saveMediaSettingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/system-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mediaSettings),
+      });
+      if (!response.ok) throw new Error('Failed to update media settings');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/system-config'] });
+      toast({ title: 'Medya ayarları kaydedildi' });
     },
   });
 
@@ -238,15 +366,15 @@ export default function SystemSettings() {
                     <Label htmlFor="siteName">Site Adı</Label>
                     <Input
                       id="siteName"
-                      defaultValue={systemConfig?.siteName || 'DİP Platform'}
-                      onChange={(e) => updateConfigMutation.mutate({ siteName: e.target.value })}
+                      value={platformSettings.siteName}
+                      onChange={(e) => setPlatformSettings(prev => ({ ...prev, siteName: e.target.value }))}
                     />
                   </div>
                   <div>
                     <Label htmlFor="defaultLanguage">Varsayılan Dil</Label>
                     <Select
-                      defaultValue={systemConfig?.defaultLanguage || 'tr'}
-                      onValueChange={(value) => updateConfigMutation.mutate({ defaultLanguage: value })}
+                      value={platformSettings.defaultLanguage}
+                      onValueChange={(value) => setPlatformSettings(prev => ({ ...prev, defaultLanguage: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -262,8 +390,8 @@ export default function SystemSettings() {
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="maintenance"
-                    checked={systemConfig?.maintenanceMode || false}
-                    onCheckedChange={(checked) => updateConfigMutation.mutate({ maintenanceMode: checked })}
+                    checked={platformSettings.maintenanceMode}
+                    onCheckedChange={(checked) => setPlatformSettings(prev => ({ ...prev, maintenanceMode: checked }))}
                   />
                   <Label htmlFor="maintenance">Bakım Modu</Label>
                 </div>
@@ -271,10 +399,20 @@ export default function SystemSettings() {
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="autoApproval"
-                    checked={systemConfig?.autoApprovalEnabled || false}
-                    onCheckedChange={(checked) => updateConfigMutation.mutate({ autoApprovalEnabled: checked })}
+                    checked={platformSettings.autoApprovalEnabled}
+                    onCheckedChange={(checked) => setPlatformSettings(prev => ({ ...prev, autoApprovalEnabled: checked }))}
                   />
                   <Label htmlFor="autoApproval">Otomatik Partner Onayı</Label>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => savePlatformSettingsMutation.mutate()}
+                    disabled={savePlatformSettingsMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {savePlatformSettingsMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -291,8 +429,8 @@ export default function SystemSettings() {
                     <Input
                       id="sessionTimeout"
                       type="number"
-                      defaultValue={systemConfig?.sessionTimeout || 60}
-                      onChange={(e) => updateConfigMutation.mutate({ sessionTimeout: parseInt(e.target.value) })}
+                      value={securitySettings.sessionTimeout}
+                      onChange={(e) => setSecuritySettings(prev => ({ ...prev, sessionTimeout: parseInt(e.target.value) || 60 }))}
                     />
                   </div>
                   <div>
@@ -300,8 +438,8 @@ export default function SystemSettings() {
                     <Input
                       id="passwordMinLength"
                       type="number"
-                      defaultValue={systemConfig?.passwordMinLength || 8}
-                      onChange={(e) => updateConfigMutation.mutate({ passwordMinLength: parseInt(e.target.value) })}
+                      value={securitySettings.passwordMinLength}
+                      onChange={(e) => setSecuritySettings(prev => ({ ...prev, passwordMinLength: parseInt(e.target.value) || 8 }))}
                     />
                   </div>
                 </div>
@@ -309,10 +447,20 @@ export default function SystemSettings() {
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="require2FA"
-                    checked={systemConfig?.require2FA || false}
-                    onCheckedChange={(checked) => updateConfigMutation.mutate({ require2FA: checked })}
+                    checked={securitySettings.require2FA}
+                    onCheckedChange={(checked) => setSecuritySettings(prev => ({ ...prev, require2FA: checked }))}
                   />
                   <Label htmlFor="require2FA">2FA Zorunlu</Label>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => saveSecuritySettingsMutation.mutate()}
+                    disabled={saveSecuritySettingsMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saveSecuritySettingsMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -574,13 +722,8 @@ export default function SystemSettings() {
                   <Input
                     id="resendApiKey"
                     type="password"
-                    defaultValue={systemConfig?.emailSettings?.resendApiKey || ''}
-                    onChange={(e) => updateConfigMutation.mutate({ 
-                      emailSettings: { 
-                        ...systemConfig?.emailSettings, 
-                        resendApiKey: e.target.value 
-                      } 
-                    })}
+                    value={emailSettings.resendApiKey}
+                    onChange={(e) => setEmailSettings(prev => ({ ...prev, resendApiKey: e.target.value }))}
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -589,28 +732,28 @@ export default function SystemSettings() {
                     <Input
                       id="fromEmail"
                       type="email"
-                      defaultValue={systemConfig?.emailSettings?.fromEmail || ''}
-                      onChange={(e) => updateConfigMutation.mutate({ 
-                        emailSettings: { 
-                          ...systemConfig?.emailSettings, 
-                          fromEmail: e.target.value 
-                        } 
-                      })}
+                      value={emailSettings.fromEmail}
+                      onChange={(e) => setEmailSettings(prev => ({ ...prev, fromEmail: e.target.value }))}
                     />
                   </div>
                   <div>
                     <Label htmlFor="fromName">Gönderen Ad</Label>
                     <Input
                       id="fromName"
-                      defaultValue={systemConfig?.emailSettings?.fromName || ''}
-                      onChange={(e) => updateConfigMutation.mutate({ 
-                        emailSettings: { 
-                          ...systemConfig?.emailSettings, 
-                          fromName: e.target.value 
-                        } 
-                      })}
+                      value={emailSettings.fromName}
+                      onChange={(e) => setEmailSettings(prev => ({ ...prev, fromName: e.target.value }))}
                     />
                   </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => saveEmailSettingsMutation.mutate()}
+                    disabled={saveEmailSettingsMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saveEmailSettingsMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -629,13 +772,8 @@ export default function SystemSettings() {
                     <Label htmlFor="netgsmUsername">NetGSM Kullanıcı Adı</Label>
                     <Input
                       id="netgsmUsername"
-                      defaultValue={systemConfig?.smsSettings?.netgsmUsername || ''}
-                      onChange={(e) => updateConfigMutation.mutate({ 
-                        smsSettings: { 
-                          ...systemConfig?.smsSettings, 
-                          netgsmUsername: e.target.value 
-                        } 
-                      })}
+                      value={smsSettings.netgsmUsername}
+                      onChange={(e) => setSmsSettings(prev => ({ ...prev, netgsmUsername: e.target.value }))}
                     />
                   </div>
                   <div>
@@ -643,13 +781,8 @@ export default function SystemSettings() {
                     <Input
                       id="netgsmPassword"
                       type="password"
-                      defaultValue={systemConfig?.smsSettings?.netgsmPassword || ''}
-                      onChange={(e) => updateConfigMutation.mutate({ 
-                        smsSettings: { 
-                          ...systemConfig?.smsSettings, 
-                          netgsmPassword: e.target.value 
-                        } 
-                      })}
+                      value={smsSettings.netgsmPassword}
+                      onChange={(e) => setSmsSettings(prev => ({ ...prev, netgsmPassword: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -657,14 +790,19 @@ export default function SystemSettings() {
                   <Label htmlFor="netgsmMsgHeader">NetGSM Mesaj Başlığı</Label>
                   <Input
                     id="netgsmMsgHeader"
-                    defaultValue={systemConfig?.smsSettings?.netgsmMsgHeader || ''}
-                    onChange={(e) => updateConfigMutation.mutate({ 
-                      smsSettings: { 
-                        ...systemConfig?.smsSettings, 
-                        netgsmMsgHeader: e.target.value 
-                      } 
-                    })}
+                    value={smsSettings.netgsmMsgHeader}
+                    onChange={(e) => setSmsSettings(prev => ({ ...prev, netgsmMsgHeader: e.target.value }))}
                   />
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => saveSmsSettingsMutation.mutate()}
+                    disabled={saveSmsSettingsMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saveSmsSettingsMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -683,13 +821,23 @@ export default function SystemSettings() {
                   <Input
                     id="heroVideoUrl"
                     placeholder="https://example.com/video.mp4"
-                    defaultValue={systemConfig?.heroVideoUrl || ''}
-                    onChange={(e) => updateConfigMutation.mutate({ heroVideoUrl: e.target.value })}
+                    value={mediaSettings.heroVideoUrl}
+                    onChange={(e) => setMediaSettings(prev => ({ ...prev, heroVideoUrl: e.target.value }))}
                   />
                 </div>
                 <div className="text-sm text-gray-600">
                   <p>Video URL'si değiştirildiğinde anasayfadaki hero bölümünde otomatik olarak güncellenir.</p>
                   <p>Desteklenen formatlar: MP4, WebM, OGV</p>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => saveMediaSettingsMutation.mutate()}
+                    disabled={saveMediaSettingsMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saveMediaSettingsMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
