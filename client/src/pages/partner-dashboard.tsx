@@ -32,8 +32,7 @@ import {
   AlertCircle,
   Save,
   Copy,
-  Send,
-  Download
+  Send
 } from "lucide-react";
 
 export default function PartnerDashboard() {
@@ -405,18 +404,6 @@ export default function PartnerDashboard() {
                               >
                                 <Eye className="h-4 w-4 mr-2" />
                                 Detaylar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
-                                onClick={() => {
-                                  const url = `/api/quote-requests/${quote.id}/pdf`;
-                                  window.open(url, '_blank');
-                                }}
-                              >
-                                <Download className="h-4 w-4 mr-2" />
-                                PDF İndir
                               </Button>
                               {(quote.status === "pending" || quote.status === "under_review") && (
                                 <Button 
