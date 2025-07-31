@@ -14,6 +14,8 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   phone: text("phone"),
   userType: text("user_type").notNull().default("user"), // user, partner, master_admin, editor_admin
+  availableUserTypes: text("available_user_types").array().default(["user"]), // Available user types for this user
+  activeUserType: text("active_user_type").notNull().default("user"), // Currently active user type
   isVerified: boolean("is_verified").default(false), // Email verification status
   language: text("language").default("tr"), // tr, en
   createdAt: timestamp("created_at").defaultNow(),

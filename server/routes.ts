@@ -121,6 +121,95 @@ const uploadDocuments = multer({
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
   
+  // Account type switching endpoint
+  app.post("/api/auth/switch-account-type", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { userType } = req.body;
+      const userId = req.user!.id;
+
+      // Get current user to check available types
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if the requested user type is available for this user
+      if (!currentUser.availableUserTypes || !currentUser.availableUserTypes.includes(userType)) {
+        return res.status(400).json({ message: "Requested account type is not available for this user" });
+      }
+
+      // Update the active user type
+      const updatedUser = await storage.updateUser(userId, {
+        activeUserType: userType
+      });
+
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update account type" });
+      }
+
+      // Update the session user type
+      req.user!.activeUserType = userType;
+      req.user!.userType = userType; // Also update userType for compatibility
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error switching account type:', error);
+      res.status(500).json({ message: "Failed to switch account type" });
+    }
+  });
+
+  // Migration endpoint to update existing users
+  app.post("/api/admin/migrate-users", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user!.userType !== 'master_admin') {
+        return res.status(403).json({ message: "Master admin access required" });
+      }
+
+      // Get all users
+      const users = await storage.getAllUsers();
+      let updated = 0;
+
+      for (const user of users) {
+        if (!user.availableUserTypes || user.availableUserTypes.length === 0) {
+          // Check if user has a partner record
+          const partner = await storage.getPartnerByUserId(user.id);
+          
+          let availableTypes = ['user'];
+          let activeType = 'user';
+          
+          if (partner) {
+            availableTypes.push('partner');
+            activeType = user.userType === 'partner' ? 'partner' : 'user';
+          }
+          
+          if (['master_admin', 'editor_admin'].includes(user.userType)) {
+            availableTypes.push(user.userType);
+            activeType = user.userType;
+          }
+
+          await storage.updateUser(user.id, {
+            availableUserTypes: availableTypes,
+            activeUserType: activeType
+          });
+          
+          updated++;
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `${updated} users updated with available user types` 
+      });
+    } catch (error) {
+      console.error('Error migrating users:', error);
+      res.status(500).json({ message: "Failed to migrate users" });
+    }
+  });
+
   // Supabase auth sync endpoint
   app.post("/api/auth/sync-supabase-user", async (req, res) => {
     try {
@@ -153,6 +242,8 @@ export function registerRoutes(app: Express): Server {
           lastName,
           password: '', // Supabase handles authentication
           userType: 'user',
+          availableUserTypes: ['user'], // Default to just user
+          activeUserType: 'user',
           isVerified: true,
           supabaseId: supabaseUser.id,
           language: 'tr'
@@ -184,6 +275,8 @@ export function registerRoutes(app: Express): Server {
             firstName: user!.firstName,
             lastName: user!.lastName,
             userType: user!.userType,
+            availableUserTypes: user!.availableUserTypes,
+            activeUserType: user!.activeUserType,
             isVerified: user!.isVerified,
             language: user!.language
           }
@@ -607,6 +700,8 @@ export function registerRoutes(app: Express): Server {
               lastName: application.lastName,
               phone: application.phone,
               userType: 'partner',
+              availableUserTypes: ['user', 'partner'], // User can switch between user and partner
+              activeUserType: 'partner', // Start as partner since application was approved
               isVerified: true,
               supabaseId: supabaseUser.user?.id, // Link to Supabase user
             });
@@ -680,6 +775,18 @@ export function registerRoutes(app: Express): Server {
           await storage.updatePartner(existingPartner.id, partnerData);
         } else {
           await storage.createPartner(partnerData);
+        }
+
+        // Update user's available user types if they're not already set
+        if (!user.availableUserTypes || !user.availableUserTypes.includes('partner')) {
+          const currentTypes = user.availableUserTypes || ['user'];
+          if (!currentTypes.includes('partner')) {
+            currentTypes.push('partner');
+          }
+          await storage.updateUser(user.id, {
+            availableUserTypes: currentTypes,
+            activeUserType: 'partner' // Set as partner since application was approved
+          });
         }
       }
 

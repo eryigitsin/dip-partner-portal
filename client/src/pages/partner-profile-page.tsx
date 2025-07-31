@@ -30,10 +30,10 @@ export default function PartnerProfilePage() {
       if (!response.ok) throw new Error("Failed to fetch partner data");
       return response.json();
     },
-    enabled: !!user && user.userType === "partner",
+    enabled: !!user && (user.activeUserType || user.userType) === "partner",
   });
 
-  if (!user || user.userType !== "partner") {
+  if (!user || (user.activeUserType || user.userType) !== "partner") {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />

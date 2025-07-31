@@ -51,14 +51,14 @@ export default function PartnerDashboard() {
       if (!response.ok) throw new Error("Failed to fetch partner data");
       return response.json();
     },
-    enabled: !!user && user.userType === "partner",
+    enabled: !!user && (user.activeUserType || user.userType) === "partner",
   });
 
   // Removed updateProfileMutation as it's not used in the current dashboard
 
   const { data: quoteRequests = [] } = useQuery<QuoteRequest[]>({
     queryKey: ["/api/quote-requests"],
-    enabled: !!user && user.userType === "partner",
+    enabled: !!user && (user.activeUserType || user.userType) === "partner",
   });
 
   const handleViewQuoteDetails = (request: QuoteRequest) => {
@@ -73,7 +73,7 @@ export default function PartnerDashboard() {
 
 
 
-  if (!user || user.userType !== "partner") {
+  if (!user || (user.activeUserType || user.userType) !== "partner") {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -447,7 +447,7 @@ export default function PartnerDashboard() {
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-700">İletişim Kişisi</Label>
-                      <p className="mt-1 text-gray-900">{partner?.fullName || "Belirtilmemiş"}</p>
+                      <p className="mt-1 text-gray-900">{partner?.contactPerson || "Belirtilmemiş"}</p>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Hizmet Kategorisi</Label>

@@ -11,17 +11,22 @@ import {
 import { useLanguage } from '@/contexts/language-context';
 import { useAuth } from '@/hooks/use-auth';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
+import { AccountTypeSelector } from '@/components/account-type-selector';
 import { t } from '@/lib/i18n';
-import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database } from 'lucide-react';
+import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [accountSelectorOpen, setAccountSelectorOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { user, logoutMutation } = useAuth();
   const { signOut } = useSupabaseAuth();
   const [location] = useLocation();
+
+  // Check if user has multiple account types available
+  const hasMultipleAccountTypes = user?.availableUserTypes && user.availableUserTypes.length > 1;
 
   const navigation = [
     { name: t('about', language), href: 'https://dip.tc/hakkimizda/', external: true },
@@ -124,7 +129,7 @@ export function Header() {
             {user ? (
               <div className="flex items-center space-x-3">
                 {/* Dropdown menu for regular users */}
-                {user.userType === 'user' && (
+                {(user.activeUserType || user.userType) === 'user' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
@@ -155,6 +160,18 @@ export function Header() {
                           <span>Sohbet</span>
                         </Link>
                       </DropdownMenuItem>
+                      {hasMultipleAccountTypes && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => setAccountSelectorOpen(true)}
+                            className="flex items-center"
+                          >
+                            <ArrowLeftRight className="mr-2 h-4 w-4" />
+                            <span>Hesap Türü Değiştir</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => signOut()}
@@ -168,7 +185,7 @@ export function Header() {
                 )}
 
                 {/* Partner users */}
-                {user.userType === 'partner' && (
+                {(user.activeUserType || user.userType) === 'partner' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
@@ -199,6 +216,18 @@ export function Header() {
                           <span>İstatistikler</span>
                         </Link>
                       </DropdownMenuItem>
+                      {hasMultipleAccountTypes && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => setAccountSelectorOpen(true)}
+                            className="flex items-center"
+                          >
+                            <ArrowLeftRight className="mr-2 h-4 w-4" />
+                            <span>Hesap Türü Değiştir</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => signOut()}
@@ -212,7 +241,7 @@ export function Header() {
                 )}
 
                 {/* Admin users */}
-                {['master_admin', 'editor_admin'].includes(user.userType) && (
+                {['master_admin', 'editor_admin'].includes(user.activeUserType || user.userType) && (
                   <div className="flex items-center space-x-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -363,6 +392,16 @@ export function Header() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Account Type Selector Modal */}
+      {user && hasMultipleAccountTypes && (
+        <AccountTypeSelector
+          isOpen={accountSelectorOpen}
+          onClose={() => setAccountSelectorOpen(false)}
+          availableTypes={user.availableUserTypes || []}
+          currentType={user.activeUserType || user.userType}
+        />
       )}
     </header>
   );
