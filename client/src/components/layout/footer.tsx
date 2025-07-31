@@ -130,30 +130,50 @@ export function Footer() {
         </div>
 
         {/* Bottom Footer */}
-        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm">
-            © 2025 DİP - Dijital İhracat Platformu. Tüm hakları saklıdır.
-          </p>
-          
-          {/* Language Switcher */}
-          <div className="flex items-center space-x-2 mt-4 sm:mt-0">
-            <span className="text-gray-400 text-sm mr-2">{t('language', language)}:</span>
-            <Button
-              variant={language === 'tr' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setLanguage('tr')}
-              className="text-xs"
-            >
-              TR
-            </Button>
-            <Button
-              variant={language === 'en' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setLanguage('en')}
-              className="text-xs"
-            >
-              EN
-            </Button>
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <div className="text-gray-400 text-sm">
+              <p className="mb-2">© 2025 DİP - Dijital İhracat Platformu. Tüm hakları saklıdır.</p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                <a 
+                  href="https://dip.tc/kullanim-sartlari" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-dip-blue transition-colors underline"
+                >
+                  Kullanım Şartları
+                </a>
+                <a 
+                  href="https://dip.tc/gizlilik-ilkesi" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-dip-blue transition-colors underline"
+                >
+                  Gizlilik Politikası
+                </a>
+              </div>
+            </div>
+            
+            {/* Language Switcher */}
+            <div className="flex items-center space-x-2 mt-4 sm:mt-0">
+              <span className="text-gray-400 text-sm mr-2">{t('language', language)}:</span>
+              <Button
+                variant={language === 'tr' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setLanguage('tr')}
+                className="text-xs"
+              >
+                TR
+              </Button>
+              <Button
+                variant={language === 'en' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setLanguage('en')}
+                className="text-xs"
+              >
+                EN
+              </Button>
+            </div>
           </div>
         </div>
       </div>

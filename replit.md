@@ -64,3 +64,5 @@ Preferred communication style: Simple, everyday language.
 - **SEO Management**: Added comprehensive SEO settings tab with meta tags, Open Graph, and Twitter Card configuration
 - **Browser Title Update**: Changed site title to "dip | iş ortakları platformu" with Turkish language attributes
 - **Dynamic Meta Tags**: Implemented SeoHead component for dynamic meta tag management based on saved SEO settings
+- **Favicon Integration**: Added DİP blue logo as site favicon for better brand recognition
+- **Footer Legal Links**: Added Terms of Service and Privacy Policy links to footer section with proper external linking
