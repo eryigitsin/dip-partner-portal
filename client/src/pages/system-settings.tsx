@@ -40,6 +40,18 @@ interface SystemConfig {
   passwordMinLength: number;
   require2FA: boolean;
   heroVideoUrl: string;
+  seoSettings: {
+    metaTitle: string;
+    metaDescription: string;
+    metaKeywords: string;
+    ogTitle: string;
+    ogDescription: string;
+    ogImage: string;
+    ogUrl: string;
+    twitterTitle: string;
+    twitterDescription: string;
+    twitterImage: string;
+  };
   emailSettings: {
     resendApiKey: string;
     fromEmail: string;
@@ -66,6 +78,19 @@ export default function SystemSettings() {
     defaultLanguage: 'tr',
     maintenanceMode: false,
     autoApprovalEnabled: false,
+  });
+
+  const [seoSettings, setSeoSettings] = useState({
+    metaTitle: '',
+    metaDescription: '',
+    metaKeywords: '',
+    ogTitle: '',
+    ogDescription: '',
+    ogImage: '',
+    ogUrl: '',
+    twitterTitle: '',
+    twitterDescription: '',
+    twitterImage: '',
   });
   
   const [securitySettings, setSecuritySettings] = useState({
@@ -119,6 +144,19 @@ export default function SystemSettings() {
         sessionTimeout: systemConfig.sessionTimeout || 60,
         passwordMinLength: systemConfig.passwordMinLength || 8,
         require2FA: systemConfig.require2FA || false,
+      });
+
+      setSeoSettings({
+        metaTitle: systemConfig.seoSettings?.metaTitle || 'dip | iş ortakları platformu',
+        metaDescription: systemConfig.seoSettings?.metaDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın',
+        metaKeywords: systemConfig.seoSettings?.metaKeywords || 'dip, iş ortakları, dijital ihracat, platform, işbirliği, hizmet sağlayıcıları',
+        ogTitle: systemConfig.seoSettings?.ogTitle || 'dip | iş ortakları platformu',
+        ogDescription: systemConfig.seoSettings?.ogDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın',
+        ogImage: systemConfig.seoSettings?.ogImage || '',
+        ogUrl: systemConfig.seoSettings?.ogUrl || '',
+        twitterTitle: systemConfig.seoSettings?.twitterTitle || 'dip | iş ortakları platformu',
+        twitterDescription: systemConfig.seoSettings?.twitterDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın',
+        twitterImage: systemConfig.seoSettings?.twitterImage || '',
       });
       
       setEmailSettings({
@@ -244,6 +282,22 @@ export default function SystemSettings() {
     },
   });
 
+  const saveSeoSettingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/system-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seoSettings }),
+      });
+      if (!response.ok) throw new Error('Failed to save SEO settings');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/system-config'] });
+      toast({ title: 'SEO ayarları kaydedildi' });
+    },
+  });
+
   const saveEmailSettingsMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch('/api/admin/system-config', {
@@ -326,10 +380,14 @@ export default function SystemSettings() {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Genel
+            </TabsTrigger>
+            <TabsTrigger value="seo" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              SEO
             </TabsTrigger>
             <TabsTrigger value="categories" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
@@ -460,6 +518,136 @@ export default function SystemSettings() {
                   >
                     <Save className="h-4 w-4 mr-2" />
                     {saveSecuritySettingsMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SEO Settings */}
+          <TabsContent value="seo" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>SEO Ayarları</CardTitle>
+                <CardDescription>Meta etiketleri ve sosyal medya paylaşım ayarları</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="metaTitle">Meta Başlık</Label>
+                    <Input
+                      id="metaTitle"
+                      value={seoSettings.metaTitle}
+                      onChange={(e) => setSeoSettings(prev => ({ ...prev, metaTitle: e.target.value }))}
+                      placeholder="Site başlığı"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="metaKeywords">Meta Keywords</Label>
+                    <Input
+                      id="metaKeywords"
+                      value={seoSettings.metaKeywords}
+                      onChange={(e) => setSeoSettings(prev => ({ ...prev, metaKeywords: e.target.value }))}
+                      placeholder="anahtar kelime1, anahtar kelime2"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="metaDescription">Meta Açıklama</Label>
+                  <Textarea
+                    id="metaDescription"
+                    value={seoSettings.metaDescription}
+                    onChange={(e) => setSeoSettings(prev => ({ ...prev, metaDescription: e.target.value }))}
+                    placeholder="Site açıklaması"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="font-medium mb-3">Open Graph (Facebook/LinkedIn)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="ogTitle">OG Başlık</Label>
+                      <Input
+                        id="ogTitle"
+                        value={seoSettings.ogTitle}
+                        onChange={(e) => setSeoSettings(prev => ({ ...prev, ogTitle: e.target.value }))}
+                        placeholder="Facebook/LinkedIn başlığı"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="ogUrl">OG URL</Label>
+                      <Input
+                        id="ogUrl"
+                        value={seoSettings.ogUrl}
+                        onChange={(e) => setSeoSettings(prev => ({ ...prev, ogUrl: e.target.value }))}
+                        placeholder="https://example.com"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="ogDescription">OG Açıklama</Label>
+                    <Textarea
+                      id="ogDescription"
+                      value={seoSettings.ogDescription}
+                      onChange={(e) => setSeoSettings(prev => ({ ...prev, ogDescription: e.target.value }))}
+                      placeholder="Facebook/LinkedIn açıklaması"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="ogImage">OG Görsel URL</Label>
+                    <Input
+                      id="ogImage"
+                      value={seoSettings.ogImage}
+                      onChange={(e) => setSeoSettings(prev => ({ ...prev, ogImage: e.target.value }))}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="font-medium mb-3">Twitter Card</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="twitterTitle">Twitter Başlık</Label>
+                      <Input
+                        id="twitterTitle"
+                        value={seoSettings.twitterTitle}
+                        onChange={(e) => setSeoSettings(prev => ({ ...prev, twitterTitle: e.target.value }))}
+                        placeholder="Twitter başlığı"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="twitterImage">Twitter Görsel URL</Label>
+                      <Input
+                        id="twitterImage"
+                        value={seoSettings.twitterImage}
+                        onChange={(e) => setSeoSettings(prev => ({ ...prev, twitterImage: e.target.value }))}
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="twitterDescription">Twitter Açıklama</Label>
+                    <Textarea
+                      id="twitterDescription"
+                      value={seoSettings.twitterDescription}
+                      onChange={(e) => setSeoSettings(prev => ({ ...prev, twitterDescription: e.target.value }))}
+                      placeholder="Twitter açıklaması"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => saveSeoSettingsMutation.mutate()}
+                    disabled={saveSeoSettingsMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saveSeoSettingsMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
                   </Button>
                 </div>
               </CardContent>

@@ -60,3 +60,7 @@ Preferred communication style: Simple, everyday language.
 - **Email Template Updates**: Updated partner approval email template to guide users through account setup process
 - **User Schema Enhancement**: Leveraged existing supabaseId field in users table to link local user records with Supabase authentication
 - **Security Improvement**: Removed temporary password system in favor of secure Supabase password reset/setup flow
+- **System Settings Save Buttons**: Replaced auto-save functionality with explicit save buttons for each settings tab (Platform, Security, Email, SMS, Media, SEO)
+- **SEO Management**: Added comprehensive SEO settings tab with meta tags, Open Graph, and Twitter Card configuration
+- **Browser Title Update**: Changed site title to "dip | iş ortakları platformu" with Turkish language attributes
+- **Dynamic Meta Tags**: Implemented SeoHead component for dynamic meta tag management based on saved SEO settings

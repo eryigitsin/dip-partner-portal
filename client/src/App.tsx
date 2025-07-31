@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SupabaseAuthProvider } from "@/hooks/use-supabase-auth";
 import { LanguageProvider } from "@/contexts/language-context";
+import { SeoHead } from "@/components/seo-head";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home";
 import AuthPage from "@/pages/auth";
@@ -31,6 +32,22 @@ import TestUpload from "@/pages/test-upload";
 import { ProtectedRoute } from "./lib/protected-route";
 import { useQuery } from "@tanstack/react-query";
 
+interface SystemConfig {
+  siteName?: string;
+  seoSettings?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    metaKeywords?: string;
+    ogTitle?: string;
+    ogDescription?: string;
+    ogImage?: string;
+    ogUrl?: string;
+    twitterTitle?: string;
+    twitterDescription?: string;
+    twitterImage?: string;
+  };
+}
+
 function InitApp() {
   // Initialize the app with service categories
   const { } = useQuery({
@@ -38,7 +55,26 @@ function InitApp() {
     staleTime: Infinity,
   });
 
-  return null;
+  // Fetch system config for SEO settings
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ['/api/admin/system-config'],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  return (
+    <SeoHead
+      title={systemConfig?.seoSettings?.metaTitle || 'dip | iş ortakları platformu'}
+      description={systemConfig?.seoSettings?.metaDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
+      keywords={systemConfig?.seoSettings?.metaKeywords || 'dip, iş ortakları, dijital ihracat, platform, işbirliği, hizmet sağlayıcıları'}
+      ogTitle={systemConfig?.seoSettings?.ogTitle || 'dip | iş ortakları platformu'}
+      ogDescription={systemConfig?.seoSettings?.ogDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
+      ogImage={systemConfig?.seoSettings?.ogImage || ''}
+      ogUrl={systemConfig?.seoSettings?.ogUrl || ''}
+      twitterTitle={systemConfig?.seoSettings?.twitterTitle || 'dip | iş ortakları platformu'}
+      twitterDescription={systemConfig?.seoSettings?.twitterDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
+      twitterImage={systemConfig?.seoSettings?.twitterImage || ''}
+    />
+  );
 }
 
 function Router() {
