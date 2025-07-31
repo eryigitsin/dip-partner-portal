@@ -329,12 +329,7 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
   }, [open, prefilledData, form]);
 
   const onSubmit = async (data: PartnerApplicationFormData) => {
-    console.log('🔄 Form submission attempt started');
-    console.log('📝 Form data:', data);
-    console.log('🎯 Selected services:', selectedServices);
-
     if (selectedServices.length === 0) {
-      console.log('❌ Form validation failed: No services selected');
       toast({
         title: 'Hizmet Seçimi Gerekli',
         description: 'En az bir hizmet eklemelisiniz.',
@@ -344,7 +339,6 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
     }
 
     setIsSubmitting(true);
-    console.log('⏳ Starting form submission...');
     try {
       const formData = new FormData();
       
@@ -355,8 +349,8 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
         }
       });
 
-      // Add services as JSON string (overwrite the services field)
-      formData.set('services', JSON.stringify(selectedServices));
+      // Add services as JSON string
+      formData.append('services', JSON.stringify(selectedServices));
 
       // Add logo file if selected
       if (logoFile) {
@@ -374,15 +368,12 @@ export function PartnerApplicationDialog({ open, onOpenChange, prefilledData, on
         formData.append(`documents`, file);
       });
 
-      console.log('📤 Sending request to /api/partner-applications');
       const response = await fetch('/api/partner-applications', {
         method: 'POST',
         body: formData,
       });
 
-      console.log('📡 Response status:', response.status, response.statusText);
       const result = await response.json();
-      console.log('📄 Response data:', result);
 
       if (!response.ok) {
         throw new Error(result.message || 'Başvuru gönderilemedi');
