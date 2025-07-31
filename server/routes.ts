@@ -1372,6 +1372,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Delete partner (admin only)
+  app.delete("/api/partners/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const user = req.user!;
+      if (!["master_admin", "editor_admin"].includes(user.userType)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const partnerId = parseInt(req.params.id);
+      
+      // Get partner details before deletion
+      const partner = await storage.getPartner(partnerId);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      // Delete the partner (this should cascade to delete related data)
+      await storage.deletePartner(partnerId);
+
+      res.json({ 
+        success: true, 
+        message: "Partner deleted successfully",
+        deletedPartner: {
+          id: partner.id,
+          companyName: partner.companyName
+        }
+      });
+    } catch (error) {
+      console.error('Error deleting partner:', error);
+      res.status(500).json({ message: "Failed to delete partner" });
+    }
+  });
+
   // Payment completion notification
   app.post("/api/payments/complete", async (req, res) => {
     try {

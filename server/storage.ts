@@ -80,6 +80,7 @@ export interface IStorage {
   getPartnerByUsername(username: string): Promise<Partner | undefined>;
   createPartner(partner: InsertPartner): Promise<Partner>;
   updatePartner(id: number, partner: Partial<InsertPartner>): Promise<Partner | undefined>;
+  deletePartner(id: number): Promise<void>;
   
   // Partner application methods
   getPartnerApplications(status?: string): Promise<PartnerApplication[]>;
@@ -364,6 +365,65 @@ export class DatabaseStorage implements IStorage {
     console.log('Updated partner logo:', partner?.logo);
     console.log('Updated partner coverImage:', partner?.coverImage);
     return partner || undefined;
+  }
+
+  async deletePartner(id: number): Promise<void> {
+    console.log('Storage deletePartner called with id:', id);
+    
+    try {
+      // Get partner details first
+      const partner = await this.getPartner(id);
+      if (!partner) {
+        console.log('Partner not found for deletion:', id);
+        return;
+      }
+      
+      console.log('Deleting partner:', partner.companyName);
+      
+      // Start transaction to delete all related data
+      await db.transaction(async (tx) => {
+        // Delete partner followers
+        await tx.delete(partnerFollowers).where(eq(partnerFollowers.partnerId, id));
+        
+        // Delete partner posts
+        await tx.delete(partnerPosts).where(eq(partnerPosts.partnerId, id));
+        
+        // Delete quote responses related to this partner's quote requests
+        const partnerQuoteRequests = await tx.select({ id: quoteRequests.id })
+          .from(quoteRequests)
+          .where(eq(quoteRequests.partnerId, id));
+        
+        for (const qr of partnerQuoteRequests) {
+          await tx.delete(quoteResponses).where(eq(quoteResponses.quoteRequestId, qr.id));
+        }
+        
+        // Delete quote requests
+        await tx.delete(quoteRequests).where(eq(quoteRequests.partnerId, id));
+        
+        // Delete application documents if partner has an application
+        const application = await tx.select({ id: partnerApplications.id })
+          .from(partnerApplications)
+          .where(eq(partnerApplications.id, partner.id));
+        
+        if (application.length > 0) {
+          await tx.delete(applicationDocuments).where(eq(applicationDocuments.applicationId, application[0].id));
+          await tx.delete(partnerApplications).where(eq(partnerApplications.id, application[0].id));
+        }
+        
+        // Delete the partner record
+        await tx.delete(partners).where(eq(partners.id, id));
+        
+        // Delete the associated user account if exists
+        if (partner.userId) {
+          await tx.delete(users).where(eq(users.id, partner.userId));
+        }
+      });
+      
+      console.log('Partner and all related data deleted successfully');
+    } catch (error) {
+      console.error('Error in deletePartner:', error);
+      throw new Error('Failed to delete partner');
+    }
   }
 
   async incrementPartnerViews(id: number): Promise<void> {
@@ -857,10 +917,7 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users);
   }
 
-  async getUserById(userId: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    return user || undefined;
-  }
+
 
   async getAllPartnersWithUsers(): Promise<Partner[]> {
     return db.select().from(partners);
@@ -1150,37 +1207,7 @@ export class DatabaseStorage implements IStorage {
     return null;
   }
 
-  // Quote Response Methods
-  async createQuoteResponse(responseData: any): Promise<any> {
-    const [response] = await db.insert(quoteResponses).values({
-      ...responseData,
-      subtotal: Math.round(responseData.subtotal * 100), // Convert to cents
-      taxAmount: Math.round(responseData.taxAmount * 100),
-      totalAmount: Math.round(responseData.total * 100),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }).returning();
-    return response;
-  }
 
-  async getQuoteResponseById(id: number): Promise<any | undefined> {
-    const [response] = await db.select().from(quoteResponses).where(eq(quoteResponses.id, id));
-    return response || undefined;
-  }
-
-  async getQuoteResponsesByRequestId(requestId: number): Promise<any[]> {
-    return await db.select().from(quoteResponses)
-      .where(eq(quoteResponses.quoteRequestId, requestId))
-      .orderBy(desc(quoteResponses.createdAt));
-  }
-
-  async updateQuoteResponse(id: number, updates: any): Promise<any | undefined> {
-    const [response] = await db.update(quoteResponses)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(quoteResponses.id, id))
-      .returning();
-    return response || undefined;
-  }
 }
 
 export const storage = new DatabaseStorage();

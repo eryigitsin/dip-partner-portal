@@ -55,6 +55,8 @@ export default function AdminDashboard() {
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [cropType, setCropType] = useState<'logo' | 'cover'>('logo');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null);
 
   const { data: applications = [] } = useQuery<PartnerApplication[]>({
     queryKey: ["/api/partner-applications"],
@@ -131,6 +133,29 @@ export default function AdminDashboard() {
     },
   });
 
+  const deletePartnerMutation = useMutation({
+    mutationFn: async (partnerId: number) => {
+      const response = await apiRequest("DELETE", `/api/partners/${partnerId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
+      toast({
+        title: "Başarılı",
+        description: "Partner başarıyla silindi",
+      });
+      setDeleteDialogOpen(false);
+      setPartnerToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Partner silinirken hata oluştu",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!user || !["master_admin", "editor_admin"].includes(user.userType)) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -179,6 +204,17 @@ export default function AdminDashboard() {
   const handleViewPartner = (partnerId: number) => {
     setSelectedPartnerId(partnerId);
     setInspectionModalOpen(true);
+  };
+
+  const handleDeletePartner = (partner: Partner) => {
+    setPartnerToDelete(partner);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePartner = () => {
+    if (partnerToDelete) {
+      deletePartnerMutation.mutate(partnerToDelete.id);
+    }
   };
 
   // Admin upload handlers
@@ -728,6 +764,14 @@ export default function AdminDashboard() {
                                 <Edit className="h-4 w-4 mr-1" />
                                 Düzenle
                               </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleDeletePartner(partner)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Sil
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -983,6 +1027,71 @@ export default function AdminDashboard() {
         title={cropType === 'logo' ? 'Logo Kırp' : 'Kapak Görseli Kırp'}
         description={cropType === 'logo' ? 'Logoyu kare formata kırpın' : 'Kapak görselini 3:1 oranında kırpın'}
       />
+      
+      {/* Delete Partner Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Partner Silme Onayı</DialogTitle>
+            <DialogDescription>
+              Bu işlem geri alınamaz. Partner silindiğinde tüm verileri kalıcı olarak kaldırılacaktır.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {partnerToDelete && (
+            <div className="py-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  {partnerToDelete.logo ? (
+                    <img 
+                      src={partnerToDelete.logo} 
+                      alt={partnerToDelete.companyName}
+                      className="w-12 h-12 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span className="text-lg font-bold text-gray-600">
+                        {partnerToDelete.companyName.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-medium text-red-900">{partnerToDelete.companyName}</div>
+                    <div className="text-sm text-red-700">{partnerToDelete.serviceCategory}</div>
+                  </div>
+                </div>
+                <div className="mt-4 text-sm text-red-800">
+                  <strong>Silinecek veriler:</strong>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Partner profil bilgileri</li>
+                    <li>Şirket logosu ve kapak görseli</li>
+                    <li>Hizmet bilgileri ve açıklamalar</li>
+                    <li>Teklif talepleri ve yanıtları</li>
+                    <li>Kullanıcı hesabı</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={deletePartnerMutation.isPending}
+            >
+              İptal
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeletePartner}
+              disabled={deletePartnerMutation.isPending}
+            >
+              {deletePartnerMutation.isPending ? "Siliniyor..." : "Partneri Sil"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
