@@ -181,6 +181,7 @@ export function QuoteResponseDialog({
   };
 
   const onSubmit = async (data: z.infer<typeof quoteResponseSchema>) => {
+    console.log('Quote submission started:', data);
     setIsSubmitting(true);
     try {
       const quoteData = {
@@ -190,12 +191,16 @@ export function QuoteResponseDialog({
         items: items.filter(item => item.description.trim() !== ""),
       };
 
+      console.log('Sending quote data:', quoteData);
       const response = await apiRequest("POST", "/api/quote-responses", quoteData);
+      console.log('Quote response created:', response);
       
       // Update quote request status to "quote_sent"
+      console.log('Updating quote request status to quote_sent');
       await apiRequest("PATCH", `/api/quote-requests/${quoteRequest.id}`, {
         status: "quote_sent"
       });
+      console.log('Quote request status updated successfully');
       
       toast({
         title: "Başarılı",
@@ -207,7 +212,7 @@ export function QuoteResponseDialog({
       console.error('Error submitting quote:', error);
       toast({
         title: "Hata",
-        description: "Teklif gönderilirken bir hata oluştu",
+        description: "Teklif gönderilirken bir hata oluştu: " + (error instanceof Error ? error.message : 'Bilinmeyen hata'),
         variant: "destructive",
       });
     } finally {

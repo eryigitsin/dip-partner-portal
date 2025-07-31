@@ -1,380 +1,178 @@
-import htmlPdf from 'html-pdf-node';
+import PDFDocument from 'pdfkit';
 import type { QuoteRequest, Partner } from '@shared/schema';
 
 export class PDFGenerator {
   static async generateQuoteRequestPDF(quoteRequest: QuoteRequest, partner?: Partner): Promise<Buffer> {
-    // Generate HTML content with proper UTF-8 encoding
-    const html = `
-    <!DOCTYPE html>
-    <html lang="tr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Teklif Talebi #${quoteRequest.id}</title>
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-            
-            body {
-                font-family: 'Arial', 'Helvetica', sans-serif;
-                line-height: 1.6;
-                color: #333;
-                background: white;
-            }
-            
-            .header {
-                background-color: #6B7280;
-                color: white;
-                padding: 30px;
-                text-align: center;
-                margin-bottom: 30px;
-            }
-            
-            .partner-info {
-                margin-bottom: 10px;
-            }
-            
-            .partner-name {
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-            
-            .title {
-                font-size: 24px;
-                font-weight: bold;
-                margin-top: 20px;
-            }
-            
-            .content {
-                padding: 0 30px;
-            }
-            
-            .section {
-                margin-bottom: 25px;
-            }
-            
-            .section-title {
-                font-size: 16px;
-                font-weight: bold;
-                color: #374151;
-                margin-bottom: 12px;
-                border-bottom: 2px solid #E5E7EB;
-                padding-bottom: 5px;
-            }
-            
-            .info-row {
-                display: flex;
-                margin-bottom: 8px;
-            }
-            
-            .info-label {
-                font-weight: bold;
-                width: 150px;
-                color: #4B5563;
-            }
-            
-            .info-value {
-                flex: 1;
-                color: #111827;
-            }
-            
-            .service-content {
-                background-color: #F9FAFB;
-                padding: 15px;
-                border-radius: 8px;
-                margin: 10px 0;
-                border-left: 4px solid #6B7280;
-                white-space: pre-wrap;
-            }
-            
-            .footer {
-                position: fixed;
-                bottom: 20px;
-                left: 0;
-                right: 0;
-                text-align: center;
-                color: #6B7280;
-                font-size: 12px;
-                padding: 20px;
-                border-top: 1px solid #E5E7EB;
-                background: white;
-            }
-            
-            .dip-logo {
-                width: 200px;
-                height: 50px;
-                margin: 0 auto 10px auto;
-                background: #6B7280;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: bold;
-                font-size: 18px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            ${partner ? `
-                <div class="partner-info">
-                    <div class="partner-name">${partner.companyName || 'Partner'}</div>
-                </div>
-            ` : ''}
-            <div class="title">Teklif Talebi #${quoteRequest.id}</div>
-        </div>
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ 
+          margin: 50,
+          bufferPages: true 
+        });
+        const buffers: Buffer[] = [];
+
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', () => {
+          const pdfData = Buffer.concat(buffers);
+          resolve(pdfData);
+        });
+
+        // Header with grey background
+        doc.rect(0, 0, doc.page.width, 120).fill('#6B7280');
         
-        <div class="content">
-            <div class="section">
-                <div class="section-title">Müşteri Bilgileri</div>
-                <div class="info-row">
-                    <div class="info-label">Ad Soyad:</div>
-                    <div class="info-value">${quoteRequest.fullName || 'Belirtilmemiş'}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">E-posta:</div>
-                    <div class="info-value">${quoteRequest.email || 'Belirtilmemiş'}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Telefon:</div>
-                    <div class="info-value">${quoteRequest.phone || 'Belirtilmemiş'}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Şirket:</div>
-                    <div class="info-value">${quoteRequest.companyName || 'Belirtilmemiş'}</div>
-                </div>
-            </div>
+        // Partner info in header
+        if (partner) {
+          doc.fillColor('white').fontSize(18).font('Helvetica-Bold');
+          doc.text(partner.companyName || 'Partner', 50, 30, { width: 300 });
+        }
+        
+        // Title
+        doc.fillColor('white').fontSize(24).font('Helvetica-Bold');
+        doc.text(`Teklif Talebi #${quoteRequest.id}`, 0, 80, { align: 'center' });
 
-            <div class="section">
-                <div class="section-title">Hizmet Detayları</div>
-                <div class="info-row">
-                    <div class="info-label">İhtiyaç Duyulan Hizmet:</div>
-                </div>
-                <div class="service-content">${(quoteRequest.serviceNeeded || 'Belirtilmemiş').replace(/\n/g, '<br>')}</div>
-                <div class="info-row">
-                    <div class="info-label">Bütçe:</div>
-                    <div class="info-value">${quoteRequest.budget || 'Belirtilmemiş'}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Durum:</div>
-                    <div class="info-value">${getStatusText(quoteRequest.status || 'pending')}</div>
-                </div>
-            </div>
+        // Reset for content
+        doc.y = 150;
+        doc.fillColor('black');
 
-            ${quoteRequest.workingStyle ? `
-            <div class="section">
-                <div class="section-title">Çalışma Şekli</div>
-                <div class="service-content">${quoteRequest.workingStyle}</div>    
-            </div>
-            ` : ''}
+        // Customer Information
+        doc.fontSize(16).font('Helvetica-Bold');
+        doc.text('Müşteri Bilgileri', 50, doc.y);
+        doc.moveDown(0.5);
 
-            ${quoteRequest.additionalNotes ? `
-            <div class="section">
-                <div class="section-title">Müşteri Notları</div>
-                <div class="service-content">${quoteRequest.additionalNotes}</div>
-            </div>
-            ` : ''}
+        doc.fontSize(12).font('Helvetica');
+        const customerInfo = [
+          ['Ad Soyad:', quoteRequest.fullName || 'Belirtilmemiş'],
+          ['E-posta:', quoteRequest.email || 'Belirtilmemiş'],
+          ['Telefon:', quoteRequest.phone || 'Belirtilmemiş'],
+          ['Şirket:', quoteRequest.companyName || 'Belirtilmemiş']
+        ];
 
-            <div class="section">
-                <div class="section-title">Talep Bilgileri</div>
-                <div class="info-row">
-                    <div class="info-label">Talep Tarihi:</div>
-                    <div class="info-value">${quoteRequest.createdAt ? new Date(quoteRequest.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Son Güncelleme:</div>
-                    <div class="info-value">${quoteRequest.updatedAt ? new Date(quoteRequest.updatedAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}</div>
-                </div>
-            </div>
-        </div>
+        customerInfo.forEach(([label, value]) => {
+          doc.font('Helvetica-Bold').text(label, 50, doc.y, { width: 120, continued: true });
+          doc.font('Helvetica').text(' ' + value);
+          doc.moveDown(0.3);
+        });
 
-        <div class="footer">
-            <div class="dip-logo">DİP</div>
-            <div><strong>DİP - Digital İhracat Platformu</strong></div>
-            <div>https://partner.dip.tc</div>
-        </div>
-    </body>
-    </html>
-    `;
+        doc.moveDown(1);
 
-    const options = {
-      format: 'A4',
-      border: {
-        top: '0',
-        right: '0',
-        bottom: '0',
-        left: '0'
-      },
-      encoding: 'utf-8',
-      displayHeaderFooter: true,
-      printBackground: true
-    };
+        // Service Details
+        doc.fontSize(16).font('Helvetica-Bold');
+        doc.text('Hizmet Detayları', 50, doc.y);
+        doc.moveDown(0.5);
 
-    try {
-      const file = { content: html };
-      const pdfBuffer = await htmlPdf.generatePdf(file, options);
-      return pdfBuffer;
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      throw new Error('Failed to generate PDF');
-    }
+        doc.fontSize(12).font('Helvetica');
+        doc.font('Helvetica-Bold').text('İhtiyaç Duyulan Hizmet:', 50, doc.y);
+        doc.moveDown(0.3);
+        doc.font('Helvetica').text(quoteRequest.serviceNeeded || 'Belirtilmemiş', 50, doc.y, { width: 500 });
+        doc.moveDown(0.5);
+
+        const serviceInfo = [
+          ['Bütçe:', quoteRequest.budget || 'Belirtilmemiş'],
+          ['Durum:', getStatusText(quoteRequest.status || 'pending')]
+        ];
+
+        serviceInfo.forEach(([label, value]) => {
+          doc.font('Helvetica-Bold').text(label, 50, doc.y, { width: 120, continued: true });
+          doc.font('Helvetica').text(' ' + value);
+          doc.moveDown(0.3);
+        });
+
+        doc.moveDown(1);
+
+        // Request Information
+        doc.fontSize(16).font('Helvetica-Bold');
+        doc.text('Talep Bilgileri', 50, doc.y);
+        doc.moveDown(0.5);
+
+        doc.fontSize(12).font('Helvetica');
+        const requestInfo = [
+          ['Talep Tarihi:', quoteRequest.createdAt ? new Date(quoteRequest.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'],
+          ['Son Güncelleme:', quoteRequest.updatedAt ? new Date(quoteRequest.updatedAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş']
+        ];
+
+        requestInfo.forEach(([label, value]) => {
+          doc.font('Helvetica-Bold').text(label, 50, doc.y, { width: 150, continued: true });
+          doc.font('Helvetica').text(' ' + value);
+          doc.moveDown(0.3);
+        });
+
+        // Footer
+        const footerY = doc.page.height - 80;
+        doc.y = footerY;
+        
+        doc.rect(0, footerY - 20, doc.page.width, 100).fill('#F9FAFB');
+        
+        doc.fillColor('black').fontSize(10).font('Helvetica');
+        doc.text('DİP - Digital İhracat Platformu', 0, footerY, { align: 'center' });
+        doc.text('https://partner.dip.tc', 0, footerY + 15, { align: 'center' });
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   static async generateQuoteResponsePDF(quoteResponse: any, quoteRequest: QuoteRequest, partner?: Partner): Promise<Buffer> {
-    // Similar HTML generation for quote responses
-    const html = `
-    <!DOCTYPE html>
-    <html lang="tr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Teklif Yanıtı #${quoteResponse.id}</title>
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-            
-            body {
-                font-family: 'Arial', 'Helvetica', sans-serif;
-                line-height: 1.6;
-                color: #333;
-                background: white;
-            }
-            
-            .header {
-                background-color: #6B7280;
-                color: white;
-                padding: 30px;
-                text-align: center;
-                margin-bottom: 30px;
-            }
-            
-            .title {
-                font-size: 24px;
-                font-weight: bold;
-            }
-            
-            .content {
-                padding: 0 30px;
-            }
-            
-            .section {
-                margin-bottom: 25px;
-            }
-            
-            .section-title {
-                font-size: 16px;
-                font-weight: bold;
-                color: #374151;
-                margin-bottom: 12px;
-                border-bottom: 2px solid #E5E7EB;
-                padding-bottom: 5px;
-            }
-            
-            .info-row {
-                display: flex;
-                margin-bottom: 8px;
-            }
-            
-            .info-label {
-                font-weight: bold;
-                width: 150px;
-                color: #4B5563;
-            }
-            
-            .info-value {
-                flex: 1;
-                color: #111827;
-            }
-            
-            .footer {
-                position: fixed;
-                bottom: 20px;
-                left: 0;
-                right: 0;
-                text-align: center;
-                color: #6B7280;
-                font-size: 12px;
-                padding: 20px;
-            }
-            
-            .dip-logo {
-                width: 200px;
-                height: 50px;
-                margin: 0 auto 10px auto;
-                background: #6B7280;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: bold;
-                font-size: 18px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <div class="title">Teklif Yanıtı #${quoteResponse.id}</div>
-        </div>
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ 
+          margin: 50,
+          bufferPages: true 
+        });
+        const buffers: Buffer[] = [];
+
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', () => {
+          const pdfData = Buffer.concat(buffers);
+          resolve(pdfData);
+        });
+
+        // Header with grey background
+        doc.rect(0, 0, doc.page.width, 120).fill('#6B7280');
         
-        <div class="content">
-            <div class="section">
-                <div class="section-title">Teklif Detayları</div>
-                <div class="info-row">
-                    <div class="info-label">Başlık:</div>
-                    <div class="info-value">${quoteResponse.title || 'Belirtilmemiş'}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Açıklama:</div>
-                    <div class="info-value">${quoteResponse.description || 'Belirtilmemiş'}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Fiyat:</div>
-                    <div class="info-value">${quoteResponse.price} ${quoteResponse.currency}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Teslimat Süresi:</div>
-                    <div class="info-value">${quoteResponse.deliveryTime || 'Belirtilmemiş'}</div>
-                </div>
-            </div>
-        </div>
+        // Title
+        doc.fillColor('white').fontSize(24).font('Helvetica-Bold');
+        doc.text(`Teklif Yanıtı #${quoteResponse.id}`, 0, 80, { align: 'center' });
 
-        <div class="footer">
-            <div class="dip-logo">DİP</div>
-            <div><strong>DİP - Digital İhracat Platformu</strong></div>
-            <div>https://partner.dip.tc</div>
-        </div>
-    </body>
-    </html>
-    `;
+        // Reset for content
+        doc.y = 150;
+        doc.fillColor('black');
 
-    const options = {
-      format: 'A4',
-      border: {
-        top: '0',
-        right: '0',
-        bottom: '0',
-        left: '0'
-      },
-      encoding: 'utf-8',
-      displayHeaderFooter: true,
-      printBackground: true
-    };
+        // Quote Details
+        doc.fontSize(16).font('Helvetica-Bold');
+        doc.text('Teklif Detayları', 50, doc.y);
+        doc.moveDown(0.5);
 
-    try {
-      const file = { content: html };
-      const pdfBuffer = await htmlPdf.generatePdf(file, options);
-      return pdfBuffer;
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      throw new Error('Failed to generate PDF');
-    }
+        doc.fontSize(12).font('Helvetica');
+        const quoteInfo = [
+          ['Başlık:', quoteResponse.title || 'Belirtilmemiş'],
+          ['Açıklama:', quoteResponse.description || 'Belirtilmemiş'],
+          ['Fiyat:', `${quoteResponse.price} ${quoteResponse.currency}`],
+          ['Teslimat Süresi:', quoteResponse.deliveryTime || 'Belirtilmemiş']
+        ];
+
+        quoteInfo.forEach(([label, value]) => {
+          doc.font('Helvetica-Bold').text(label, 50, doc.y, { width: 120, continued: true });
+          doc.font('Helvetica').text(' ' + value);
+          doc.moveDown(0.3);
+        });
+
+        // Footer
+        const footerY = doc.page.height - 80;
+        doc.y = footerY;
+        
+        doc.rect(0, footerY - 20, doc.page.width, 100).fill('#F9FAFB');
+        
+        doc.fillColor('black').fontSize(10).font('Helvetica');
+        doc.text('DİP - Digital İhracat Platformu', 0, footerY, { align: 'center' });
+        doc.text('https://partner.dip.tc', 0, footerY + 15, { align: 'center' });
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 }
 
