@@ -13,9 +13,6 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import { supabaseStorage } from "./supabase-storage";
-import { PDFGenerator } from './services/pdf-generator.js';
-import { sendEmail as sendResendEmail, createQuoteSentEmailTemplate, createQuoteStatusUpdateEmailTemplate } from './services/email-service.js';
-import { resendService } from './services/resend-service.js';
 
 // Email templates and functionality
 const emailTemplates = {
@@ -2200,19 +2197,42 @@ export function registerRoutes(app: Express): Server {
       try {
         const user = await storage.getUserById(quoteRequest.userId!);
         if (user) {
-          const userName = `${user.firstName} ${user.lastName}`;
-          const emailTemplate = createQuoteSentEmailTemplate(
-            userName,
-            partner.companyName,
-            responseData.title,
-            responseData.total / 100,
-            new Date(responseData.validUntil).toLocaleDateString('tr-TR')
-          );
+          // Create email template for quote sent notification
+          const emailContent = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px;">Teklifiniz Hazır!</h1>
+              </div>
+              <div style="padding: 30px; background: #f8f9fa;">
+                <p>Merhaba ${user.fullName || user.firstName + ' ' + user.lastName},</p>
+                <p><strong>${partner.companyName}</strong> firması, "${quoteRequest.serviceNeeded}" hizmet talebiniz için bir teklif gönderdi.</p>
+                <p><strong>Teklif Detayları:</strong></p>
+                <ul>
+                  <li>Teklif Başlığı: ${responseData.title}</li>
+                  <li>Toplam Tutar: ${(responseData.total / 100).toFixed(2)} TL</li>
+                  <li>Geçerlilik Süresi: ${new Date(responseData.validUntil).toLocaleDateString('tr-TR')}</li>
+                </ul>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${process.env.CLIENT_URL}/user-dashboard?tab=requests" 
+                     style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Teklifi İncele
+                  </a>
+                </div>
+                <p style="color: #666; font-size: 14px;">
+                  Bu teklifi inceleyerek kabul veya ret edebilirsiniz. Herhangi bir sorunuz olursa bizimle iletişime geçin.
+                </p>
+              </div>
+              <div style="background: #fff; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+                <img src="https://partner.dip.tc/dip-logo-white.png" alt="DİP Logo" style="height: 30px; filter: invert(1);">
+                <p style="margin: 10px 0 0 0; color: #666; font-size: 12px;">DİP - Dijital İhracat Platformu</p>
+              </div>
+            </div>
+          `;
 
-          await sendResendEmail({
+          await sendEmail({
             to: user.email,
             subject: `${partner.companyName} - Yeni Teklif Aldınız!`,
-            html: emailTemplate,
+            html: emailContent,
           });
         }
       } catch (emailError) {
@@ -2297,84 +2317,6 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error updating quote response status:', error);
       res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  // PDF Generation Routes
-  app.get('/api/quote-requests/:id/pdf', async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    try {
-      const requestId = parseInt(req.params.id);
-      const quoteRequest = await storage.getQuoteRequestById(requestId);
-      
-      if (!quoteRequest) {
-        return res.status(404).json({ error: 'Quote request not found' });
-      }
-
-      // Check permissions
-      const user = req.user;
-      const partner = await storage.getPartnerByUserId(user.id);
-      const canAccess = 
-        (user.userType === 'partner' && partner && partner.id === quoteRequest.partnerId) ||
-        (user.userType === 'user' && quoteRequest.userId === user.id) ||
-        (user.userType === 'master_admin' || user.userType === 'editor_admin');
-
-      if (!canAccess) {
-        return res.status(403).json({ error: 'Unauthorized' });
-      }
-
-      const partnerData = partner || await storage.getPartner(quoteRequest.partnerId!);
-      const pdfBuffer = await PDFGenerator.generateQuoteRequestPDF(quoteRequest, partnerData || undefined);
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="Teklif-Talebi-${quoteRequest.id}.pdf"`);
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error('Error generating quote request PDF:', error);
-      res.status(500).json({ error: 'Failed to generate PDF' });
-    }
-  });
-
-  app.get('/api/quote-responses/:id/pdf', async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    try {
-      const responseId = parseInt(req.params.id);
-      const quoteResponse = await storage.getQuoteResponseById(responseId);
-      
-      if (!quoteResponse) {
-        return res.status(404).json({ error: 'Quote response not found' });
-      }
-
-      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
-      if (!quoteRequest) {
-        return res.status(404).json({ error: 'Quote request not found' });
-      }
-
-      // Check permissions
-      const user = req.user;
-      const partner = await storage.getPartnerByUserId(user.id);
-      const canAccess = 
-        (user.userType === 'partner' && partner && partner.id === quoteResponse.partnerId) ||
-        (user.userType === 'user' && quoteRequest.userId === user.id) ||
-        (user.userType === 'master_admin' || user.userType === 'editor_admin');
-
-      if (!canAccess) {
-        return res.status(403).json({ error: 'Unauthorized' });
-      }
-
-      const partnerData = await storage.getPartner(quoteResponse.partnerId);
-      if (!partnerData) {
-        return res.status(404).json({ error: 'Partner not found' });
-      }
-
-      const pdfBuffer = await PDFGenerator.generateQuoteResponsePDF(quoteResponse, quoteRequest, partnerData);
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="Teklif-${quoteResponse.id}.pdf"`);
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error('Error generating quote response PDF:', error);
-      res.status(500).json({ error: 'Failed to generate PDF' });
     }
   });
 
