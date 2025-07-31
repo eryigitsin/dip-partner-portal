@@ -1,32 +1,36 @@
-import { MailService } from '@sendgrid/mail';
+import { Resend } from 'resend';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
+if (!process.env.RESEND_API_KEY) {
+  throw new Error("RESEND_API_KEY environment variable must be set");
 }
 
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface EmailParams {
   to: string | string[];
-  from: string;
   subject: string;
-  text?: string;
-  html?: string;
+  html: string;
+  from?: string;
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
-    await mailService.send({
-      to: params.to,
-      from: params.from,
+    const { data, error } = await resend.emails.send({
+      from: params.from || 'DİP Platform <noreply@dip.tc>',
+      to: Array.isArray(params.to) ? params.to : [params.to],
       subject: params.subject,
-      text: params.text || '',
       html: params.html,
     });
+
+    if (error) {
+      console.error('Resend email error:', error);
+      return false;
+    }
+
+    console.log('Email sent successfully:', data);
     return true;
   } catch (error) {
-    console.error('SendGrid email error:', error);
+    console.error('Email sending error:', error);
     return false;
   }
 }

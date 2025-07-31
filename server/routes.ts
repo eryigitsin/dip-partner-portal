@@ -2204,7 +2204,7 @@ export function registerRoutes(app: Express): Server {
                 <h1 style="margin: 0; font-size: 24px;">Teklifiniz Hazır!</h1>
               </div>
               <div style="padding: 30px; background: #f8f9fa;">
-                <p>Merhaba ${user.fullName || user.firstName + ' ' + user.lastName},</p>
+                <p>Merhaba ${user.firstName} ${user.lastName},</p>
                 <p><strong>${partner.companyName}</strong> firması, "${quoteRequest.serviceNeeded}" hizmet talebiniz için bir teklif gönderdi.</p>
                 <p><strong>Teklif Detayları:</strong></p>
                 <ul>
@@ -2317,6 +2317,89 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error updating quote response status:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // PDF Download Routes
+  app.get('/api/quote-requests/:id/pdf', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const requestId = parseInt(req.params.id);
+      const quoteRequest = await storage.getQuoteRequestById(requestId);
+      
+      if (!quoteRequest) {
+        return res.status(404).json({ error: 'Quote request not found' });
+      }
+      
+      // Check permissions
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      const canView = 
+        (user!.userType === 'partner' && partner && partner.id === quoteRequest.partnerId) ||
+        (user!.userType === 'user' && quoteRequest.userId === user!.id) ||
+        (user!.userType === 'master_admin' || user!.userType === 'editor_admin');
+      
+      if (!canView) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      const { PDFGenerator } = await import('./pdf-generator.js');
+      const generator = new PDFGenerator();
+      
+      await generator.generateQuoteRequestPDF({
+        quoteRequest,
+        partner: partner || undefined,
+        type: 'quote_request'
+      }, res);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+  });
+
+  app.get('/api/quote-responses/:id/pdf', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const responseId = parseInt(req.params.id);
+      const quoteResponse = await storage.getQuoteResponseById(responseId);
+      
+      if (!quoteResponse) {
+        return res.status(404).json({ error: 'Quote response not found' });
+      }
+      
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest) {
+        return res.status(404).json({ error: 'Related quote request not found' });
+      }
+      
+      // Check permissions
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      const canView = 
+        (user!.userType === 'partner' && partner && partner.id === quoteRequest.partnerId) ||
+        (user!.userType === 'user' && quoteRequest.userId === user!.id) ||
+        (user!.userType === 'master_admin' || user!.userType === 'editor_admin');
+      
+      if (!canView) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      const { PDFGenerator } = await import('./pdf-generator.js');
+      const generator = new PDFGenerator();
+      
+      await generator.generateQuoteResponsePDF({
+        quoteRequest,
+        partner: partner || undefined,
+        quoteResponse,
+        type: 'quote_response'
+      }, res);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      res.status(500).json({ error: 'Failed to generate PDF' });
     }
   });
 

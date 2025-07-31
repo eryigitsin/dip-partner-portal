@@ -91,12 +91,27 @@ export function QuoteResponseDialog({
   const parseServiceItems = (serviceNeeded: string) => {
     // Split services by common separators and create initial items
     const services = serviceNeeded.split(/[,\n\r;]+/).map(s => s.trim()).filter(s => s.length > 0);
-    return services.map(service => ({
+    
+    // Filter out "Çalışma Şekli" items as they should go to notes
+    const filteredServices = services.filter(service => 
+      !service.toLowerCase().includes('çalışma şekli')
+    );
+    
+    return filteredServices.map(service => ({
       description: service,
       quantity: 1,
       unitPrice: 0,
       total: 0
     }));
+  };
+
+  // Extract work style from service description for notes
+  const extractWorkStyle = (serviceNeeded: string) => {
+    const lines = serviceNeeded.split(/[,\n\r;]+/).map(s => s.trim()).filter(s => s.length > 0);
+    const workStyleLine = lines.find(line => 
+      line.toLowerCase().includes('çalışma şekli')
+    );
+    return workStyleLine || '';
   };
 
   const initialItems = parseServiceItems(quoteRequest.serviceNeeded || "");
@@ -126,7 +141,7 @@ export function QuoteResponseDialog({
       taxAmount: 0,
       total: 0,
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-      notes: "",
+      notes: extractWorkStyle(quoteRequest.serviceNeeded || ''),
       paymentTerms: "Hizmet teslimi sonrası 30 gün içinde ödeme",
       deliveryTime: "15 iş günü",
     },
