@@ -1,178 +1,190 @@
-import PDFDocument from 'pdfkit';
+import { jsPDF } from 'jspdf';
 import type { QuoteRequest, Partner } from '@shared/schema';
 
 export class PDFGenerator {
   static async generateQuoteRequestPDF(quoteRequest: QuoteRequest, partner?: Partner): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ 
-          margin: 50,
-          bufferPages: true 
-        });
-        const buffers: Buffer[] = [];
-
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => {
-          const pdfData = Buffer.concat(buffers);
-          resolve(pdfData);
-        });
-
-        // Header with grey background
-        doc.rect(0, 0, doc.page.width, 120).fill('#6B7280');
-        
-        // Partner info in header
-        if (partner) {
-          doc.fillColor('white').fontSize(18).font('Helvetica-Bold');
-          doc.text(partner.companyName || 'Partner', 50, 30, { width: 300 });
-        }
-        
-        // Title
-        doc.fillColor('white').fontSize(24).font('Helvetica-Bold');
-        doc.text(`Teklif Talebi #${quoteRequest.id}`, 0, 80, { align: 'center' });
-
-        // Reset for content
-        doc.y = 150;
-        doc.fillColor('black');
-
-        // Customer Information
-        doc.fontSize(16).font('Helvetica-Bold');
-        doc.text('Müşteri Bilgileri', 50, doc.y);
-        doc.moveDown(0.5);
-
-        doc.fontSize(12).font('Helvetica');
-        const customerInfo = [
-          ['Ad Soyad:', quoteRequest.fullName || 'Belirtilmemiş'],
-          ['E-posta:', quoteRequest.email || 'Belirtilmemiş'],
-          ['Telefon:', quoteRequest.phone || 'Belirtilmemiş'],
-          ['Şirket:', quoteRequest.companyName || 'Belirtilmemiş']
-        ];
-
-        customerInfo.forEach(([label, value]) => {
-          doc.font('Helvetica-Bold').text(label, 50, doc.y, { width: 120, continued: true });
-          doc.font('Helvetica').text(' ' + value);
-          doc.moveDown(0.3);
-        });
-
-        doc.moveDown(1);
-
-        // Service Details
-        doc.fontSize(16).font('Helvetica-Bold');
-        doc.text('Hizmet Detayları', 50, doc.y);
-        doc.moveDown(0.5);
-
-        doc.fontSize(12).font('Helvetica');
-        doc.font('Helvetica-Bold').text('İhtiyaç Duyulan Hizmet:', 50, doc.y);
-        doc.moveDown(0.3);
-        doc.font('Helvetica').text(quoteRequest.serviceNeeded || 'Belirtilmemiş', 50, doc.y, { width: 500 });
-        doc.moveDown(0.5);
-
-        const serviceInfo = [
-          ['Bütçe:', quoteRequest.budget || 'Belirtilmemiş'],
-          ['Durum:', getStatusText(quoteRequest.status || 'pending')]
-        ];
-
-        serviceInfo.forEach(([label, value]) => {
-          doc.font('Helvetica-Bold').text(label, 50, doc.y, { width: 120, continued: true });
-          doc.font('Helvetica').text(' ' + value);
-          doc.moveDown(0.3);
-        });
-
-        doc.moveDown(1);
-
-        // Request Information
-        doc.fontSize(16).font('Helvetica-Bold');
-        doc.text('Talep Bilgileri', 50, doc.y);
-        doc.moveDown(0.5);
-
-        doc.fontSize(12).font('Helvetica');
-        const requestInfo = [
-          ['Talep Tarihi:', quoteRequest.createdAt ? new Date(quoteRequest.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'],
-          ['Son Güncelleme:', quoteRequest.updatedAt ? new Date(quoteRequest.updatedAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş']
-        ];
-
-        requestInfo.forEach(([label, value]) => {
-          doc.font('Helvetica-Bold').text(label, 50, doc.y, { width: 150, continued: true });
-          doc.font('Helvetica').text(' ' + value);
-          doc.moveDown(0.3);
-        });
-
-        // Footer
-        const footerY = doc.page.height - 80;
-        doc.y = footerY;
-        
-        doc.rect(0, footerY - 20, doc.page.width, 100).fill('#F9FAFB');
-        
-        doc.fillColor('black').fontSize(10).font('Helvetica');
-        doc.text('DİP - Digital İhracat Platformu', 0, footerY, { align: 'center' });
-        doc.text('https://partner.dip.tc', 0, footerY + 15, { align: 'center' });
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
+    const doc = new jsPDF();
+    
+    // PDF dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    let yPosition = 20;
+    
+    // Header with blue background (matching HTML template)
+    doc.setFillColor(37, 99, 235); // #2563eb
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    // Header text
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text('DİP - Dijital İhracat Platformu', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.text(`Teklif Talebi #${quoteRequest.id}`, pageWidth / 2, 35, { align: 'center' });
+    
+    yPosition = 70;
+    
+    // Reset text color for content
+    doc.setTextColor(0, 0, 0);
+    
+    // Section: Customer Information
+    yPosition = this.addSection(doc, 'Müşteri Bilgileri', yPosition, margin, contentWidth);
+    
+    const customerInfo: [string, string][] = [
+      ['Ad Soyad:', quoteRequest.fullName || 'Belirtilmemiş'],
+      ['E-posta:', quoteRequest.email || 'Belirtilmemiş'],
+      ['Telefon:', quoteRequest.phone || 'Belirtilmemiş'],
+      ['Şirket:', quoteRequest.companyName || 'Belirtilmemiş']
+    ];
+    
+    yPosition = this.addInfoRows(doc, customerInfo, yPosition, margin);
+    yPosition += 10;
+    
+    // Section: Service Details
+    yPosition = this.addSection(doc, 'Hizmet Detayları', yPosition, margin, contentWidth);
+    
+    // Service needed (with proper text wrapping)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text('İhtiyaç Duyulan Hizmet:', margin, yPosition);
+    yPosition += 6;
+    
+    doc.setFont("helvetica", "normal");
+    const serviceText = quoteRequest.serviceNeeded || 'Belirtilmemiş';
+    const serviceLines = doc.splitTextToSize(serviceText, contentWidth - 20);
+    doc.text(serviceLines, margin + 10, yPosition);
+    yPosition += serviceLines.length * 5 + 10;
+    
+    // Working style if exists - using message field instead
+    if (quoteRequest.message) {
+      doc.setFont("helvetica", "bold");
+      doc.text('Çalışma Şekli:', margin, yPosition);
+      doc.setFont("helvetica", "normal");
+      doc.text(quoteRequest.message, margin + 40, yPosition);
+      yPosition += 8;
+    }
+    
+    const serviceInfo: [string, string][] = [
+      ['Bütçe:', quoteRequest.budget || 'Belirtilmemiş'],
+      ['Durum:', getStatusText(quoteRequest.status || 'pending')]
+    ];
+    
+    yPosition = this.addInfoRows(doc, serviceInfo, yPosition, margin);
+    yPosition += 10;
+    
+    // Section: Customer Message (if exists) - using message field
+    if (quoteRequest.message) {
+      yPosition = this.addSection(doc, 'Müşteri Mesajı', yPosition, margin, contentWidth);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const messageLines = doc.splitTextToSize(quoteRequest.message, contentWidth - 20);
+      doc.text(messageLines, margin + 10, yPosition);
+      yPosition += messageLines.length * 5 + 15;
+    }
+    
+    // Section: Request Information
+    yPosition = this.addSection(doc, 'Talep Bilgileri', yPosition, margin, contentWidth);
+    
+    const requestInfo: [string, string][] = [
+      ['Talep Tarihi:', quoteRequest.createdAt ? new Date(quoteRequest.createdAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş'],
+      ['Son Güncelleme:', quoteRequest.updatedAt ? new Date(quoteRequest.updatedAt).toLocaleDateString('tr-TR') : 'Belirtilmemiş']
+    ];
+    
+    yPosition = this.addInfoRows(doc, requestInfo, yPosition, margin);
+    
+    // Footer
+    const footerY = doc.internal.pageSize.getHeight() - 20;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('DİP - Digital İhracat Platformu | https://partner.dip.tc', pageWidth / 2, footerY, { align: 'center' });
+    
+    return Buffer.from(doc.output('arraybuffer'));
+  }
+  
+  private static addSection(doc: jsPDF, title: string, yPosition: number, margin: number, contentWidth: number): number {
+    // Section background (light border)
+    doc.setDrawColor(229, 231, 235); // #e5e7eb
+    doc.setLineWidth(0.5);
+    doc.rect(margin, yPosition - 5, contentWidth, 20, 'S');
+    
+    // Section title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(55, 65, 81); // #374151
+    doc.text(title, margin + 5, yPosition + 5);
+    
+    return yPosition + 20;
+  }
+  
+  private static addInfoRows(doc: jsPDF, info: Array<[string, string]>, yPosition: number, margin: number): number {
+    doc.setFontSize(10);
+    
+    info.forEach(([label, value]) => {
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(55, 65, 81); // #374151
+      doc.text(label, margin + 10, yPosition);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(17, 24, 39); // #111827
+      doc.text(value, margin + 60, yPosition);
+      
+      yPosition += 6;
     });
+    
+    return yPosition;
   }
 
   static async generateQuoteResponsePDF(quoteResponse: any, quoteRequest: QuoteRequest, partner?: Partner): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ 
-          margin: 50,
-          bufferPages: true 
-        });
-        const buffers: Buffer[] = [];
-
-        doc.on('data', buffers.push.bind(buffers));
-        doc.on('end', () => {
-          const pdfData = Buffer.concat(buffers);
-          resolve(pdfData);
-        });
-
-        // Header with grey background
-        doc.rect(0, 0, doc.page.width, 120).fill('#6B7280');
-        
-        // Title
-        doc.fillColor('white').fontSize(24).font('Helvetica-Bold');
-        doc.text(`Teklif Yanıtı #${quoteResponse.id}`, 0, 80, { align: 'center' });
-
-        // Reset for content
-        doc.y = 150;
-        doc.fillColor('black');
-
-        // Quote Details
-        doc.fontSize(16).font('Helvetica-Bold');
-        doc.text('Teklif Detayları', 50, doc.y);
-        doc.moveDown(0.5);
-
-        doc.fontSize(12).font('Helvetica');
-        const quoteInfo = [
-          ['Başlık:', quoteResponse.title || 'Belirtilmemiş'],
-          ['Açıklama:', quoteResponse.description || 'Belirtilmemiş'],
-          ['Fiyat:', `${quoteResponse.price} ${quoteResponse.currency}`],
-          ['Teslimat Süresi:', quoteResponse.deliveryTime || 'Belirtilmemiş']
-        ];
-
-        quoteInfo.forEach(([label, value]) => {
-          doc.font('Helvetica-Bold').text(label, 50, doc.y, { width: 120, continued: true });
-          doc.font('Helvetica').text(' ' + value);
-          doc.moveDown(0.3);
-        });
-
-        // Footer
-        const footerY = doc.page.height - 80;
-        doc.y = footerY;
-        
-        doc.rect(0, footerY - 20, doc.page.width, 100).fill('#F9FAFB');
-        
-        doc.fillColor('black').fontSize(10).font('Helvetica');
-        doc.text('DİP - Digital İhracat Platformu', 0, footerY, { align: 'center' });
-        doc.text('https://partner.dip.tc', 0, footerY + 15, { align: 'center' });
-
-        doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
+    const doc = new jsPDF();
+    
+    // PDF dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    let yPosition = 20;
+    
+    // Header with blue background
+    doc.setFillColor(37, 99, 235); // #2563eb
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    // Header text
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text('DİP - Dijital İhracat Platformu', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.text(`Teklif Yanıtı #${quoteResponse.id}`, pageWidth / 2, 35, { align: 'center' });
+    
+    yPosition = 70;
+    
+    // Reset text color for content
+    doc.setTextColor(0, 0, 0);
+    
+    // Section: Quote Details
+    yPosition = this.addSection(doc, 'Teklif Detayları', yPosition, margin, contentWidth);
+    
+    const quoteInfo: [string, string][] = [
+      ['Başlık:', quoteResponse.title || 'Belirtilmemiş'],
+      ['Açıklama:', quoteResponse.description || 'Belirtilmemiş'],
+      ['Fiyat:', `${quoteResponse.price} ${quoteResponse.currency}`],
+      ['Teslimat Süresi:', quoteResponse.deliveryTime || 'Belirtilmemiş']
+    ];
+    
+    yPosition = this.addInfoRows(doc, quoteInfo, yPosition, margin);
+    
+    // Footer
+    const footerY = doc.internal.pageSize.getHeight() - 20;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('DİP - Digital İhracat Platformu | https://partner.dip.tc', pageWidth / 2, footerY, { align: 'center' });
+    
+    return Buffer.from(doc.output('arraybuffer'));
   }
 }
 
