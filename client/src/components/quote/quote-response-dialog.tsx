@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -10,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { QuoteRequest } from "@shared/schema";
+import { QuoteRequest, Partner } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import ServiceAutocomplete from "@/components/ui/service-autocomplete";
 import { 
   Plus, 
   Minus, 
@@ -66,10 +69,48 @@ export function QuoteResponseDialog({
   onSuccess 
 }: QuoteResponseDialogProps) {
   const { toast } = useToast();
-  const [items, setItems] = useState<QuoteItem[]>([
-    { description: "", quantity: 1, unitPrice: 0, total: 0 }
-  ]);
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get partner data for services
+  const { data: partner } = useQuery<Partner>({
+    queryKey: ["/api/partners", "me"],
+    enabled: !!user && user.userType === "partner",
+  });
+
+  const generateQuoteTitle = () => {
+    const currentDate = new Date().toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric'
+    });
+    const companyName = quoteRequest.companyName || quoteRequest.fullName;
+    return `${companyName} - ${currentDate} - DİP'e Özel Proje Teklifi`;
+  };
+
+  const parseServiceItems = (serviceNeeded: string) => {
+    // Split services by common separators and create initial items
+    const services = serviceNeeded.split(/[,\n\r;]+/).map(s => s.trim()).filter(s => s.length > 0);
+    return services.map(service => ({
+      description: service,
+      quantity: 1,
+      unitPrice: 0,
+      total: 0
+    }));
+  };
+
+  const initialItems = parseServiceItems(quoteRequest.serviceNeeded || "");
+  const [items, setItems] = useState<QuoteItem[]>(
+    initialItems.length > 0 ? initialItems : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]
+  );
+
+  // Reset items when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      const newInitialItems = parseServiceItems(quoteRequest.serviceNeeded || "");
+      setItems(newInitialItems.length > 0 ? newInitialItems : [{ description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    }
+  }, [isOpen, quoteRequest.serviceNeeded]);
 
   // Generate a random quote number
   const quoteNumber = `DIP${new Date().getFullYear()}${String(Math.floor(Math.random() * 1000000)).padStart(6, '0')}`;
@@ -77,7 +118,7 @@ export function QuoteResponseDialog({
   const form = useForm<z.infer<typeof quoteResponseSchema>>({
     resolver: zodResolver(quoteResponseSchema),
     defaultValues: {
-      title: `${quoteRequest.serviceNeeded} Hizmeti için Teklif`,
+      title: generateQuoteTitle(),
       description: "",
       items: [],
       subtotal: 0,
@@ -135,11 +176,16 @@ export function QuoteResponseDialog({
         items: items.filter(item => item.description.trim() !== ""),
       };
 
-      await apiRequest("POST", "/api/quote-responses", quoteData);
+      const response = await apiRequest("POST", "/api/quote-responses", quoteData);
+      
+      // Update quote request status to "quote_sent"
+      await apiRequest("PATCH", `/api/quote-requests/${quoteRequest.id}`, {
+        status: "quote_sent"
+      });
       
       toast({
         title: "Başarılı",
-        description: "Teklifiniz başarıyla gönderildi",
+        description: "Teklifiniz başarıyla gönderildi ve müşteriye iletildi",
       });
       
       onSuccess();
@@ -233,11 +279,12 @@ export function QuoteResponseDialog({
                   {items.map((item, index) => (
                     <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 border rounded-lg">
                       <div className="col-span-5">
-                        <label className="text-sm font-medium">Hizmet Açıklaması</label>
-                        <Input
+                        <label className="text-sm font-medium">Hizmet Adı</label>
+                        <ServiceAutocomplete
+                          partnerServices={partner?.services ? partner.services.split(',').map(s => s.trim()) : []}
                           value={item.description}
-                          onChange={(e) => updateItem(index, 'description', e.target.value)}
-                          placeholder="Hizmet açıklaması"
+                          onChange={(value) => updateItem(index, 'description', value)}
+                          placeholder="Hizmetlerinizden seçin."
                         />
                       </div>
                       

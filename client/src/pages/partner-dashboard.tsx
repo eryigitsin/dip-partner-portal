@@ -101,7 +101,7 @@ export default function PartnerDashboard() {
           <p><strong>Bütçe:</strong> ${request.budget || 'Belirtilmedi'}</p>
           <p><strong>Mesaj:</strong> ${request.message || 'Mesaj yok'}</p>
           <h2>Talep Tarihi</h2>
-          <p>${new Date(request.createdAt).toLocaleDateString('tr-TR')}</p>
+          <p>${request.createdAt ? new Date(request.createdAt).toLocaleDateString('tr-TR') : 'Tarih belirtilmemiş'}</p>
         </body>
       </html>
     `;
@@ -295,7 +295,7 @@ export default function PartnerDashboard() {
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
                             <h4 className="font-medium">
-                              {quote.firstName || ''} {quote.lastName || ''}
+                              {quote.fullName || ''}
                             </h4>
                             <Badge className={getStatusColor(quote.status || 'pending')}>
                               <div className="flex items-center space-x-1">
@@ -304,7 +304,7 @@ export default function PartnerDashboard() {
                               </div>
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{quote.company || ''}</p>
+                          <p className="text-sm text-gray-600 mt-1">{quote.companyName || ''}</p>
                           <p className="text-sm text-gray-500 mt-1 line-clamp-2">
                             {quote.serviceNeeded || ''}
                           </p>
@@ -366,7 +366,7 @@ export default function PartnerDashboard() {
                           <TableCell>
                             <div>
                               <div className="font-medium">
-                                {quote.firstName || ''} {quote.lastName || ''}
+                                {quote.fullName || ''}
                               </div>
                               <div className="text-sm text-gray-500 flex items-center space-x-2">
                                 <Mail className="h-3 w-3" />
@@ -378,7 +378,7 @@ export default function PartnerDashboard() {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>{quote.company || ''}</TableCell>
+                          <TableCell>{quote.companyName || ''}</TableCell>
                           <TableCell>
                             <div className="max-w-xs">
                               <p className="text-sm line-clamp-2">{quote.serviceNeeded || ''}</p>
@@ -409,7 +409,10 @@ export default function PartnerDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleDownloadPDF(quote)}
+                                onClick={() => {
+                                  setSelectedQuoteRequest(quote);
+                                  setIsDetailModalOpen(true);
+                                }}
                               >
                                 <Download className="h-4 w-4 mr-2" />
                                 PDF
@@ -489,7 +492,7 @@ export default function PartnerDashboard() {
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-700">İletişim Kişisi</Label>
-                      <p className="mt-1 text-gray-900">{partner?.contactPerson || "Belirtilmemiş"}</p>
+                      <p className="mt-1 text-gray-900">{partner?.fullName || "Belirtilmemiş"}</p>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Hizmet Kategorisi</Label>

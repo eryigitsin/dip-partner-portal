@@ -191,6 +191,10 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUserById(id: number): Promise<User | undefined> {
+    return this.getUser(id);
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user || undefined;
@@ -525,6 +529,55 @@ export class DatabaseStorage implements IStorage {
     return request || undefined;
   }
 
+  async getQuoteRequestById(id: number): Promise<QuoteRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(quoteRequests)
+      .where(eq(quoteRequests.id, id));
+    return request || undefined;
+  }
+
+  // Quote Response Management
+  async createQuoteResponse(response: any): Promise<any> {
+    const [newResponse] = await db
+      .insert(quoteResponses)
+      .values({
+        ...response,
+        subtotal: Math.round(response.subtotal * 100), // Convert to cents
+        taxAmount: Math.round(response.taxAmount * 100),
+        totalAmount: Math.round(response.total * 100),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newResponse;
+  }
+
+  async getQuoteResponsesByRequestId(requestId: number): Promise<any[]> {
+    return await db
+      .select()
+      .from(quoteResponses)
+      .where(eq(quoteResponses.quoteRequestId, requestId))
+      .orderBy(desc(quoteResponses.createdAt));
+  }
+
+  async getQuoteResponseById(id: number): Promise<any | undefined> {
+    const [response] = await db
+      .select()
+      .from(quoteResponses)
+      .where(eq(quoteResponses.id, id));
+    return response || undefined;
+  }
+
+  async updateQuoteResponse(id: number, responseUpdate: any): Promise<any | undefined> {
+    const [response] = await db
+      .update(quoteResponses)
+      .set({ ...responseUpdate, updatedAt: new Date() })
+      .where(eq(quoteResponses.id, id))
+      .returning();
+    return response || undefined;
+  }
+
   async getServiceCategories(): Promise<ServiceCategory[]> {
     return await db.select().from(serviceCategories).orderBy(asc(serviceCategories.sortOrder));
   }
@@ -683,36 +736,7 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
-  // Quote Responses Management
-  async createQuoteResponse(response: InsertQuoteResponse): Promise<QuoteResponse> {
-    const [newResponse] = await db
-      .insert(quoteResponses)
-      .values(response)
-      .returning();
-    return newResponse;
-  }
 
-  async getQuoteResponsesByRequestId(requestId: number): Promise<QuoteResponse[]> {
-    return await db.select().from(quoteResponses)
-      .where(eq(quoteResponses.quoteRequestId, requestId))
-      .orderBy(desc(quoteResponses.createdAt));
-  }
-
-  async getQuoteResponseById(id: number): Promise<QuoteResponse | undefined> {
-    const [response] = await db.select().from(quoteResponses)
-      .where(eq(quoteResponses.id, id))
-      .limit(1);
-    return response || undefined;
-  }
-
-  async updateQuoteResponse(id: number, updates: Partial<QuoteResponse>): Promise<QuoteResponse | undefined> {
-    const [response] = await db
-      .update(quoteResponses)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(quoteResponses.id, id))
-      .returning();
-    return response || undefined;
-  }
 
 
 
@@ -1127,46 +1151,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Quote Response Methods
-  async createQuoteResponse(responseData: InsertQuoteResponse): Promise<QuoteResponse> {
-    try {
-      const [response] = await db.insert(quoteResponses).values(responseData).returning();
-      return response;
-    } catch (error) {
-      console.error('Error creating quote response:', error);
-      throw error;
-    }
+  async createQuoteResponse(responseData: any): Promise<any> {
+    const [response] = await db.insert(quoteResponses).values({
+      ...responseData,
+      subtotal: Math.round(responseData.subtotal * 100), // Convert to cents
+      taxAmount: Math.round(responseData.taxAmount * 100),
+      totalAmount: Math.round(responseData.total * 100),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return response;
   }
 
-  async getQuoteResponseById(id: number): Promise<QuoteResponse | null> {
-    try {
-      const [response] = await db.select().from(quoteResponses).where(eq(quoteResponses.id, id));
-      return response || null;
-    } catch (error) {
-      console.error('Error fetching quote response:', error);
-      return null;
-    }
+  async getQuoteResponseById(id: number): Promise<any | undefined> {
+    const [response] = await db.select().from(quoteResponses).where(eq(quoteResponses.id, id));
+    return response || undefined;
   }
 
-  async getQuoteResponsesByRequestId(requestId: number): Promise<QuoteResponse[]> {
-    try {
-      const responses = await db.select().from(quoteResponses).where(eq(quoteResponses.quoteRequestId, requestId));
-      return responses;
-    } catch (error) {
-      console.error('Error fetching quote responses:', error);
-      return [];
-    }
+  async getQuoteResponsesByRequestId(requestId: number): Promise<any[]> {
+    return await db.select().from(quoteResponses)
+      .where(eq(quoteResponses.quoteRequestId, requestId))
+      .orderBy(desc(quoteResponses.createdAt));
   }
 
-  async updateQuoteResponse(id: number, updates: Partial<QuoteResponse>): Promise<QuoteResponse | null> {
-    try {
-      const [response] = await db.update(quoteResponses).set(updates).where(eq(quoteResponses.id, id)).returning();
-      return response || null;
-    } catch (error) {
-      console.error('Error updating quote response:', error);
-      return null;
-    }
+  async updateQuoteResponse(id: number, updates: any): Promise<any | undefined> {
+    const [response] = await db.update(quoteResponses)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(quoteResponses.id, id))
+      .returning();
+    return response || undefined;
   }
-
 }
 
 export const storage = new DatabaseStorage();

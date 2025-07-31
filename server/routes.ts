@@ -2193,6 +2193,53 @@ export function registerRoutes(app: Express): Server {
         status: 'quote_sent',
       });
 
+      // Send email notification to user
+      try {
+        const user = await storage.getUserById(quoteRequest.userId!);
+        if (user) {
+          // Create email template for quote sent notification
+          const emailContent = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px;">Teklifiniz Hazır!</h1>
+              </div>
+              <div style="padding: 30px; background: #f8f9fa;">
+                <p>Merhaba ${user.fullName || user.firstName + ' ' + user.lastName},</p>
+                <p><strong>${partner.companyName}</strong> firması, "${quoteRequest.serviceNeeded}" hizmet talebiniz için bir teklif gönderdi.</p>
+                <p><strong>Teklif Detayları:</strong></p>
+                <ul>
+                  <li>Teklif Başlığı: ${responseData.title}</li>
+                  <li>Toplam Tutar: ${(responseData.total / 100).toFixed(2)} TL</li>
+                  <li>Geçerlilik Süresi: ${new Date(responseData.validUntil).toLocaleDateString('tr-TR')}</li>
+                </ul>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${process.env.CLIENT_URL}/user-dashboard?tab=requests" 
+                     style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Teklifi İncele
+                  </a>
+                </div>
+                <p style="color: #666; font-size: 14px;">
+                  Bu teklifi inceleyerek kabul veya ret edebilirsiniz. Herhangi bir sorunuz olursa bizimle iletişime geçin.
+                </p>
+              </div>
+              <div style="background: #fff; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+                <img src="https://partner.dip.tc/dip-logo-white.png" alt="DİP Logo" style="height: 30px; filter: invert(1);">
+                <p style="margin: 10px 0 0 0; color: #666; font-size: 12px;">DİP - Dijital İhracat Platformu</p>
+              </div>
+            </div>
+          `;
+
+          await sendEmail({
+            to: user.email,
+            subject: `${partner.companyName} - Yeni Teklif Aldınız!`,
+            html: emailContent,
+          });
+        }
+      } catch (emailError) {
+        console.error('Quote sent email notification failed:', emailError);
+        // Don't fail the request if email fails
+      }
+
       res.status(201).json(quoteResponse);
     } catch (error) {
       console.error('Error creating quote response:', error);
