@@ -92,39 +92,37 @@ export class PDFGenerator {
   }
 
   private addHeader(quoteRequest: QuoteRequest, partner?: Partner): void {
-    const headerHeight = 100;
+    // Add date in top right corner
+    this.doc.fillColor('black')
+      .fontSize(10)
+      .text(new Date().toLocaleDateString('tr-TR'), this.doc.page.width - 100, 30, { align: 'right' });
     
-    // Gray header background
-    this.doc.rect(0, 0, this.doc.page.width, headerHeight)
-      .fill('#6b7280');
-    
-    // Reset text color to white
-    this.doc.fillColor('white');
-    
-    // Add partner logo and name if available
+    // Add partner company name centered at top
     if (partner) {
-      this.doc.fontSize(16)
-        .text(partner.companyName, 50, 25, { align: 'left' });
-      
-      this.doc.fontSize(20)
-        .text(`Teklif Talebi #${quoteRequest.id}`, 50, 50, { align: 'left' });
-    } else {
       this.doc.fontSize(18)
-        .text('DİP - Dijital İhracat Platformu', 50, 25, { 
-          align: 'center', 
-          width: this.doc.page.width - 100 
-        });
-      
-      this.doc.fontSize(20)
-        .text(`Teklif Talebi #${quoteRequest.id}`, 50, 55, { 
+        .text(partner.companyName.toUpperCase(), 50, 80, { 
           align: 'center', 
           width: this.doc.page.width - 100 
         });
     }
     
-    // Reset position and color for content
-    this.doc.y = headerHeight + 20;
-    this.doc.fillColor('black');
+    // Add quote request date
+    const requestDate = quoteRequest.createdAt ? new Date(quoteRequest.createdAt).toLocaleDateString('tr-TR') : new Date().toLocaleDateString('tr-TR');
+    this.doc.fontSize(14)
+      .text(requestDate, 50, 120, { 
+        align: 'center', 
+        width: this.doc.page.width - 100 
+      });
+    
+    // Add main title
+    this.doc.fontSize(16)
+      .text(`TEKLİF TALEBİ #${quoteRequest.id}`, 50, 160, { 
+        align: 'center', 
+        width: this.doc.page.width - 100 
+      });
+    
+    // Reset position for content
+    this.doc.y = 220;
   }
 
   private addQuoteResponseHeader(quoteResponse: any, partner?: Partner): void {
@@ -153,7 +151,15 @@ export class PDFGenerator {
 
   private addCustomerSection(quoteRequest: QuoteRequest): void {
     this.checkPageSpace(150);
-    this.addSectionTitle('Müşteri Bilgileri');
+    
+    // Customer information in a more formal layout
+    this.doc.fontSize(12)
+      .text('MÜŞTERİ BİLGİLERİ', 50, this.doc.y, { 
+        align: 'left',
+        underline: true 
+      });
+    
+    this.doc.y += 30;
     
     const customerInfo = [
       { label: 'Ad Soyad:', value: quoteRequest.fullName || 'Belirtilmemiş' },
@@ -163,49 +169,60 @@ export class PDFGenerator {
     ];
     
     customerInfo.forEach(info => {
-      this.doc.fontSize(10)
-        .text(info.label, 50, this.doc.y, { continued: true })
-        .text(` ${info.value}`);
-      this.doc.y += 18;
+      this.doc.fontSize(11)
+        .text(`${info.label} ${info.value}`, 70, this.doc.y);
+      this.doc.y += 20;
     });
     
-    this.doc.y += 15;
+    this.doc.y += 20;
   }
 
   private addServiceSection(quoteRequest: QuoteRequest): void {
-    this.checkPageSpace(120);
-    this.addSectionTitle('Hizmet Detayları');
+    this.checkPageSpace(150);
+    
+    // Service details with bullet points
+    this.doc.fontSize(12)
+      .text('HİZMET DETAYLARI', 50, this.doc.y, { 
+        align: 'left',
+        underline: true 
+      });
+    
+    this.doc.y += 30;
     
     const serviceNeeded = quoteRequest.serviceNeeded || '';
     const lines = serviceNeeded.split('\n').filter(line => line.trim());
     const mainService = lines.find(line => !line.includes('Çalışma Şekli:')) || serviceNeeded;
     
-    const serviceInfo = [
-      { label: 'İhtiyaç Duyulan Hizmet:', value: mainService },
-      { label: 'Bütçe:', value: quoteRequest.budget || 'Belirtilmemiş' },
-      { label: 'Durum:', value: this.getStatusText(quoteRequest.status || 'pending') }
-    ];
+    // Display main service with bullet point
+    this.doc.fontSize(11)
+      .text(`• ${mainService}`, 70, this.doc.y, { width: 450 });
+    this.doc.y += 25;
     
-    serviceInfo.forEach(info => {
-      this.doc.fontSize(10)
-        .text(info.label, 50, this.doc.y, { continued: true })
-        .text(` ${info.value}`, { width: 480 });
-      this.doc.y += 18;
-    });
+    // Budget information
+    if (quoteRequest.budget && quoteRequest.budget !== 'Belirtilmemiş') {
+      this.doc.text(`• Bütçe: ${quoteRequest.budget}`, 70, this.doc.y);
+      this.doc.y += 25;
+    }
     
-    this.doc.y += 15;
+    this.doc.y += 20;
   }
 
   private addMessageSection(message: string): void {
-    const messageHeight = this.doc.heightOfString(message, { width: 480 }) + 40;
+    const messageHeight = this.doc.heightOfString(message, { width: 450 }) + 60;
     this.checkPageSpace(messageHeight);
     
-    this.addSectionTitle('Müşteri Mesajı');
+    this.doc.fontSize(12)
+      .text('MÜŞTERİ MESAJI', 50, this.doc.y, { 
+        align: 'left',
+        underline: true 
+      });
     
-    this.doc.fontSize(10)
-      .text(message, 50, this.doc.y, { width: 480 });
+    this.doc.y += 30;
     
-    this.doc.y += 20;
+    this.doc.fontSize(11)
+      .text(message, 70, this.doc.y, { width: 450 });
+    
+    this.doc.y += 30;
   }
 
   private addRequestInfoSection(quoteRequest: QuoteRequest): void {
@@ -347,29 +364,33 @@ export class PDFGenerator {
   }
 
   private addSectionTitle(title: string): void {
-    this.doc.rect(40, this.doc.y - 5, this.doc.page.width - 80, 25)
-      .fill('#f3f4f6');
-    
     this.doc.fillColor('black')
       .fontSize(12)
-      .text(title, 50, this.doc.y, { align: 'left' });
+      .text(title, 50, this.doc.y, { align: 'left', underline: true });
     
-    this.doc.y += 25;
+    this.doc.y += 30;
   }
 
   private addFooterAtBottom(): void {
-    const footerY = this.doc.page.height - 80;
+    const footerY = this.doc.page.height - 100;
     
-    // Footer background
-    this.doc.rect(0, footerY, this.doc.page.width, 80)
-      .fill('#ffffff')
-      .stroke('#e5e7eb');
+    // Add closing section similar to the template
+    this.doc.fillColor('black')
+      .fontSize(11)
+      .text('Saygılarımla,', this.doc.page.width - 150, footerY, { align: 'right' });
     
-    // DİP Logo text (since we can't easily embed the image)
-    this.doc.fillColor('#6b7280')
-      .fontSize(10)
-      .text('DİP - Dijital İhracat Platformu', 50, footerY + 20, { align: 'center', width: this.doc.page.width - 100 })
-      .text('https://partner.dip.tc', 50, footerY + 35, { align: 'center', width: this.doc.page.width - 100 });
+    this.doc.fontSize(11)
+      .text('DİP Ekibi', this.doc.page.width - 150, footerY + 20, { align: 'right' });
+    
+    this.doc.fontSize(10)
+      .text('Dijital İhracat Platformu', this.doc.page.width - 150, footerY + 35, { align: 'right' });
+    
+    // Add website at the bottom
+    this.doc.fontSize(9)
+      .text('https://partner.dip.tc', 50, this.doc.page.height - 30, { 
+        align: 'center', 
+        width: this.doc.page.width - 100 
+      });
   }
 
   private checkPageSpace(requiredSpace: number): void {

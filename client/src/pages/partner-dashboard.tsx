@@ -408,14 +408,15 @@ export default function PartnerDashboard() {
                               </Button>
                               <Button
                                 size="sm"
-                                className="bg-dip-blue hover:bg-dip-dark-blue text-white"
+                                variant="outline"
+                                className="bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
                                 onClick={() => {
                                   const url = `/api/quote-requests/${quote.id}/pdf`;
                                   window.open(url, '_blank');
                                 }}
                               >
                                 <Download className="h-4 w-4 mr-2" />
-                                Teklif Hazırla
+                                PDF İndir
                               </Button>
                               {(quote.status === "pending" || quote.status === "under_review") && (
                                 <Button 
@@ -424,7 +425,7 @@ export default function PartnerDashboard() {
                                   onClick={() => handleSendQuote(quote)}
                                 >
                                   <Send className="h-4 w-4 mr-2" />
-                                  Teklif Gönder
+                                  Teklif Hazırla
                                 </Button>
                               )}
                             </div>
