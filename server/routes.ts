@@ -1008,6 +1008,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get partner followers
+  app.get("/api/partners/:id/followers", async (req, res) => {
+    try {
+      const partnerId = parseInt(req.params.id);
+      const followers = await storage.getPartnerFollowers(partnerId);
+      res.json(followers);
+    } catch (error) {
+      console.error('Error fetching partner followers:', error);
+      res.status(500).json({ message: 'Failed to fetch followers' });
+    }
+  });
+
   // This route has been moved to line 1316 with multer support for file uploads
 
   // User unfollow partner endpoint (different from partner endpoint)

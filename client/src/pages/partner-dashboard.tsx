@@ -157,7 +157,7 @@ export default function PartnerDashboard() {
     queryKey: ["/api/partners", partner?.id, "view-stats"],
     queryFn: async () => {
       if (!partner?.id) return [];
-      const response = await fetch(`/api/partners/${partner.id}/view-stats?days=5`);
+      const response = await fetch(`/api/partners/${partner.id}/view-stats?days=7`);
       if (!response.ok) return [];
       return response.json();
     },
