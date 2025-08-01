@@ -31,6 +31,25 @@ export function PartnersCatalog({
   const [currentSearch, setCurrentSearch] = useState('');
   const [currentCategory, setCurrentCategory] = useState(selectedCategory || '');
 
+  // Function to strip HTML tags and decode HTML entities
+  const stripHtml = (html: string | null | undefined) => {
+    if (!html) return '';
+    
+    // Create a temporary div element to decode HTML entities
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // Get the text content without HTML tags
+    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Clean up any remaining HTML-like patterns
+    return textContent
+      .replace(/<[^>]*>/g, '') // Remove any remaining HTML tags
+      .replace(/&[a-zA-Z0-9#]+;/g, ' ') // Remove HTML entities
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .trim();
+  };
+
   const { data: categories = [] } = useQuery<ServiceCategory[]>({
     queryKey: ['/api/categories'],
   });
@@ -247,7 +266,7 @@ export function PartnersCatalog({
                   </div>
                   
                   <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3">
-                    {partner.shortDescription || partner.description}
+                    {stripHtml(partner.shortDescription || partner.description)}
                   </p>
 
                   {partner.dipAdvantages && (
