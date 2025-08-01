@@ -978,18 +978,26 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      console.log('Looking for partner with userId:', req.user!.id);
+      console.log('=== API ENDPOINT DEBUG ===');
+      console.log('User ID from session:', req.user!.id);
+      console.log('Calling storage.getPartnerByUserId...');
+      
       const partner = await storage.getPartnerByUserId(req.user!.id);
-      console.log('Partner query result type:', typeof partner);
-      console.log('Partner query result:', partner);
-      console.log('Partner exists?', !!partner);
-      console.log('Partner ID:', partner?.id);
+      
+      console.log('=== RESULT FROM STORAGE ===');
+      console.log('Partner result type:', typeof partner);
+      console.log('Partner result:', partner);
+      console.log('Partner is truthy?', !!partner);
+      console.log('Partner is null?', partner === null);
+      console.log('Partner is undefined?', partner === undefined);
       
       if (!partner) {
-        console.log('Partner not found for userId:', req.user!.id);
-        console.log('This should not happen based on the previous log!');
+        console.log('=== PARTNER NOT FOUND ===');
+        console.log('This is the problem! The method returns', partner);
         return res.status(404).json({ message: "Partner not found" });
       }
+      
+      console.log('=== PARTNER FOUND, PROCEEDING ===');
 
       console.log('Getting user contact information...');
       // Also get user contact information

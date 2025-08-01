@@ -343,10 +343,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPartnerByUserId(userId: number): Promise<Partner | undefined> {
+    console.log('=== STORAGE METHOD DEBUG ===');
     console.log('Looking for partner with userId:', userId);
     try {
-      const [partner] = await db.select().from(partners).where(eq(partners.userId, userId));
-      console.log('Database query result:', partner);
+      console.log('Executing database query...');
+      const results = await db.select().from(partners).where(eq(partners.userId, userId));
+      console.log('Raw database results:', results);
+      console.log('Results length:', results.length);
+      
+      const [partner] = results;
+      console.log('Extracted partner:', partner);
+      console.log('Partner type:', typeof partner);
+      console.log('Will return:', partner || undefined);
+      
       return partner || undefined;
     } catch (error) {
       console.error('Error in getPartnerByUserId:', error);
