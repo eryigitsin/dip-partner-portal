@@ -214,6 +214,8 @@ export interface IStorage {
 
   // Partner Markets Pool Management
   getAllMarkets(): Promise<Market[]>;
+  getMarketByName(name: string): Promise<Market | undefined>;
+  createMarket(data: { name: string; nameEn?: string | null; region?: string | null; isActive: boolean }): Promise<Market>;
   getPartnerSelectedMarkets(partnerId: number): Promise<Array<{ id: number; name: string; nameEn?: string; region?: string }>>;
   addPartnerMarket(partnerId: number, marketId: number): Promise<void>;
   removePartnerMarket(partnerId: number, marketId: number): Promise<void>;
@@ -1541,6 +1543,24 @@ export class DatabaseStorage implements IStorage {
   // Markets Pool Management
   async getAllMarkets(): Promise<Market[]> {
     return await db.select().from(markets).where(eq(markets.isActive, true)).orderBy(asc(markets.name));
+  }
+
+  async getMarketByName(name: string): Promise<Market | undefined> {
+    const [market] = await db.select().from(markets).where(eq(markets.name, name));
+    return market || undefined;
+  }
+
+  async createMarket(data: { name: string; nameEn?: string | null; region?: string | null; isActive: boolean }): Promise<Market> {
+    const [market] = await db
+      .insert(markets)
+      .values({
+        name: data.name,
+        nameEn: data.nameEn,
+        region: data.region,
+        isActive: data.isActive
+      })
+      .returning();
+    return market;
   }
 
   async getPartnerSelectedMarkets(partnerId: number): Promise<Array<{ id: number; name: string; nameEn?: string; region?: string }>> {

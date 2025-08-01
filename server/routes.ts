@@ -3111,6 +3111,115 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Partner Markets Management Routes
+  app.get("/api/partner/markets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const selectedMarkets = await storage.getPartnerSelectedMarkets(partner.id);
+      res.json(selectedMarkets);
+    } catch (error) {
+      console.error('Error fetching partner markets:', error);
+      res.status(500).json({ message: 'Failed to fetch partner markets' });
+    }
+  });
+
+  app.post("/api/partner/markets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const { marketId } = req.body;
+      
+      if (!marketId) {
+        return res.status(400).json({ message: "Market ID is required" });
+      }
+
+      await storage.addPartnerMarket(partner.id, marketId);
+      res.json({ success: true, message: "Market added successfully" });
+    } catch (error) {
+      console.error('Error adding partner market:', error);
+      res.status(500).json({ message: 'Failed to add market' });
+    }
+  });
+
+  app.delete("/api/partner/markets/:marketId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const { marketId } = req.params;
+      await storage.removePartnerMarket(partner.id, parseInt(marketId));
+      res.json({ success: true, message: "Market removed successfully" });
+    } catch (error) {
+      console.error('Error removing partner market:', error);
+      res.status(500).json({ message: 'Failed to remove market' });
+    }
+  });
+
+  // Create new market (for partners to add new markets to the system)
+  app.post("/api/partner/markets/new", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const { name, nameEn, region } = req.body;
+      
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ message: "Market name is required" });
+      }
+
+      // Check if market already exists
+      const existingMarket = await storage.getMarketByName(name.trim());
+      if (existingMarket) {
+        // If market exists, just add it to partner's markets
+        await storage.addPartnerMarket(partner.id, existingMarket.id);
+        return res.json({ success: true, market: existingMarket, message: "Existing market added to your profile" });
+      }
+
+      // Create new market
+      const newMarket = await storage.createMarket({
+        name: name.trim(),
+        nameEn: nameEn?.trim() || null,
+        region: region?.trim() || null,
+        isActive: true
+      });
+
+      // Add new market to partner's markets
+      await storage.addPartnerMarket(partner.id, newMarket.id);
+
+      res.json({ success: true, market: newMarket, message: "Market created and added successfully" });
+    } catch (error) {
+      console.error('Error creating new market:', error);
+      res.status(500).json({ message: 'Failed to create market' });
+    }
+  });
+
   // Markets API endpoints
   app.get("/api/markets", async (req, res) => {
     try {

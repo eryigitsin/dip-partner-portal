@@ -14,6 +14,7 @@ import { Footer } from "@/components/layout/footer";
 import { QuoteRequestDetailModal } from "@/components/quote/quote-request-detail-modal";
 import { QuoteResponseDialog } from "@/components/quote/quote-response-dialog";
 import { PartnerServicesTab } from "@/components/partner-services-tab";
+import { PartnerMarketsTab } from "@/components/partner-markets-tab";
 import { QuoteRequest, Partner } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -351,11 +352,12 @@ export default function PartnerDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
             <TabsTrigger value="performance">Performans</TabsTrigger>
             <TabsTrigger value="services">Hizmetler</TabsTrigger>
+            <TabsTrigger value="markets">Pazarlar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -978,6 +980,9 @@ export default function PartnerDashboard() {
             <PartnerServicesTab />
           </TabsContent>
 
+          <TabsContent value="markets" className="space-y-6">
+            <PartnerMarketsTab />
+          </TabsContent>
 
         </Tabs>
       </div>
