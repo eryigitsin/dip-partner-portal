@@ -80,7 +80,7 @@ export function QuoteRequestsEmbedded() {
   // Calculate statistics
   const totalRequests = quoteRequests.length;
   const pendingRequests = quoteRequests.filter(req => req.status === 'pending').length;
-  const respondedRequests = quoteRequests.filter(req => req.status === 'responded').length;
+  const respondedRequests = quoteRequests.filter(req => req.status === 'responded' || req.status === 'quote_sent').length;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -90,8 +90,9 @@ export function QuoteRequestsEmbedded() {
           Beklemede
         </Badge>;
       case 'responded':
+      case 'quote_sent':
         return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-          <AlertCircle className="h-3 w-3 mr-1" />
+          <MessageSquare className="h-3 w-3 mr-1" />
           Yanıtlandı
         </Badge>;
       case 'accepted':
@@ -100,8 +101,8 @@ export function QuoteRequestsEmbedded() {
           Kabul Edildi
         </Badge>;
       case 'completed':
-        return <Badge variant="default" className="bg-green-600">
-          <CheckCircle className="h-3 w-3 mr-1" />
+        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+          <CheckCircle2 className="h-3 w-3 mr-1" />
           Tamamlandı
         </Badge>;
       case 'rejected':
@@ -143,6 +144,7 @@ export function QuoteRequestsEmbedded() {
                 <SelectItem value="all">Tümü</SelectItem>
                 <SelectItem value="pending">Beklemede</SelectItem>
                 <SelectItem value="responded">Yanıtlandı</SelectItem>
+                <SelectItem value="quote_sent">Teklif Gönderildi</SelectItem>
                 <SelectItem value="accepted">Kabul Edildi</SelectItem>
                 <SelectItem value="completed">Tamamlandı</SelectItem>
                 <SelectItem value="rejected">Reddedildi</SelectItem>
@@ -215,22 +217,15 @@ export function QuoteRequestsEmbedded() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={request.status}
-                        onValueChange={(value) => updateStatusMutation.mutate({ id: request.id, status: value })}
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Beklemede</SelectItem>
-                          <SelectItem value="responded">Yanıtlandı</SelectItem>
-                          <SelectItem value="accepted">Kabul Edildi</SelectItem>
-                          <SelectItem value="completed">Tamamlandı</SelectItem>
-                          <SelectItem value="rejected">Reddedildi</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="text-sm text-gray-500">
+                        {(request.status as any) === 'quote_sent' ? 'Partner tarafından yanıtlandı' : 
+                         request.status === 'pending' ? 'Partner yanıtı bekleniyor' :
+                         request.status === 'accepted' ? 'Müşteri tarafından kabul edildi' :
+                         request.status === 'completed' ? 'Proje tamamlandı' :
+                         request.status === 'rejected' ? 'Müşteri tarafından reddedildi' :
+                         request.status === 'responded' ? 'Partner tarafından yanıtlandı' :
+                         'Otomatik güncelleme'}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
