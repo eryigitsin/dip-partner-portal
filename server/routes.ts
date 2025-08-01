@@ -859,7 +859,7 @@ export function registerRoutes(app: Express): Server {
       const { partnerId } = req.query;
       let requests;
 
-      if (req.user!.userType === "partner") {
+      if (req.user!.userType === "partner" || req.user!.activeUserType === "partner") {
         const partner = await storage.getPartnerByUserId(req.user!.id);
         if (!partner) {
           return res.status(404).json({ message: "Partner profile not found" });

@@ -63,7 +63,6 @@ export function PartnerServicesTab() {
   // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ['/api/categories'],
-    queryFn: () => apiRequest('/api/categories'),
   });
 
   // Fetch all services from pool

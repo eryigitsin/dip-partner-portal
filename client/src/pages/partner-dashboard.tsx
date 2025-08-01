@@ -52,14 +52,14 @@ export default function PartnerDashboard() {
       if (!response.ok) throw new Error("Failed to fetch partner data");
       return response.json();
     },
-    enabled: !!user && (user.activeUserType || user.userType) === "partner",
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
   // Removed updateProfileMutation as it's not used in the current dashboard
 
   const { data: quoteRequests = [] } = useQuery<QuoteRequest[]>({
     queryKey: ["/api/quote-requests"],
-    enabled: !!user && (user.activeUserType || user.userType) === "partner",
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
   const handleViewQuoteDetails = (request: QuoteRequest) => {
