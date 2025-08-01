@@ -863,49 +863,56 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 <div className="flex justify-between items-start">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-start gap-2 min-w-0 flex-1">
                                     {isExpanded ? (
-                                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                                      <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
                                     ) : (
-                                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                                      <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5" />
                                     )}
-                                    <Badge variant={
-                                      feedback.category === 'bug' ? 'destructive' : 
-                                      feedback.category === 'feature' ? 'secondary' :
-                                      feedback.category === 'complaint' ? 'destructive' :
-                                      'default'
-                                    }>
-                                      {feedback.category === 'request' && 'İstek / Öneri'}
-                                      {feedback.category === 'bug' && 'Hata Bildirme'}
-                                      {feedback.category === 'feature' && 'Özellik Talebi'}
-                                      {feedback.category === 'complaint' && 'Şikayet'}
-                                      {feedback.category === 'other' && 'Diğer'}
-                                    </Badge>
-                                    <Badge 
-                                      variant={
-                                        feedback.status === 'new' ? 'default' :
-                                        feedback.status === 'reviewed' ? 'secondary' :
-                                        feedback.status === 'resolved' ? 'outline' :
-                                        'default'
-                                      }
-                                      className={
-                                        feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
-                                        feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
-                                        feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                                        'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                      }
-                                    >
-                                      {feedback.status === 'new' && 'Yeni'}
-                                      {feedback.status === 'reviewed' && 'İncelendi'}
-                                      {feedback.status === 'resolved' && 'Çözüldü'}
-                                    </Badge>
-                                    <span className="text-sm font-medium text-gray-700">{feedback.name}</span>
+                                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant={
+                                          feedback.category === 'bug' ? 'destructive' : 
+                                          feedback.category === 'feature' ? 'secondary' :
+                                          feedback.category === 'complaint' ? 'destructive' :
+                                          'default'
+                                        }>
+                                          {feedback.category === 'request' && 'İstek / Öneri'}
+                                          {feedback.category === 'bug' && 'Hata Bildirme'}
+                                          {feedback.category === 'feature' && 'Özellik Talebi'}
+                                          {feedback.category === 'complaint' && 'Şikayet'}
+                                          {feedback.category === 'other' && 'Diğer'}
+                                        </Badge>
+                                        <Badge 
+                                          variant={
+                                            feedback.status === 'new' ? 'default' :
+                                            feedback.status === 'reviewed' ? 'secondary' :
+                                            feedback.status === 'resolved' ? 'outline' :
+                                            'default'
+                                          }
+                                          className={
+                                            feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                                            feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                                            feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                                            'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                          }
+                                        >
+                                          {feedback.status === 'new' && 'Yeni'}
+                                          {feedback.status === 'reviewed' && 'İncelendi'}
+                                          {feedback.status === 'resolved' && 'Çözüldü'}
+                                        </Badge>
+                                      </div>
+                                      <div className="text-sm font-medium text-gray-800">{feedback.name}</div>
+                                    </div>
                                   </div>
-                                  <div className="text-sm text-gray-500">
+                                  <div className="text-xs text-gray-500 text-right whitespace-nowrap ml-2">
                                     {new Date(feedback.createdAt).toLocaleDateString('tr-TR', {
-                                      year: 'numeric',
-                                      month: 'short',
                                       day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}
+                                    <br />
+                                    {new Date(feedback.createdAt).toLocaleTimeString('tr-TR', {
                                       hour: '2-digit',
                                       minute: '2-digit'
                                     })}
@@ -917,9 +924,9 @@ export default function AdminDashboard() {
                               {isExpanded && (
                                 <div className="px-4 pb-4 border-t bg-gray-50/50">
                                   <div className="space-y-3 pt-3">
-                                    <div className="flex items-center gap-4 text-sm">
+                                    <div className="flex items-center gap-3 text-xs flex-wrap">
                                       <div className="flex items-center gap-1">
-                                        <Mail className="h-4 w-4" />
+                                        <Mail className="h-3 w-3" />
                                         <a 
                                           href={`mailto:${feedback.email}`}
                                           className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -929,7 +936,7 @@ export default function AdminDashboard() {
                                       </div>
                                       {feedback.phone && (
                                         <div className="flex items-center gap-1">
-                                          <Phone className="h-4 w-4" />
+                                          <Phone className="h-3 w-3" />
                                           <a 
                                             href={`tel:${feedback.phone}`}
                                             className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -1018,49 +1025,56 @@ export default function AdminDashboard() {
                                 }}
                               >
                                 <div className="flex justify-between items-start">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-start gap-2 min-w-0 flex-1">
                                     {isExpanded ? (
-                                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                                      <ChevronDown className="h-4 w-4 text-gray-400 mt-0.5" />
                                     ) : (
-                                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                                      <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5" />
                                     )}
-                                    <Badge variant={
-                                      feedback.category === 'bug' ? 'destructive' : 
-                                      feedback.category === 'feature' ? 'secondary' :
-                                      feedback.category === 'complaint' ? 'destructive' :
-                                      'default'
-                                    }>
-                                      {feedback.category === 'request' && 'İstek / Öneri'}
-                                      {feedback.category === 'bug' && 'Hata Bildirme'}
-                                      {feedback.category === 'feature' && 'Özellik Talebi'}
-                                      {feedback.category === 'complaint' && 'Şikayet'}
-                                      {feedback.category === 'other' && 'Diğer'}
-                                    </Badge>
-                                    <Badge 
-                                      variant={
-                                        feedback.status === 'new' ? 'default' :
-                                        feedback.status === 'reviewed' ? 'secondary' :
-                                        feedback.status === 'resolved' ? 'outline' :
-                                        'default'
-                                      }
-                                      className={
-                                        feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
-                                        feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
-                                        feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                                        'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                      }
-                                    >
-                                      {feedback.status === 'new' && 'Yeni'}
-                                      {feedback.status === 'reviewed' && 'İncelendi'}
-                                      {feedback.status === 'resolved' && 'Çözüldü'}
-                                    </Badge>
-                                    <span className="text-sm font-medium text-gray-700">{feedback.name}</span>
+                                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge variant={
+                                          feedback.category === 'bug' ? 'destructive' : 
+                                          feedback.category === 'feature' ? 'secondary' :
+                                          feedback.category === 'complaint' ? 'destructive' :
+                                          'default'
+                                        }>
+                                          {feedback.category === 'request' && 'İstek / Öneri'}
+                                          {feedback.category === 'bug' && 'Hata Bildirme'}
+                                          {feedback.category === 'feature' && 'Özellik Talebi'}
+                                          {feedback.category === 'complaint' && 'Şikayet'}
+                                          {feedback.category === 'other' && 'Diğer'}
+                                        </Badge>
+                                        <Badge 
+                                          variant={
+                                            feedback.status === 'new' ? 'default' :
+                                            feedback.status === 'reviewed' ? 'secondary' :
+                                            feedback.status === 'resolved' ? 'outline' :
+                                            'default'
+                                          }
+                                          className={
+                                            feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                                            feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                                            feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                                            'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                          }
+                                        >
+                                          {feedback.status === 'new' && 'Yeni'}
+                                          {feedback.status === 'reviewed' && 'İncelendi'}
+                                          {feedback.status === 'resolved' && 'Çözüldü'}
+                                        </Badge>
+                                      </div>
+                                      <div className="text-sm font-medium text-gray-800">{feedback.name}</div>
+                                    </div>
                                   </div>
-                                  <div className="text-sm text-gray-500">
+                                  <div className="text-xs text-gray-500 text-right whitespace-nowrap ml-2">
                                     {new Date(feedback.createdAt).toLocaleDateString('tr-TR', {
-                                      year: 'numeric',
-                                      month: 'short',
                                       day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}
+                                    <br />
+                                    {new Date(feedback.createdAt).toLocaleTimeString('tr-TR', {
                                       hour: '2-digit',
                                       minute: '2-digit'
                                     })}
@@ -1072,9 +1086,9 @@ export default function AdminDashboard() {
                               {isExpanded && (
                                 <div className="px-4 pb-4 border-t bg-orange-50/30">
                                   <div className="space-y-3 pt-3">
-                                    <div className="flex items-center gap-4 text-sm">
+                                    <div className="flex items-center gap-3 text-xs flex-wrap">
                                       <div className="flex items-center gap-1">
-                                        <Mail className="h-4 w-4" />
+                                        <Mail className="h-3 w-3" />
                                         <a 
                                           href={`mailto:${feedback.email}`}
                                           className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -1084,7 +1098,7 @@ export default function AdminDashboard() {
                                       </div>
                                       {feedback.phone && (
                                         <div className="flex items-center gap-1">
-                                          <Phone className="h-4 w-4" />
+                                          <Phone className="h-3 w-3" />
                                           <a 
                                             href={`tel:${feedback.phone}`}
                                             className="text-blue-600 hover:text-blue-800 hover:underline"
