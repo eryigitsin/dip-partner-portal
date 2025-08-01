@@ -99,6 +99,25 @@ export default function PartnerDashboard() {
     return responseCount > 0 ? Math.round(totalScore / responseCount) : 100;
   };
 
+  const calculateSatisfactionScore = (quoteRequests: QuoteRequest[]) => {
+    const ratedQuotes = quoteRequests.filter(quote => quote.satisfactionRating);
+    if (ratedQuotes.length === 0) return 92; // Default value when no ratings yet
+    
+    let totalScore = 0;
+    ratedQuotes.forEach(quote => {
+      const rating = quote.satisfactionRating!;
+      switch (rating) {
+        case 5: totalScore += 100; break; // Çok Memnun Kaldım
+        case 4: totalScore += 75; break;  // Memnun Kaldım
+        case 3: totalScore += 50; break;  // Ortalama
+        case 2: totalScore += 25; break;  // Memnun Kalmadım
+        case 1: totalScore += 0; break;   // Hiç Memnun Kalmadım
+      }
+    });
+    
+    return Math.round(totalScore / ratedQuotes.length);
+  };
+
 
   const { data: partner } = useQuery<Partner>({
     queryKey: ["/api/partners", user?.id],
@@ -761,6 +780,28 @@ export default function PartnerDashboard() {
 
 
           <TabsContent value="performance" className="space-y-6">
+            {/* How It Works Section */}
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="pt-6">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-blue-800 mb-2">
+                      Nasıl Çalışır?
+                    </h3>
+                    <div className="text-sm text-blue-700 space-y-1">
+                      <p><strong>Profil Tamamlama:</strong> Logo (%25), kapak fotoğrafı (%25), açıklama (%25) ve kullanıcı adı (%25) ile hesaplanır.</p>
+                      <p><strong>Yanıt Hızı:</strong> Teklif taleplerini ne kadar hızlı yanıtladığınıza göre hesaplanır (30dk içinde %100, 2 saat içinde %85, vb.).</p>
+                      <p><strong>Müşteri Memnuniyeti:</strong> Teklif sonrası müşteri anketlerine verilen cevaplara göre hesaplanır (%0-100 arası).</p>
+                      <p><strong>Hedefler:</strong> Yönetici tarafından belirlenen aylık hedeflerinizi gösterir. Hedefleriniz için yönetici ile iletişime geçebilirsiniz.</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Performance Scores and Monthly Goals */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
@@ -789,10 +830,10 @@ export default function PartnerDashboard() {
 
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Müşteri Memnuniyeti</span>
-                    <span className="text-sm font-bold text-purple-600">%92</span>
+                    <span className="text-sm font-bold text-purple-600">%{calculateSatisfactionScore(quoteRequests)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-purple-600 h-2 rounded-full" style={{ width: '92%' }}></div>
+                    <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${calculateSatisfactionScore(quoteRequests)}%` }}></div>
                   </div>
                 </CardContent>
               </Card>

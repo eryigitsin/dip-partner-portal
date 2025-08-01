@@ -1036,6 +1036,28 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Submit satisfaction rating for quote request
+  app.post("/api/quote-requests/:id/satisfaction", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const quoteRequestId = parseInt(req.params.id);
+      const { rating } = req.body;
+
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: "Invalid rating. Must be between 1 and 5." });
+      }
+
+      await storage.updateQuoteRequestSatisfaction(quoteRequestId, rating);
+      res.json({ message: "Satisfaction rating submitted successfully" });
+    } catch (error) {
+      console.error('Error submitting satisfaction rating:', error);
+      res.status(500).json({ message: "Failed to submit satisfaction rating" });
+    }
+  });
+
   // Get partner profile for current user
   app.get("/api/partners/me", async (req, res) => {
     console.log('==== INSIDE /api/partners/me ENDPOINT ====');

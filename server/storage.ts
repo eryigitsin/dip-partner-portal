@@ -936,6 +936,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(partnerPosts.id, postId));
   }
 
+  async updateQuoteRequestSatisfaction(quoteRequestId: number, rating: number): Promise<void> {
+    await db
+      .update(quoteRequests)
+      .set({ satisfactionRating: rating })
+      .where(eq(quoteRequests.id, quoteRequestId));
+  }
+
   // Admin functions
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users);

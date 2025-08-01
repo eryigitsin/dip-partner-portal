@@ -172,6 +172,7 @@ export const quoteRequests = pgTable("quote_requests", {
   projectDate: timestamp("project_date"),
   status: text("status").default("pending"), // pending, under_review, quote_sent, accepted, rejected, completed
   responseTime: integer("response_time"), // Response time in minutes
+  satisfactionRating: integer("satisfaction_rating"), // 1-5 rating (1=Hiç Memnun Kalmadım, 5=Çok Memnun Kaldım)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
