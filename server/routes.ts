@@ -236,6 +236,24 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
+      // If user is already logged in with the same email, skip re-authentication
+      if (req.isAuthenticated() && req.user?.email === supabaseUser.email) {
+        return res.json({ 
+          success: true, 
+          user: {
+            id: req.user.id,
+            email: req.user.email,
+            firstName: req.user.firstName,
+            lastName: req.user.lastName,
+            userType: req.user.userType,
+            availableUserTypes: req.user.availableUserTypes,
+            activeUserType: req.user.activeUserType,
+            isVerified: req.user.isVerified,
+            language: req.user.language
+          }
+        });
+      }
+
       // Check if user already exists in our database
       let user = await storage.getUserByEmail(supabaseUser.email);
       
