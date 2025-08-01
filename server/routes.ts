@@ -852,13 +852,6 @@ export function registerRoutes(app: Express): Server {
 
   app.get("/api/quote-requests", async (req, res) => {
     try {
-      console.log('=== /api/quote-requests DEBUG ===');
-      console.log('User authenticated:', req.isAuthenticated());
-      console.log('User from session:', req.user);
-      console.log('User ID:', req.user?.id);
-      console.log('User Type:', req.user?.userType);
-      console.log('Active User Type:', req.user?.activeUserType);
-      
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Authentication required" });
       }
@@ -867,27 +860,20 @@ export function registerRoutes(app: Express): Server {
       let requests;
 
       if (req.user!.userType === "partner" || req.user!.activeUserType === "partner") {
-        console.log('User is partner, looking for partner profile...');
         const partner = await storage.getPartnerByUserId(req.user!.id);
-        console.log('Partner found:', partner ? `ID: ${partner.id}, Company: ${partner.companyName}` : 'NOT FOUND');
         
         if (!partner) {
           return res.status(404).json({ message: "Partner profile not found" });
         }
-        console.log('Fetching quote requests for partner ID:', partner.id);
         requests = await storage.getQuoteRequests(partner.id);
       } else if (partnerId) {
-        console.log('Fetching quote requests for specific partner ID:', partnerId);
         requests = await storage.getQuoteRequests(parseInt(partnerId as string));
       } else {
-        console.log('Fetching quote requests for user ID:', req.user!.id);
         requests = await storage.getQuoteRequests(undefined, req.user!.id);
       }
 
-      console.log('Quote requests result:', requests.length, 'requests');
       res.json(requests);
     } catch (error) {
-      console.error('Quote requests error:', error);
       res.status(500).json({ message: "Failed to fetch quote requests" });
     }
   });
@@ -971,29 +957,13 @@ export function registerRoutes(app: Express): Server {
   // Get partner profile for current user
   app.get("/api/partners/me", async (req, res) => {
     try {
-      console.log('=== /api/partners/me DEBUG ===');
-      console.log('Session ID:', req.sessionID);
-      console.log('User authenticated:', req.isAuthenticated());
-      console.log('User from session:', req.user);
-      console.log('Session data:', req.session);
-      
       if (!req.isAuthenticated()) {
-        console.log('User not authenticated, returning 401');
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      console.log('User ID to search:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
-      console.log('Partner found:', partner ? `ID: ${partner.id}, Company: ${partner.companyName}` : 'NOT FOUND');
       
       if (!partner) {
-        console.log('=== TROUBLESHOOTING ===');
-        // Let's check if partner exists with different user ID
-        const allPartners = await storage.getPartners({});
-        console.log('All partners in system:');
-        allPartners.forEach(p => {
-          console.log(`  Partner ID: ${p.id}, UserID: ${p.userId}, Company: ${p.companyName}`);
-        });
         return res.status(404).json({ message: "Partner not found" });
       }
 
