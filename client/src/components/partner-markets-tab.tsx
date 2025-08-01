@@ -170,7 +170,7 @@ export function PartnerMarketsTab() {
                 </div>
               </div>
               <TooltipProvider>
-                <Tooltip>
+                <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
