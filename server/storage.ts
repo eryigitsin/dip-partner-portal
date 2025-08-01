@@ -868,6 +868,25 @@ export class DatabaseStorage implements IStorage {
       .where(or(eq(users.userType, 'master_admin'), eq(users.userType, 'editor_admin')));
   }
 
+  async getPartnerFollowers(partnerId: number): Promise<any[]> {
+    const followers = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        company: userProfiles.company,
+        followedAt: partnerFollowers.createdAt
+      })
+      .from(partnerFollowers)
+      .innerJoin(users, eq(partnerFollowers.userId, users.id))
+      .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+      .where(eq(partnerFollowers.partnerId, partnerId))
+      .orderBy(desc(partnerFollowers.createdAt));
+    
+    return followers;
+  }
+
   async getPartnerPosts(partnerId: number): Promise<PartnerPost[]> {
     return await db.select().from(partnerPosts)
       .where(eq(partnerPosts.partnerId, partnerId))

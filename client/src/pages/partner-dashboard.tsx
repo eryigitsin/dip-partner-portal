@@ -65,6 +65,12 @@ export default function PartnerDashboard() {
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
+  // Get partner followers
+  const { data: followers = [] } = useQuery({
+    queryKey: ["/api/partners/me/followers"],
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")) && !!partner,
+  });
+
   const handleViewQuoteDetails = (request: QuoteRequest) => {
     setSelectedQuoteRequest(request);
     setIsDetailModalOpen(true);
@@ -267,11 +273,11 @@ export default function PartnerDashboard() {
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
                             data={[
-                              { date: '28 Tem', visits: 40 },
-                              { date: '29 Tem', visits: 54 },
-                              { date: '30 Tem', visits: 32 },
-                              { date: '31 Tem', visits: 48 },
-                              { date: '1 Ağu', visits: partner?.profileViews ? Math.floor(partner.profileViews * 0.3) : 25 }
+                              { date: '28 Tem', visits: Math.floor((partner?.profileViews || 143) * 0.2) },
+                              { date: '29 Tem', visits: Math.floor((partner?.profileViews || 143) * 0.25) },
+                              { date: '30 Tem', visits: Math.floor((partner?.profileViews || 143) * 0.15) },
+                              { date: '31 Tem', visits: Math.floor((partner?.profileViews || 143) * 0.2) },
+                              { date: '1 Ağu', visits: Math.floor((partner?.profileViews || 143) * 0.2) }
                             ]}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
@@ -300,21 +306,29 @@ export default function PartnerDashboard() {
                     <div>
                       <h4 className="text-sm font-medium mb-2">Son Takipçiler</h4>
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                          <div>
-                            <div className="font-medium">Ahmet Yılmaz</div>
-                            <div className="text-gray-500">Tech Solutions Ltd.</div>
+                        {followers.length === 0 ? (
+                          <div className="text-center text-sm text-gray-500 py-4">
+                            Henüz takipçiniz bulunmuyor
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
-                          <div>
-                            <div className="font-medium">Ayşe Demir</div>
-                            <div className="text-gray-500">Digital Marketing Co.</div>
-                          </div>
-                        </div>
-                        <div className="text-center text-xs text-gray-500 mt-2">
-                          Detaylı liste için profil sayfasını ziyaret edin
-                        </div>
+                        ) : (
+                          <>
+                            {followers.slice(0, 2).map((follower: any) => (
+                              <div key={follower.id} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+                                <div>
+                                  <div className="font-medium">
+                                    {follower.firstName} {follower.lastName}
+                                  </div>
+                                  <div className="text-gray-500">
+                                    {follower.company || follower.email.includes('@dip.tc') ? 'DİP Ekibi' : 'Kullanıcı'}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="text-center text-xs text-gray-500 mt-2">
+                              Detaylı liste için profil sayfasını ziyaret edin
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
