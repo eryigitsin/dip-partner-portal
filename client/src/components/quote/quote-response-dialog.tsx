@@ -78,6 +78,12 @@ export function QuoteResponseDialog({
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
+  // Get partner's selected services from the new system
+  const { data: partnerServices = [] } = useQuery({
+    queryKey: ["/api/partner/services"],
+    enabled: !!partner?.id,
+  });
+
   const generateQuoteTitle = () => {
     const currentDate = new Date().toLocaleDateString('tr-TR', {
       day: '2-digit',
@@ -297,7 +303,7 @@ export function QuoteResponseDialog({
                         <label className="text-sm font-medium">Hizmet Adı</label>
                         <ServiceAutocomplete
                           partnerId={partner?.id}
-                          partnerServices={partner?.services ? partner.services.split(',').map(s => s.trim()) : []}
+                          partnerServices={partnerServices.map((service: any) => service.name)}
                           value={item.description}
                           onChange={(value) => updateItem(index, 'description', value)}
                           placeholder="Hizmetlerinizden seçin."

@@ -2700,24 +2700,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get current partner endpoint
-  app.get("/api/partners/me", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    try {
-      const user = req.user;
-      const partner = await storage.getPartnerByUserId(user!.id);
-      
-      if (!partner) {
-        return res.status(404).json({ message: "Partner not found" });
-      }
 
-      res.json(partner);
-    } catch (error) {
-      console.error('Error fetching current partner:', error);
-      res.status(500).json({ message: 'Failed to fetch partner' });
-    }
-  });
 
   // Partner Services Management Routes
   app.get("/api/partner/services", async (req, res) => {
