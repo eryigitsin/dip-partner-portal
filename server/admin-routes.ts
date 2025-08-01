@@ -127,5 +127,78 @@ export function createAdminRoutes(storage: IStorage): Router {
     }
   });
 
+  // Markets management endpoints
+  router.get('/markets', requireAdmin, async (req, res) => {
+    try {
+      const markets = await storage.getAllMarkets();
+      res.json(markets);
+    } catch (error) {
+      console.error('Error fetching markets:', error);
+      res.status(500).json({ message: 'Failed to fetch markets' });
+    }
+  });
+
+  router.post('/markets', requireAdmin, async (req, res) => {
+    try {
+      const { name, nameEn, region } = req.body;
+      const user = req.user!;
+      
+      if (!name) {
+        return res.status(400).json({ message: 'Market name is required' });
+      }
+
+      const newMarket = await storage.createMarketInPool({
+        name,
+        nameEn,
+        region,
+        createdBy: user.id
+      });
+
+      res.json(newMarket);
+    } catch (error) {
+      console.error('Error creating market:', error);
+      res.status(500).json({ message: 'Failed to create market' });
+    }
+  });
+
+  router.patch('/markets/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name, nameEn, region, isActive } = req.body;
+      
+      const updated = await storage.updateMarket(id, {
+        name,
+        nameEn,
+        region,
+        isActive
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ message: 'Market not found' });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating market:', error);
+      res.status(500).json({ message: 'Failed to update market' });
+    }
+  });
+
+  router.delete('/markets/:id', requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteMarket(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: 'Market not found or could not be deleted' });
+      }
+
+      res.json({ success: true, message: 'Market deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting market:', error);
+      res.status(500).json({ message: 'Failed to delete market' });
+    }
+  });
+
   return router;
 }

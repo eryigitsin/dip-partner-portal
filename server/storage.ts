@@ -1593,6 +1593,30 @@ export class DatabaseStorage implements IStorage {
     return market;
   }
 
+  // Admin Markets Management
+  async updateMarket(id: number, data: { name?: string; nameEn?: string; region?: string; isActive?: boolean }): Promise<Market | undefined> {
+    const [updated] = await db
+      .update(markets)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(markets.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteMarket(id: number): Promise<boolean> {
+    try {
+      // First, remove all partner-market relationships
+      await db.delete(partnerSelectedMarkets).where(eq(partnerSelectedMarkets.marketId, id));
+      
+      // Then delete the market
+      const result = await db.delete(markets).where(eq(markets.id, id));
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      console.error('Error deleting market:', error);
+      return false;
+    }
+  }
+
   // Feedback methods
   async getFeedback(): Promise<Feedback[]> {
     return await db.select().from(feedback).orderBy(desc(feedback.createdAt));

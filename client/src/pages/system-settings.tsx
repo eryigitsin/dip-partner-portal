@@ -33,6 +33,16 @@ interface Service {
   isActive: boolean;
 }
 
+interface Market {
+  id: number;
+  name: string;
+  nameEn?: string;
+  region?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface SystemConfig {
   siteName: string;
   defaultLanguage: string;
@@ -72,8 +82,10 @@ export default function SystemSettings() {
   const [emailPreview, setEmailPreview] = useState<{subject: string; content: string} | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingMarket, setEditingMarket] = useState<Market | null>(null);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [newService, setNewService] = useState({ name: '', description: '', category: '' });
+  const [newMarket, setNewMarket] = useState({ name: '', nameEn: '', region: '' });
   
   // Local state for form fields
   const [platformSettings, setPlatformSettings] = useState({
@@ -121,6 +133,11 @@ export default function SystemSettings() {
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['/api/admin/categories'],
+  });
+
+  // Fetch markets
+  const { data: markets = [] } = useQuery<Market[]>({
+    queryKey: ['/api/admin/markets'],
   });
 
   // Fetch services
@@ -252,6 +269,60 @@ export default function SystemSettings() {
     },
   });
 
+  // Market mutations
+  const updateMarketMutation = useMutation({
+    mutationFn: async (market: Market) => {
+      const response = await fetch(`/api/admin/markets/${market.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: market.name,
+          nameEn: market.nameEn,
+          region: market.region,
+          isActive: market.isActive
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to update market');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/markets'] });
+      toast({ title: 'Pazar güncellendi' });
+      setEditingMarket(null);
+    },
+  });
+
+  const createMarketMutation = useMutation({
+    mutationFn: async (market: { name: string; nameEn?: string; region?: string }) => {
+      const response = await fetch('/api/admin/markets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(market),
+      });
+      if (!response.ok) throw new Error('Failed to create market');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/markets'] });
+      toast({ title: 'Pazar oluşturuldu' });
+      setNewMarket({ name: '', nameEn: '', region: '' });
+    },
+  });
+
+  const deleteMarketMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/admin/markets/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete market');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/markets'] });
+      toast({ title: 'Pazar silindi' });
+    },
+  });
+
   // Save mutations for different settings sections
   const savePlatformSettingsMutation = useMutation({
     mutationFn: async () => {
@@ -357,6 +428,10 @@ export default function SystemSettings() {
     setEditingService({ ...service });
   };
 
+  const handleMarketEdit = (market: Market) => {
+    setEditingMarket({ ...market });
+  };
+
   if (user?.userType !== 'master_admin' && user?.activeUserType !== 'master_admin') {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -383,7 +458,7 @@ export default function SystemSettings() {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Genel
@@ -399,6 +474,10 @@ export default function SystemSettings() {
             <TabsTrigger value="services" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               Hizmetler
+            </TabsTrigger>
+            <TabsTrigger value="markets" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Pazarlar
             </TabsTrigger>
             <TabsTrigger value="email" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -891,6 +970,160 @@ export default function SystemSettings() {
                                 onClick={() => handleServiceEdit(service)}
                               >
                                 <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Markets Management */}
+          <TabsContent value="markets" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pazar Yönetimi</CardTitle>
+                <CardDescription>Hedef pazarlar havuzunu yönetin</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Add New Market */}
+                <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+                  <h3 className="text-lg font-medium mb-4">Yeni Pazar Ekle</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="newMarketName">Pazar Adı (Türkçe) *</Label>
+                      <Input
+                        id="newMarketName"
+                        value={newMarket.name}
+                        onChange={(e) => setNewMarket(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Örn: Türkiye"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newMarketNameEn">Pazar Adı (İngilizce)</Label>
+                      <Input
+                        id="newMarketNameEn"
+                        value={newMarket.nameEn}
+                        onChange={(e) => setNewMarket(prev => ({ ...prev, nameEn: e.target.value }))}
+                        placeholder="Örn: Turkey"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newMarketRegion">Bölge</Label>
+                      <Input
+                        id="newMarketRegion"
+                        value={newMarket.region}
+                        onChange={(e) => setNewMarket(prev => ({ ...prev, region: e.target.value }))}
+                        placeholder="Örn: Avrupa"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Button
+                      onClick={() => createMarketMutation.mutate(newMarket)}
+                      disabled={!newMarket.name || createMarketMutation.isPending}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {createMarketMutation.isPending ? 'Ekleniyor...' : 'Pazar Ekle'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Markets List */}
+                <div className="space-y-3">
+                  {markets.map((market) => {
+                    const isEditing = editingMarket && editingMarket.id === market.id;
+                    return (
+                      <div key={market.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          {isEditing ? (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <Input
+                                  value={editingMarket.name}
+                                  onChange={(e) => setEditingMarket(prev => prev ? { ...prev, name: e.target.value } : null)}
+                                  placeholder="Pazar adı (Türkçe)"
+                                />
+                              </div>
+                              <div>
+                                <Input
+                                  value={editingMarket.nameEn || ''}
+                                  onChange={(e) => setEditingMarket(prev => prev ? { ...prev, nameEn: e.target.value } : null)}
+                                  placeholder="Pazar adı (İngilizce)"
+                                />
+                              </div>
+                              <div>
+                                <Input
+                                  value={editingMarket.region || ''}
+                                  onChange={(e) => setEditingMarket(prev => prev ? { ...prev, region: e.target.value } : null)}
+                                  placeholder="Bölge"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium">{market.name}</span>
+                                {market.nameEn && (
+                                  <span className="text-gray-500">({market.nameEn})</span>
+                                )}
+                                {market.region && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {market.region}
+                                  </Badge>
+                                )}
+                                <Badge variant={market.isActive ? "default" : "secondary"}>
+                                  {market.isActive ? "Aktif" : "Pasif"}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                Oluşturulma: {new Date(market.createdAt).toLocaleDateString('tr-TR')}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => updateMarketMutation.mutate(editingMarket)}
+                                disabled={updateMarketMutation.isPending}
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingMarket(null)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleMarketEdit(market)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  if (confirm(`"${market.name}" pazarını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
+                                    deleteMarketMutation.mutate(market.id);
+                                  }
+                                }}
+                                disabled={deleteMarketMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
                           )}
