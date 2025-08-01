@@ -1,0 +1,49 @@
+Partner type: object
+Will return: {
+  id: 1,
+  userId: 6,
+  companyName: 'Markaşef',
+  logo: '/uploads/logos/logo-1753568112823-569757262.jpg',
+  coverImage: 'https://fgjuscppjxzznslgtkgu.supabase.co/storage/v1/object/public/partner-covers/partner-1/ms-cover-2-1754056132516-107413657.png',
+  description: 'markaşef, siz ve müşterileriniz için hem marka, hem de e-ticaret tarafında mükemmel tecrübeler tasarlar. \n' +
+    '</br></br>\n' +
+    'E-ticarette “kalıcı” büyümenin markalaşarak yakalanması gerektiğine inanır ve bütün sisteminizi bu doğrultuda düzenler, birlikte her dönem artan cirolar yönetiriz.',
+  shortDescription: null,
+  businessType: null,
+  serviceCategory: 'Pazarlama & Reklam',
+  services: 'Marka Tasarımı ve Uygulama\n' +
+    'Dijital Pazarlama\n' +
+    'Sosyal Medya & Influencer Pazarlaması\n' +
+    'Uçtan Uca eTicaret Yönetimi\n' +
+    'Uçtan Uca eİhracat Yönetimi\n' +
+    'eTicaret Otomasyonu\n' +
+    'Yurtiçi & Yurt Dışı Pazaryerleri Kurulumu\n' +
+    'Yurtiçi & Yurt Dışı Pazaryeri Hesap Yönetimi',
+  dipAdvantages: 'DİP Üyelerine Bütün Hizmetlerimizde %50 İndirim ve Ücretsiz Marka Durum Analizi',
+  address: null,
+  city: 'İstanbul',
+  country: 'Türkiye',
+  companyAddress: 'FENERBAHÇE MAH. İĞRİP SK. NO: 13 / 1, KADIKÖY, İSTANBUL 34726, TR',
+  companySize: '1-10 çalışan',
+  foundingYear: '2020',
+  sectorExperience: '5',
+  targetMarkets: 'Avrupa, Körfez Ülkeleri, Rusya, Türkî Cumhuriyetler, Amerika',
+  contactPerson: 'Emre Sarıkaya',
+  website: 'https://markasef.com',
+  linkedinProfile: 'https://www.linkedin.com/company/markasef/',
+  twitterProfile: 'https://x.com/marka_sef',
+  instagramProfile: 'https://www.instagram.com/marka_sef/',
+  facebookProfile: 'https://www.facebook.com/markasefcom/',
+  socialMedia: null,
+  isApproved: true,
+  isActive: true,
+  followersCount: 2,
+  profileViews: 143,
+  username: 'markasef',
+  createdAt: 2025-07-26T18:55:24.867Z,
+  updatedAt: 2025-08-01T15:00:40.929Z
+}
+3:36:19 PM [express] GET /api/partners/me 404 in 332ms :: {"message":"Partner not found"}
+3:36:19 PM [express] GET /api/quote-requests 304 in 372ms :: [{"id":3,"userId":4,"partnerId":1,"full…
+3:36:20 PM [express] GET /api/partners/me 404 in 179ms :: {"message":"Partner not found"}
+3:36:49 PM [express] GET /api/admin/system-config 403 in 134ms :: {"message":"Master admin access re…

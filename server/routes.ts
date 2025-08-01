@@ -936,28 +936,16 @@ export function registerRoutes(app: Express): Server {
   // Get partner followers
   app.get("/api/partners/me/followers", async (req, res) => {
     try {
-      console.log('=== /api/partners/me/followers called ===');
-      console.log('User authenticated:', req.isAuthenticated());
-      console.log('User object:', req.user);
-      
       if (!req.isAuthenticated()) {
-        console.log('User not authenticated, returning 401');
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      console.log('Looking for partner with userId:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
-      console.log('Partner found:', partner ? { id: partner.id, companyName: partner.companyName } : 'null');
-      
       if (!partner) {
-        console.log('Partner not found for userId:', req.user!.id);
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      console.log('Fetching followers for partnerId:', partner.id);
       const followers = await storage.getPartnerFollowers(partner.id);
-      console.log('Followers found:', followers.length, followers);
-      
       res.json(followers);
     } catch (error) {
       console.error('Error fetching partner followers:', error);
@@ -978,26 +966,11 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      console.log('=== API ENDPOINT DEBUG ===');
-      console.log('User ID from session:', req.user!.id);
-      console.log('Calling storage.getPartnerByUserId...');
-      
       const partner = await storage.getPartnerByUserId(req.user!.id);
       
-      console.log('=== RESULT FROM STORAGE ===');
-      console.log('Partner result type:', typeof partner);
-      console.log('Partner result:', partner);
-      console.log('Partner is truthy?', !!partner);
-      console.log('Partner is null?', partner === null);
-      console.log('Partner is undefined?', partner === undefined);
-      
       if (!partner) {
-        console.log('=== PARTNER NOT FOUND ===');
-        console.log('This is the problem! The method returns', partner);
         return res.status(404).json({ message: "Partner not found" });
       }
-      
-      console.log('=== PARTNER FOUND, PROCEEDING ===');
 
       console.log('Getting user contact information...');
       // Also get user contact information

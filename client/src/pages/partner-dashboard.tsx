@@ -51,20 +51,13 @@ export default function PartnerDashboard() {
   const { data: partner } = useQuery<Partner>({
     queryKey: ["/api/partners", "me"],
     queryFn: async () => {
-      console.log("Fetching partner data...");
       const response = await fetch("/api/partners/me");
-      console.log("Partner response status:", response.status);
       if (!response.ok) {
-        const error = await response.text();
-        console.error("Partner fetch error:", error);
         throw new Error("Failed to fetch partner data");
       }
-      const data = await response.json();
-      console.log("Partner data received:", data);
-      return data;
+      return response.json();
     },
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
-    retry: 1,
   });
 
   // Removed updateProfileMutation as it's not used in the current dashboard
@@ -75,13 +68,10 @@ export default function PartnerDashboard() {
   });
 
   // Get partner followers
-  const { data: followers = [], error: followersError } = useQuery({
+  const { data: followers = [] } = useQuery({
     queryKey: ["/api/partners/me/followers"],
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")) && !!partner,
   });
-
-  // Debug followers query
-  console.log("Followers query:", { followers, followersError, partnerExists: !!partner });
 
   const handleViewQuoteDetails = (request: QuoteRequest) => {
     setSelectedQuoteRequest(request);
