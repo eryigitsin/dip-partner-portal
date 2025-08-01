@@ -977,6 +977,8 @@ export function registerRoutes(app: Express): Server {
     try {
       console.log('=== /api/partners/me DEBUG ===');
       console.log('Session ID:', req.sessionID);
+      console.log('Session data:', req.session);
+      console.log('Passport user:', req.session?.passport?.user);
       console.log('User authenticated:', req.isAuthenticated());
       console.log('User from session:', req.user);
       console.log('User ID:', req.user?.id);
@@ -988,11 +990,14 @@ export function registerRoutes(app: Express): Server {
 
       console.log('Looking for partner with userId:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
+      console.log('Partner query result:', partner);
       
       if (!partner) {
         console.log('Partner not found for userId:', req.user!.id);
         return res.status(404).json({ message: "Partner not found" });
       }
+      
+      console.log('Partner found successfully:', { id: partner.id, companyName: partner.companyName, userId: partner.userId });
 
       console.log('Getting user contact information...');
       // Also get user contact information
