@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import {
   FileText,
   Clock,
@@ -14,7 +16,9 @@ import {
   XCircle,
   AlertCircle,
   MessageSquare,
-  CheckCircle2
+  CheckCircle2,
+  Eye,
+  Download
 } from 'lucide-react';
 
 interface QuoteRequest {
@@ -38,9 +42,37 @@ interface QuoteRequest {
   };
 }
 
+interface QuoteResponse {
+  id: number;
+  quoteRequestId: number;
+  partnerId: number;
+  title: string;
+  description: string;
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>;
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  validUntil: string;
+  notes: string;
+  paymentTerms: string;
+  deliveryTime: string;
+  quoteNumber: string;
+  status: string;
+  createdAt: string;
+}
+
 export function QuoteRequestsEmbedded() {
   const { toast } = useToast();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [quoteResponse, setQuoteResponse] = useState<QuoteResponse | null>(null);
 
   // Fetch all quote requests
   const { data: quoteRequests = [], isLoading } = useQuery<QuoteRequest[]>({
@@ -73,6 +105,43 @@ export function QuoteRequestsEmbedded() {
       });
     },
   });
+
+  // Function to handle viewing quote details
+  const handleViewDetails = async (request: QuoteRequest) => {
+    setSelectedRequest(request);
+    
+    // If quote was sent, fetch the quote response details
+    if (request.status === 'quote_sent' || request.status === 'responded') {
+      try {
+        const response = await fetch(`/api/quote-responses/${request.id}`);
+        if (response.ok) {
+          const quoteResponses = await response.json();
+          if (quoteResponses.length > 0) {
+            // Convert the data format to match our interface
+            const quoteData = quoteResponses[0];
+            setQuoteResponse({
+              ...quoteData,
+              total: quoteData.totalAmount ? quoteData.totalAmount / 100 : 0, // Convert from cents
+              subtotal: quoteData.subtotal ? quoteData.subtotal / 100 : 0,
+              taxAmount: quoteData.taxAmount ? quoteData.taxAmount / 100 : 0,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching quote response:', error);
+      }
+    } else {
+      setQuoteResponse(null);
+    }
+    
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setIsDetailModalOpen(false);
+    setSelectedRequest(null);
+    setQuoteResponse(null);
+  };
 
   // Filter requests by status
   const filteredRequests = selectedStatus === 'all' 
@@ -221,15 +290,15 @@ export function QuoteRequestsEmbedded() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm text-gray-500">
-                        {request.status === 'quote_sent' ? 'Partner tarafından yanıtlandı' : 
-                         request.status === 'pending' ? 'Partner yanıtı bekleniyor' :
-                         request.status === 'accepted' ? 'Müşteri tarafından kabul edildi' :
-                         request.status === 'completed' ? 'Proje tamamlandı' :
-                         request.status === 'rejected' ? 'Müşteri tarafından reddedildi' :
-                         request.status === 'responded' ? 'Partner tarafından yanıtlandı' :
-                         'Otomatik güncelleme'}
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewDetails(request)}
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Detaylar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -238,6 +307,197 @@ export function QuoteRequestsEmbedded() {
           </div>
         )}
       </CardContent>
+
+      {/* Quote Details Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Teklif Talebi Detayları
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedRequest && (
+            <div className="space-y-6">
+              {/* Quote Request Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Teklif Talebi Bilgileri</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Müşteri Adı</label>
+                      <p className="text-sm font-medium">{selectedRequest.fullName}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Şirket</label>
+                      <p className="text-sm">{selectedRequest.companyName}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">E-posta</label>
+                      <p className="text-sm">{selectedRequest.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Telefon</label>
+                      <p className="text-sm">{selectedRequest.phone}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Bütçe</label>
+                      <p className="text-sm">{selectedRequest.budget || 'Belirtilmemiş'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Talep Tarihi</label>
+                      <p className="text-sm">{new Date(selectedRequest.createdAt).toLocaleDateString('tr-TR')}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">İhtiyaç Duyulan Hizmetler</label>
+                    <p className="text-sm mt-1 p-3 bg-gray-50 rounded-md">{selectedRequest.serviceNeeded}</p>
+                  </div>
+                  
+                  {selectedRequest.message && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Ek Mesaj</label>
+                      <p className="text-sm mt-1 p-3 bg-gray-50 rounded-md">{selectedRequest.message}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Durum</label>
+                    <div className="mt-1">
+                      {getStatusBadge(selectedRequest.status)}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quote Response Details (if available) */}
+              {quoteResponse && (
+                <>
+                  <Separator />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="text-lg">Gönderilen Teklif Detayları</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(`/api/quote-responses/${quoteResponse.id}/pdf`, '_blank')}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          PDF İndir
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Teklif Numarası</label>
+                          <p className="text-sm font-medium">{quoteResponse.quoteNumber}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Geçerlilik Tarihi</label>
+                          <p className="text-sm">{new Date(quoteResponse.validUntil).toLocaleDateString('tr-TR')}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Teslimat Süresi</label>
+                          <p className="text-sm">{quoteResponse.deliveryTime}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Teklif Tarihi</label>
+                          <p className="text-sm">{new Date(quoteResponse.createdAt).toLocaleDateString('tr-TR')}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Teklif Başlığı</label>
+                        <p className="text-sm mt-1 font-medium">{quoteResponse.title}</p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Açıklama</label>
+                        <p className="text-sm mt-1 p-3 bg-gray-50 rounded-md">{quoteResponse.description}</p>
+                      </div>
+
+                      {/* Quote Items */}
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 mb-2 block">Hizmet Kalemleri</label>
+                        <div className="border rounded-md overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Hizmet</TableHead>
+                                <TableHead className="text-right">Miktar</TableHead>
+                                <TableHead className="text-right">Birim Fiyat</TableHead>
+                                <TableHead className="text-right">Toplam</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {quoteResponse.items.map((item, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>{item.description}</TableCell>
+                                  <TableCell className="text-right">{item.quantity}</TableCell>
+                                  <TableCell className="text-right">
+                                    {item.unitPrice > 0 ? `₺${item.unitPrice.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {item.total > 0 ? `₺${item.total.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+
+                      {/* Pricing Summary */}
+                      <div className="bg-gray-50 p-4 rounded-md space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm">Ara Toplam:</span>
+                          <span className="text-sm font-medium">
+                            {quoteResponse.subtotal > 0 ? `₺${quoteResponse.subtotal.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">KDV (%{quoteResponse.taxRate}):</span>
+                          <span className="text-sm font-medium">
+                            {quoteResponse.taxAmount > 0 ? `₺${quoteResponse.taxAmount.toLocaleString('tr-TR')}` : 'Dahil'}
+                          </span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between">
+                          <span className="text-base font-medium">Genel Toplam:</span>
+                          <span className="text-base font-bold">
+                            {quoteResponse.total > 0 ? `₺${quoteResponse.total.toLocaleString('tr-TR')}` : 'Özel Fiyat - İletişime Geçiniz'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {quoteResponse.notes && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Notlar</label>
+                          <p className="text-sm mt-1 p-3 bg-gray-50 rounded-md">{quoteResponse.notes}</p>
+                        </div>
+                      )}
+
+                      {quoteResponse.paymentTerms && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600">Ödeme Koşulları</label>
+                          <p className="text-sm mt-1 p-3 bg-gray-50 rounded-md">{quoteResponse.paymentTerms}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
