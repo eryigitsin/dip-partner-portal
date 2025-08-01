@@ -1262,9 +1262,8 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { conversationId, receiverId, message } = req.body;
+      const { receiverId, message } = req.body;
       const newMessage = await storage.createMessage({
-        conversationId,
         senderId: req.user.id,
         receiverId,
         message,

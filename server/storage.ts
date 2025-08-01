@@ -1579,7 +1579,12 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(asc(markets.name));
 
-    return selectedMarkets;
+    return selectedMarkets.map(market => ({
+      id: market.id,
+      name: market.name,
+      nameEn: market.nameEn || undefined,
+      region: market.region || undefined
+    }));
   }
 
   async addPartnerMarket(partnerId: number, marketId: number): Promise<void> {
