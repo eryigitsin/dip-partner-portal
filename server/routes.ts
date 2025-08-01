@@ -137,8 +137,22 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Get all available types for this user
+      const allAvailableTypes = [currentUser.userType];
+      if (currentUser.availableUserTypes) {
+        allAvailableTypes.push(...currentUser.availableUserTypes);
+      }
+      
+      // If user doesn't have partner type but has a partner record, add it
+      if (userType === 'partner' && !allAvailableTypes.includes('partner')) {
+        const partnerRecord = await storage.getPartnerByUserId(userId);
+        if (partnerRecord) {
+          allAvailableTypes.push('partner');
+        }
+      }
+      
       // Check if the requested user type is available for this user
-      if (!currentUser.availableUserTypes || !currentUser.availableUserTypes.includes(userType)) {
+      if (!allAvailableTypes.includes(userType)) {
         return res.status(400).json({ message: "Requested account type is not available for this user" });
       }
 
