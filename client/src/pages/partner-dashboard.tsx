@@ -152,6 +152,18 @@ export default function PartnerDashboard() {
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")) && !!partner,
   });
 
+  // Get partner view statistics
+  const { data: viewStats = [] } = useQuery<Array<{date: string, visits: number}>>({
+    queryKey: ["/api/partners", partner?.id, "view-stats"],
+    queryFn: async () => {
+      if (!partner?.id) return [];
+      const response = await fetch(`/api/partners/${partner.id}/view-stats?days=5`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")) && !!partner,
+  });
+
   const handleViewQuoteDetails = (request: QuoteRequest) => {
     setSelectedQuoteRequest(request);
     setIsDetailModalOpen(true);
@@ -446,12 +458,8 @@ export default function PartnerDashboard() {
                       <div className="h-32">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            data={[
-                              { date: '28 Tem', visits: Math.floor((partner?.profileViews || 143) * 0.2) },
-                              { date: '29 Tem', visits: Math.floor((partner?.profileViews || 143) * 0.25) },
-                              { date: '30 Tem', visits: Math.floor((partner?.profileViews || 143) * 0.15) },
-                              { date: '31 Tem', visits: Math.floor((partner?.profileViews || 143) * 0.2) },
-                              { date: '1 Ağu', visits: Math.floor((partner?.profileViews || 143) * 0.2) }
+                            data={viewStats.length > 0 ? viewStats : [
+                              { date: 'Veri yok', visits: 0 }
                             ]}
                           >
                             <CartesianGrid strokeDasharray="3 3" />

@@ -995,6 +995,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get partner view statistics
+  app.get("/api/partners/:id/view-stats", async (req, res) => {
+    try {
+      const partnerId = parseInt(req.params.id);
+      const days = parseInt(req.query.days as string) || 7;
+      const stats = await storage.getPartnerViewStats(partnerId, days);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching partner view stats:', error);
+      res.status(500).json({ message: 'Failed to fetch view statistics' });
+    }
+  });
+
   // This route has been moved to line 1316 with multer support for file uploads
 
   // User unfollow partner endpoint (different from partner endpoint)
