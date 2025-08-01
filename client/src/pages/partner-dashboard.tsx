@@ -18,6 +18,7 @@ import { QuoteRequest, Partner } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TooltipNoDelay, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip-no-delay";
+import { FeedbackModal } from "@/components/feedback/feedback-modal";
 import { 
   BarChart3, 
   Users, 
@@ -53,6 +54,7 @@ export default function PartnerDashboard() {
   const [selectedQuoteRequest, setSelectedQuoteRequest] = useState<QuoteRequest | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isResponseDialogOpen, setIsResponseDialogOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [quotesHelpDismissed, setQuotesHelpDismissed] = useState(() => {
     return localStorage.getItem('quotesHelpDismissed') === 'true';
   });
@@ -579,7 +581,17 @@ export default function PartnerDashboard() {
                               </div>
                             ))}
                             <div className="text-center text-xs text-gray-500 mt-2">
-                              Detaylı liste için profil sayfasını ziyaret edin
+                              Detaylı istatistikler eklenecektir. Talepleriniz için lütfen "Geribildirim Formu"nu kullanın.
+                            </div>
+                            <div className="text-center mt-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setIsFeedbackModalOpen(true)}
+                                className="text-dip-blue border-dip-blue hover:bg-dip-blue hover:text-white"
+                              >
+                                Geri Bildirim Formu
+                              </Button>
                             </div>
                           </>
                         )}
@@ -1007,6 +1019,12 @@ export default function PartnerDashboard() {
           }}
         />
       )}
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </div>
   );
 }

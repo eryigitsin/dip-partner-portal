@@ -357,6 +357,19 @@ export const systemConfig = pgTable("system_config", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Feedback from users and partners
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  category: text("category").notNull(), // request, bug, feature, complaint, other
+  message: text("message").notNull(),
+  status: text("status").default("open"), // open, in_progress, resolved, closed
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Application documents for file uploads
 export const applicationDocuments = pgTable("application_documents", {
   id: serial("id").primaryKey(),
@@ -564,6 +577,12 @@ export const insertUserEmailPreferencesSchema = createInsertSchema(userEmailPref
   updatedAt: true,
 });
 
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types for services system
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -620,3 +639,5 @@ export const insertMarketingContactSchema = createInsertSchema(marketingContacts
 });
 export type InsertMarketingContact = z.infer<typeof insertMarketingContactSchema>;
 export type MarketingContact = typeof marketingContacts.$inferSelect;
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;

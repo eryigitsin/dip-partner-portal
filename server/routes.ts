@@ -2373,6 +2373,64 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Feedback endpoints
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      console.log('Creating feedback:', req.body);
+      const feedbackData = req.body;
+      const newFeedback = await storage.createFeedback(feedbackData);
+      res.json(newFeedback);
+    } catch (error) {
+      console.error('Error creating feedback:', error);
+      res.status(500).json({ message: "Failed to create feedback" });
+    }
+  });
+
+  // Admin only - get all feedback
+  app.get("/api/admin/feedback", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      if (req.user!.userType !== 'master_admin') {
+        return res.status(403).json({ message: "Master admin access required" });
+      }
+
+      const feedbackList = await storage.getFeedback();
+      res.json(feedbackList);
+    } catch (error) {
+      console.error('Error fetching feedback:', error);
+      res.status(500).json({ message: "Failed to fetch feedback" });
+    }
+  });
+
+  // Admin only - update feedback status
+  app.patch("/api/admin/feedback/:id/status", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      if (req.user!.userType !== 'master_admin') {
+        return res.status(403).json({ message: "Master admin access required" });
+      }
+
+      const feedbackId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      const updatedFeedback = await storage.updateFeedbackStatus(feedbackId, status);
+      if (!updatedFeedback) {
+        return res.status(404).json({ message: "Feedback not found" });
+      }
+      
+      res.json(updatedFeedback);
+    } catch (error) {
+      console.error('Error updating feedback status:', error);
+      res.status(500).json({ message: "Failed to update feedback" });
+    }
+  });
+
   // Marketing contact management routes
   app.get("/api/admin/marketing-contacts", async (req, res) => {
     if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {

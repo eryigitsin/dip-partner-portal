@@ -37,7 +37,10 @@ import {
   Edit,
   Trash2,
   Upload,
-  ImageIcon
+  ImageIcon,
+  MessageSquare,
+  User,
+  Flag
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -80,6 +83,12 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error("Failed to fetch quote requests");
       return response.json();
     },
+    enabled: !!user && user.userType === "master_admin",
+  });
+
+  // Fetch feedback for master admin
+  const { data: feedbackList = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/feedback"],
     enabled: !!user && user.userType === "master_admin",
   });
 
@@ -151,6 +160,27 @@ export default function AdminDashboard() {
       toast({
         title: "Hata",
         description: error.message || "Partner silinirken hata oluştu",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Feedback status update mutation
+  const updateFeedbackStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      return await apiRequest("PATCH", `/api/admin/feedback/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/feedback"] });
+      toast({
+        title: "Başarılı",
+        description: "Geri bildirim durumu güncellendi",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Geri bildirim güncellenirken hata oluştu",
         variant: "destructive",
       });
     },
@@ -424,11 +454,12 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="applications">Başvurular</TabsTrigger>
             <TabsTrigger value="partners">Partnerler</TabsTrigger>
             <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
+            <TabsTrigger value="feedback">Geri Bildirimler</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -785,6 +816,119 @@ export default function AdminDashboard() {
 
           <TabsContent value="quotes" className="space-y-6">
             <QuoteRequestsEmbedded />
+          </TabsContent>
+
+          <TabsContent value="feedback" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Geri Bildirimler
+                </CardTitle>
+                <CardDescription>
+                  Kullanıcılardan gelen geri bildirimleri inceleyin ve yönetin
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {feedbackList.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    Henüz geri bildirim bulunmamaktadır
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {feedbackList.map((feedback: any) => (
+                      <Card key={feedback.id} className="border-l-4 border-l-blue-500">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={
+                                feedback.category === 'bug' ? 'destructive' : 
+                                feedback.category === 'feature' ? 'secondary' :
+                                feedback.category === 'complaint' ? 'destructive' :
+                                'default'
+                              }>
+                                {feedback.category === 'request' && 'İstek / Öneri'}
+                                {feedback.category === 'bug' && 'Hata Bildirme'}
+                                {feedback.category === 'feature' && 'Özellik Talebi'}
+                                {feedback.category === 'complaint' && 'Şikayet'}
+                                {feedback.category === 'other' && 'Diğer'}
+                              </Badge>
+                              <Badge variant={
+                                feedback.status === 'new' ? 'secondary' :
+                                feedback.status === 'reviewed' ? 'default' :
+                                feedback.status === 'resolved' ? 'outline' :
+                                'secondary'
+                              }>
+                                {feedback.status === 'new' && 'Yeni'}
+                                {feedback.status === 'reviewed' && 'İncelendi'}
+                                {feedback.status === 'resolved' && 'Çözüldü'}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(feedback.createdAt).toLocaleDateString('tr-TR', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2 mb-3">
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-1">
+                                <User className="h-4 w-4" />
+                                <span className="font-medium">{feedback.name}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-4 w-4" />
+                                <span>{feedback.email}</span>
+                              </div>
+                              {feedback.phone && (
+                                <div className="flex items-center gap-1">
+                                  <Phone className="h-4 w-4" />
+                                  <span>{feedback.phone}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                            <p className="text-sm leading-relaxed">{feedback.message}</p>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Select
+                              value={feedback.status}
+                              onValueChange={(status) => 
+                                updateFeedbackStatusMutation.mutate({ id: feedback.id, status })
+                              }
+                            >
+                              <SelectTrigger className="w-[150px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="new">Yeni</SelectItem>
+                                <SelectItem value="reviewed">İncelendi</SelectItem>
+                                <SelectItem value="resolved">Çözüldü</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            
+                            {feedback.category === 'bug' && (
+                              <Button size="sm" variant="outline" className="text-red-600">
+                                <Flag className="h-4 w-4 mr-1" />
+                                Öncelikli
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

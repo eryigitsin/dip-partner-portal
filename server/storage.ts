@@ -19,6 +19,7 @@ import {
   userEmailPreferences,
   marketingContacts,
   systemConfig,
+  feedback,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -49,6 +50,8 @@ import {
   type InsertUserEmailPreferences,
   type MarketingContact,
   type InsertMarketingContact,
+  type Feedback,
+  type InsertFeedback,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql } from "drizzle-orm";
@@ -200,6 +203,11 @@ export interface IStorage {
   createServiceInPool(data: { name: string; description?: string; category?: string; createdBy: number }): Promise<Service>;
   getServicesByIds(serviceIds: number[]): Promise<Service[]>;
   getPartnersOfferingService(serviceId: number): Promise<Array<{ partner: Partner; user: User }>>
+
+  // Feedback methods
+  getFeedback(): Promise<Feedback[]>;
+  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
+  updateFeedbackStatus(id: number, status: string): Promise<Feedback | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1508,6 +1516,28 @@ export class DatabaseStorage implements IStorage {
       partner: row.partners,
       user: row.users
     }));
+  }
+
+  // Feedback methods
+  async getFeedback(): Promise<Feedback[]> {
+    return await db.select().from(feedback).orderBy(desc(feedback.createdAt));
+  }
+
+  async createFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
+    const [newFeedback] = await db
+      .insert(feedback)
+      .values(feedbackData)
+      .returning();
+    return newFeedback;
+  }
+
+  async updateFeedbackStatus(id: number, status: string): Promise<Feedback | undefined> {
+    const [updatedFeedback] = await db
+      .update(feedback)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(feedback.id, id))
+      .returning();
+    return updatedFeedback || undefined;
   }
 
 }
