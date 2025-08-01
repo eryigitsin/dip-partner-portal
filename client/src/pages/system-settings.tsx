@@ -29,6 +29,7 @@ interface Service {
   name: string;
   description: string;
   category: string;
+  categoryId: number;
   isActive: boolean;
 }
 

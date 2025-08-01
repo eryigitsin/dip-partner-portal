@@ -188,7 +188,7 @@ export interface IStorage {
   updateCategory(id: number, updates: any): Promise<any>;
   
   // Service management with categories
-  getAllServicesWithCategories(): Promise<Array<{ id: number; name: string; description: string; categoryId: number; isActive: boolean }>>;
+  getAllServicesWithCategories(): Promise<Array<{ id: number; name: string; description: string; category: string; categoryId: number; isActive: boolean }>>;
   createService(data: { name: string; description: string; categoryId: number; isActive: boolean; createdBy: number }): Promise<any>;
   updateService(id: number, updates: any): Promise<any>;
   
@@ -1288,12 +1288,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Service management methods
-  async getAllServicesWithCategories(): Promise<Array<{ id: number; name: string; description: string; categoryId: number; isActive: boolean }>> {
+  async getAllServicesWithCategories(): Promise<Array<{ id: number; name: string; description: string; category: string; categoryId: number; isActive: boolean }>> {
     const allServices = await db.select().from(services);
     return allServices.map(service => ({
       id: service.id,
       name: service.name,
       description: service.description || '',
+      category: service.category || '',
       categoryId: 1, // Services use category text field, default to 1 for UI compatibility
       isActive: service.isActive !== null ? service.isActive : true
     }));
