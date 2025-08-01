@@ -53,7 +53,7 @@ export default function AdminDashboard() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
-  const [partnerFormData, setPartnerFormData] = useState<Partial<Partner & { email?: string; password?: string }>>({});
+  const [partnerFormData, setPartnerFormData] = useState<Partial<Partner>>({});
   const [inspectionModalOpen, setInspectionModalOpen] = useState(false);
   const [selectedPartnerId, setSelectedPartnerId] = useState<number | null>(null);
   const [adminLogoFile, setAdminLogoFile] = useState<File | null>(null);
@@ -365,9 +365,9 @@ export default function AdminDashboard() {
     try {
       const formData = new FormData();
       
-      // Add partner data
+      // Add partner data (excluding email and password fields)
       Object.entries(partnerFormData).forEach(([key, value]) => {
-        if (key !== 'logo' && key !== 'coverImage' && value !== undefined && value !== null) {
+        if (key !== 'logo' && key !== 'coverImage' && key !== 'email' && key !== 'password' && value !== undefined && value !== null) {
           formData.append(key, value.toString());
         }
       });
@@ -1375,31 +1375,6 @@ export default function AdminDashboard() {
                   rows={3}
                 />
               </div>
-              
-              {user?.userType === "master_admin" && (
-                <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-yellow-50">
-                  <div className="space-y-2">
-                    <Label htmlFor="partnerEmail">Partner E-posta</Label>
-                    <Input
-                      id="partnerEmail"
-                      type="email"
-                      value={partnerFormData.email || ''}
-                      onChange={(e) => setPartnerFormData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="partner@example.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="partnerPassword">Partner Şifresi</Label>
-                    <Input
-                      id="partnerPassword"
-                      type="password"
-                      value={partnerFormData.password || ''}
-                      onChange={(e) => setPartnerFormData(prev => ({ ...prev, password: e.target.value }))}
-                      placeholder="Yeni şifre"
-                    />
-                  </div>
-                </div>
-              )}
               
               <div className="flex justify-end space-x-2 pt-4">
                 <Button 
