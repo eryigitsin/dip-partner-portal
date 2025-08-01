@@ -41,7 +41,9 @@ import {
   MessageSquare,
   User,
   Flag,
-  Handshake
+  Handshake,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -61,6 +63,7 @@ export default function AdminDashboard() {
   const [cropType, setCropType] = useState<'logo' | 'cover'>('logo');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null);
+  const [expandedFeedback, setExpandedFeedback] = useState<Set<number>>(new Set());
 
   const { data: applications = [] } = useQuery<PartnerApplication[]>({
     queryKey: ["/api/partner-applications"],
@@ -841,113 +844,137 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {feedbackList.filter((f: any) => f.source !== 'partner').map((feedback: any) => (
-                      <Card key={feedback.id} className="border-l-4 border-l-blue-500">
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={
-                                feedback.category === 'bug' ? 'destructive' : 
-                                feedback.category === 'feature' ? 'secondary' :
-                                feedback.category === 'complaint' ? 'destructive' :
-                                'default'
-                              }>
-                                {feedback.category === 'request' && 'İstek / Öneri'}
-                                {feedback.category === 'bug' && 'Hata Bildirme'}
-                                {feedback.category === 'feature' && 'Özellik Talebi'}
-                                {feedback.category === 'complaint' && 'Şikayet'}
-                                {feedback.category === 'other' && 'Diğer'}
-                              </Badge>
-                              <Badge 
-                                variant={
-                                  feedback.status === 'new' ? 'default' :
-                                  feedback.status === 'reviewed' ? 'secondary' :
-                                  feedback.status === 'resolved' ? 'outline' :
-                                  'default'
-                                }
-                                className={
-                                  feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
-                                  feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
-                                  feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                                  'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                }
+                      {feedbackList.filter((f: any) => f.source !== 'partner').map((feedback: any) => {
+                        const isExpanded = expandedFeedback.has(feedback.id);
+                        return (
+                          <Card key={feedback.id} className="border-l-4 border-l-blue-500">
+                            <CardContent className="p-0">
+                              {/* Header - Always Visible */}
+                              <div 
+                                className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedFeedback);
+                                  if (isExpanded) {
+                                    newExpanded.delete(feedback.id);
+                                  } else {
+                                    newExpanded.add(feedback.id);
+                                  }
+                                  setExpandedFeedback(newExpanded);
+                                }}
                               >
-                                {feedback.status === 'new' && 'Yeni'}
-                                {feedback.status === 'reviewed' && 'İncelendi'}
-                                {feedback.status === 'resolved' && 'Çözüldü'}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {new Date(feedback.createdAt).toLocaleDateString('tr-TR', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2 mb-3">
-                            <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center gap-1">
-                                <User className="h-4 w-4" />
-                                <span className="font-medium">{feedback.name}</span>
+                                <div className="flex justify-between items-start">
+                                  <div className="flex items-center gap-2">
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                                    )}
+                                    <Badge variant={
+                                      feedback.category === 'bug' ? 'destructive' : 
+                                      feedback.category === 'feature' ? 'secondary' :
+                                      feedback.category === 'complaint' ? 'destructive' :
+                                      'default'
+                                    }>
+                                      {feedback.category === 'request' && 'İstek / Öneri'}
+                                      {feedback.category === 'bug' && 'Hata Bildirme'}
+                                      {feedback.category === 'feature' && 'Özellik Talebi'}
+                                      {feedback.category === 'complaint' && 'Şikayet'}
+                                      {feedback.category === 'other' && 'Diğer'}
+                                    </Badge>
+                                    <Badge 
+                                      variant={
+                                        feedback.status === 'new' ? 'default' :
+                                        feedback.status === 'reviewed' ? 'secondary' :
+                                        feedback.status === 'resolved' ? 'outline' :
+                                        'default'
+                                      }
+                                      className={
+                                        feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                                        feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                                        feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                                        'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                      }
+                                    >
+                                      {feedback.status === 'new' && 'Yeni'}
+                                      {feedback.status === 'reviewed' && 'İncelendi'}
+                                      {feedback.status === 'resolved' && 'Çözüldü'}
+                                    </Badge>
+                                    <span className="text-sm font-medium text-gray-700">{feedback.name}</span>
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {new Date(feedback.createdAt).toLocaleDateString('tr-TR', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Mail className="h-4 w-4" />
-                                <a 
-                                  href={`mailto:${feedback.email}`}
-                                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                                >
-                                  {feedback.email}
-                                </a>
-                              </div>
-                              {feedback.phone && (
-                                <div className="flex items-center gap-1">
-                                  <Phone className="h-4 w-4" />
-                                  <a 
-                                    href={`tel:${feedback.phone}`}
-                                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                                  >
-                                    {feedback.phone}
-                                  </a>
+
+                              {/* Expandable Content */}
+                              {isExpanded && (
+                                <div className="px-4 pb-4 border-t bg-gray-50/50">
+                                  <div className="space-y-3 pt-3">
+                                    <div className="flex items-center gap-4 text-sm">
+                                      <div className="flex items-center gap-1">
+                                        <Mail className="h-4 w-4" />
+                                        <a 
+                                          href={`mailto:${feedback.email}`}
+                                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                                        >
+                                          {feedback.email}
+                                        </a>
+                                      </div>
+                                      {feedback.phone && (
+                                        <div className="flex items-center gap-1">
+                                          <Phone className="h-4 w-4" />
+                                          <a 
+                                            href={`tel:${feedback.phone}`}
+                                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                                          >
+                                            {feedback.phone}
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="bg-white p-3 rounded-lg border">
+                                      <p className="text-sm leading-relaxed">{feedback.message}</p>
+                                    </div>
+                                    
+                                    <div className="flex gap-2 pt-2">
+                                      <Select
+                                        value={feedback.status}
+                                        onValueChange={(status) => 
+                                          updateFeedbackStatusMutation.mutate({ id: feedback.id, status })
+                                        }
+                                      >
+                                        <SelectTrigger className="w-[150px]">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="new">Yeni</SelectItem>
+                                          <SelectItem value="reviewed">İncelendi</SelectItem>
+                                          <SelectItem value="resolved">Çözüldü</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      
+                                      {feedback.category === 'bug' && (
+                                        <Button size="sm" variant="outline" className="text-red-600">
+                                          <Flag className="h-4 w-4 mr-1" />
+                                          Öncelikli
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                               )}
-                            </div>
-                          </div>
-                          
-                          <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                            <p className="text-sm leading-relaxed">{feedback.message}</p>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <Select
-                              value={feedback.status}
-                              onValueChange={(status) => 
-                                updateFeedbackStatusMutation.mutate({ id: feedback.id, status })
-                              }
-                            >
-                              <SelectTrigger className="w-[150px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="new">Yeni</SelectItem>
-                                <SelectItem value="reviewed">İncelendi</SelectItem>
-                                <SelectItem value="resolved">Çözüldü</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            
-                            {feedback.category === 'bug' && (
-                              <Button size="sm" variant="outline" className="text-red-600">
-                                <Flag className="h-4 w-4 mr-1" />
-                                Öncelikli
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -972,113 +999,137 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {feedbackList.filter((f: any) => f.source === 'partner').map((feedback: any) => (
-                        <Card key={feedback.id} className="border-l-4 border-l-orange-500">
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <div className="flex items-center gap-2">
-                                <Badge variant={
-                                  feedback.category === 'bug' ? 'destructive' : 
-                                  feedback.category === 'feature' ? 'secondary' :
-                                  feedback.category === 'complaint' ? 'destructive' :
-                                  'default'
-                                }>
-                                  {feedback.category === 'request' && 'İstek / Öneri'}
-                                  {feedback.category === 'bug' && 'Hata Bildirme'}
-                                  {feedback.category === 'feature' && 'Özellik Talebi'}
-                                  {feedback.category === 'complaint' && 'Şikayet'}
-                                  {feedback.category === 'other' && 'Diğer'}
-                                </Badge>
-                                <Badge 
-                                  variant={
-                                    feedback.status === 'new' ? 'default' :
-                                    feedback.status === 'reviewed' ? 'secondary' :
-                                    feedback.status === 'resolved' ? 'outline' :
-                                    'default'
+                      {feedbackList.filter((f: any) => f.source === 'partner').map((feedback: any) => {
+                        const isExpanded = expandedFeedback.has(feedback.id);
+                        return (
+                          <Card key={feedback.id} className="border-l-4 border-l-orange-500">
+                            <CardContent className="p-0">
+                              {/* Header - Always Visible */}
+                              <div 
+                                className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedFeedback);
+                                  if (isExpanded) {
+                                    newExpanded.delete(feedback.id);
+                                  } else {
+                                    newExpanded.add(feedback.id);
                                   }
-                                  className={
-                                    feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
-                                    feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
-                                    feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                                    'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                  }
-                                >
-                                  {feedback.status === 'new' && 'Yeni'}
-                                  {feedback.status === 'reviewed' && 'İncelendi'}
-                                  {feedback.status === 'resolved' && 'Çözüldü'}
-                                </Badge>
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {new Date(feedback.createdAt).toLocaleDateString('tr-TR', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-2 mb-3">
-                              <div className="flex items-center gap-4 text-sm">
-                                <div className="flex items-center gap-1">
-                                  <User className="h-4 w-4" />
-                                  <span className="font-medium">{feedback.name}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Mail className="h-4 w-4" />
-                                  <a 
-                                    href={`mailto:${feedback.email}`}
-                                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                                  >
-                                    {feedback.email}
-                                  </a>
-                                </div>
-                                {feedback.phone && (
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="h-4 w-4" />
-                                    <a 
-                                      href={`tel:${feedback.phone}`}
-                                      className="text-blue-600 hover:text-blue-800 hover:underline"
-                                    >
-                                      {feedback.phone}
-                                    </a>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                              <p className="text-sm leading-relaxed">{feedback.message}</p>
-                            </div>
-                            
-                            <div className="flex gap-2">
-                              <Select
-                                value={feedback.status}
-                                onValueChange={(status) => 
-                                  updateFeedbackStatusMutation.mutate({ id: feedback.id, status })
-                                }
+                                  setExpandedFeedback(newExpanded);
+                                }}
                               >
-                                <SelectTrigger className="w-[150px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="new">Yeni</SelectItem>
-                                  <SelectItem value="reviewed">İncelendi</SelectItem>
-                                  <SelectItem value="resolved">Çözüldü</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              
-                              {feedback.category === 'bug' && (
-                                <Button size="sm" variant="outline" className="text-red-600">
-                                  <Flag className="h-4 w-4 mr-1" />
-                                  Öncelikli
-                                </Button>
+                                <div className="flex justify-between items-start">
+                                  <div className="flex items-center gap-2">
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                                    )}
+                                    <Badge variant={
+                                      feedback.category === 'bug' ? 'destructive' : 
+                                      feedback.category === 'feature' ? 'secondary' :
+                                      feedback.category === 'complaint' ? 'destructive' :
+                                      'default'
+                                    }>
+                                      {feedback.category === 'request' && 'İstek / Öneri'}
+                                      {feedback.category === 'bug' && 'Hata Bildirme'}
+                                      {feedback.category === 'feature' && 'Özellik Talebi'}
+                                      {feedback.category === 'complaint' && 'Şikayet'}
+                                      {feedback.category === 'other' && 'Diğer'}
+                                    </Badge>
+                                    <Badge 
+                                      variant={
+                                        feedback.status === 'new' ? 'default' :
+                                        feedback.status === 'reviewed' ? 'secondary' :
+                                        feedback.status === 'resolved' ? 'outline' :
+                                        'default'
+                                      }
+                                      className={
+                                        feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                                        feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                                        feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                                        'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                      }
+                                    >
+                                      {feedback.status === 'new' && 'Yeni'}
+                                      {feedback.status === 'reviewed' && 'İncelendi'}
+                                      {feedback.status === 'resolved' && 'Çözüldü'}
+                                    </Badge>
+                                    <span className="text-sm font-medium text-gray-700">{feedback.name}</span>
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {new Date(feedback.createdAt).toLocaleDateString('tr-TR', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Expandable Content */}
+                              {isExpanded && (
+                                <div className="px-4 pb-4 border-t bg-orange-50/30">
+                                  <div className="space-y-3 pt-3">
+                                    <div className="flex items-center gap-4 text-sm">
+                                      <div className="flex items-center gap-1">
+                                        <Mail className="h-4 w-4" />
+                                        <a 
+                                          href={`mailto:${feedback.email}`}
+                                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                                        >
+                                          {feedback.email}
+                                        </a>
+                                      </div>
+                                      {feedback.phone && (
+                                        <div className="flex items-center gap-1">
+                                          <Phone className="h-4 w-4" />
+                                          <a 
+                                            href={`tel:${feedback.phone}`}
+                                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                                          >
+                                            {feedback.phone}
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="bg-white p-3 rounded-lg border">
+                                      <p className="text-sm leading-relaxed">{feedback.message}</p>
+                                    </div>
+                                    
+                                    <div className="flex gap-2 pt-2">
+                                      <Select
+                                        value={feedback.status}
+                                        onValueChange={(status) => 
+                                          updateFeedbackStatusMutation.mutate({ id: feedback.id, status })
+                                        }
+                                      >
+                                        <SelectTrigger className="w-[150px]">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="new">Yeni</SelectItem>
+                                          <SelectItem value="reviewed">İncelendi</SelectItem>
+                                          <SelectItem value="resolved">Çözüldü</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      
+                                      {feedback.category === 'bug' && (
+                                        <Button size="sm" variant="outline" className="text-red-600">
+                                          <Flag className="h-4 w-4 mr-1" />
+                                          Öncelikli
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                               )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
