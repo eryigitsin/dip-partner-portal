@@ -7,6 +7,7 @@ import {
   quoteRequests,
   serviceCategories,
   services,
+  partnerSelectedServices,
   partnerServices,
   partnerPosts,
   partnerFollowers,
@@ -190,6 +191,15 @@ export interface IStorage {
   getAllServicesWithCategories(): Promise<Array<{ id: number; name: string; description: string; categoryId: number; isActive: boolean }>>;
   createService(data: { name: string; description: string; categoryId: number; isActive: boolean; createdBy: number }): Promise<any>;
   updateService(id: number, updates: any): Promise<any>;
+  
+  // Partner Services Pool Management
+  getAllServices(): Promise<Service[]>;
+  getPartnerSelectedServices(partnerId: number): Promise<Array<{ id: number; name: string; description?: string; category?: string }>>;
+  addPartnerService(partnerId: number, serviceId: number): Promise<void>;
+  removePartnerService(partnerId: number, serviceId: number): Promise<void>;
+  createServiceInPool(data: { name: string; description?: string; category?: string; createdBy: number }): Promise<Service>;
+  getServicesByIds(serviceIds: number[]): Promise<Service[]>;
+  getPartnersOfferingService(serviceId: number): Promise<Array<{ partner: Partner; user: User }>>
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1315,6 +1325,98 @@ export class DatabaseStorage implements IStorage {
       .where(eq(services.id, id))
       .returning();
     return service;
+  }
+
+  // Partner Services Pool Management implementation
+  async getAllServices(): Promise<Service[]> {
+    return await db.select().from(services).where(eq(services.isActive, true));
+  }
+
+  async getPartnerSelectedServices(partnerId: number): Promise<Array<{ id: number; name: string; description?: string; category?: string }>> {
+    const selectedServices = await db
+      .select({
+        id: services.id,
+        name: services.name,
+        description: services.description,
+        category: services.category
+      })
+      .from(partnerSelectedServices)
+      .innerJoin(services, eq(partnerSelectedServices.serviceId, services.id))
+      .where(and(
+        eq(partnerSelectedServices.partnerId, partnerId),
+        eq(services.isActive, true)
+      ));
+    
+    return selectedServices.map(service => ({
+      id: service.id,
+      name: service.name,
+      description: service.description || undefined,
+      category: service.category || undefined
+    }));
+  }
+
+  async addPartnerService(partnerId: number, serviceId: number): Promise<void> {
+    // Check if already exists
+    const existing = await db
+      .select()
+      .from(partnerSelectedServices)
+      .where(and(
+        eq(partnerSelectedServices.partnerId, partnerId),
+        eq(partnerSelectedServices.serviceId, serviceId)
+      ));
+
+    if (existing.length === 0) {
+      await db.insert(partnerSelectedServices).values({
+        partnerId,
+        serviceId
+      });
+    }
+  }
+
+  async removePartnerService(partnerId: number, serviceId: number): Promise<void> {
+    await db
+      .delete(partnerSelectedServices)
+      .where(and(
+        eq(partnerSelectedServices.partnerId, partnerId),
+        eq(partnerSelectedServices.serviceId, serviceId)
+      ));
+  }
+
+  async createServiceInPool(data: { name: string; description?: string; category?: string; createdBy: number }): Promise<Service> {
+    const [service] = await db
+      .insert(services)
+      .values({
+        name: data.name,
+        description: data.description,
+        category: data.category || 'Genel',
+        isActive: true,
+        createdBy: data.createdBy
+      })
+      .returning();
+    return service;
+  }
+
+  async getServicesByIds(serviceIds: number[]): Promise<Service[]> {
+    if (serviceIds.length === 0) return [];
+    return await db.select().from(services).where(sql`${services.id} = ANY(${serviceIds})`);
+  }
+
+  async getPartnersOfferingService(serviceId: number): Promise<Array<{ partner: Partner; user: User }>> {
+    const partnersWithUsers = await db
+      .select()
+      .from(partnerSelectedServices)
+      .innerJoin(partners, eq(partnerSelectedServices.partnerId, partners.id))
+      .innerJoin(users, eq(partners.userId, users.id))
+      .where(and(
+        eq(partnerSelectedServices.serviceId, serviceId),
+        eq(partners.isApproved, true),
+        eq(partners.isActive, true)
+      ));
+    
+    return partnersWithUsers.map(row => ({
+      partner: row.partners,
+      user: row.users
+    }));
   }
 
 }

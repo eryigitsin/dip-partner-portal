@@ -2655,7 +2655,7 @@ export function registerRoutes(app: Express): Server {
         description, 
         categoryId, 
         isActive: true, 
-        createdBy: req.user.id 
+        createdBy: req.user!.id 
       });
       res.json(service);
     } catch (error) {
@@ -2673,6 +2673,136 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error updating service:', error);
       res.status(500).json({ error: 'Failed to update service' });
+    }
+  });
+
+  // Get current partner endpoint
+  app.get("/api/partners/me", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      res.json(partner);
+    } catch (error) {
+      console.error('Error fetching current partner:', error);
+      res.status(500).json({ message: 'Failed to fetch partner' });
+    }
+  });
+
+  // Partner Services Management Routes
+  app.get("/api/partner/services", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const selectedServices = await storage.getPartnerSelectedServices(partner.id);
+      res.json(selectedServices);
+    } catch (error) {
+      console.error('Error fetching partner services:', error);
+      res.status(500).json({ message: 'Failed to fetch partner services' });
+    }
+  });
+
+  app.post("/api/partner/services", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const { serviceId } = req.body;
+      
+      if (!serviceId) {
+        return res.status(400).json({ message: "Service ID is required" });
+      }
+
+      await storage.addPartnerService(partner.id, serviceId);
+      res.json({ success: true, message: "Service added successfully" });
+    } catch (error) {
+      console.error('Error adding partner service:', error);
+      res.status(500).json({ message: 'Failed to add service' });
+    }
+  });
+
+  app.delete("/api/partner/services/:serviceId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const { serviceId } = req.params;
+      await storage.removePartnerService(partner.id, parseInt(serviceId));
+      res.json({ success: true, message: "Service removed successfully" });
+    } catch (error) {
+      console.error('Error removing partner service:', error);
+      res.status(500).json({ message: 'Failed to remove service' });
+    }
+  });
+
+  app.post("/api/partner/services/new", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const { name, description, category } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: "Service name is required" });
+      }
+
+      // Create new service in the pool
+      const newService = await storage.createServiceInPool({
+        name,
+        description,
+        category,
+        createdBy: user!.id
+      });
+
+      // Automatically add it to partner's services
+      await storage.addPartnerService(partner.id, newService.id);
+
+      res.json({ success: true, service: newService, message: "Service created and added successfully" });
+    } catch (error) {
+      console.error('Error creating new service:', error);
+      res.status(500).json({ message: 'Failed to create service' });
+    }
+  });
+
+  app.get("/api/services/:serviceId/partners", async (req, res) => {
+    try {
+      const { serviceId } = req.params;
+      const partnersWithUsers = await storage.getPartnersOfferingService(parseInt(serviceId));
+      res.json(partnersWithUsers);
+    } catch (error) {
+      console.error('Error fetching service partners:', error);
+      res.status(500).json({ message: 'Failed to fetch service partners' });
     }
   });
 

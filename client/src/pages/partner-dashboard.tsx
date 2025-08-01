@@ -12,6 +12,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { QuoteRequestDetailModal } from "@/components/quote/quote-request-detail-modal";
 import { QuoteResponseDialog } from "@/components/quote/quote-response-dialog";
+import { PartnerServicesTab } from "@/components/partner-services-tab";
 import { QuoteRequest, Partner } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -487,28 +488,7 @@ export default function PartnerDashboard() {
           </TabsContent>
 
           <TabsContent value="services" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hizmet Yönetimi</CardTitle>
-                <CardDescription>
-                  Sunduğunuz hizmetleri ve paketlerinizi yönetin
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Hizmet Yönetimi
-                  </h3>
-                  <p className="text-gray-600">
-                    Hizmet yönetimi özelliği yakında eklenecektir.
-                  </p>
-                  <Button className="mt-4 bg-dip-blue hover:bg-dip-dark-blue">
-                    Hizmet Ekle
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PartnerServicesTab />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
