@@ -975,13 +975,22 @@ export function registerRoutes(app: Express): Server {
   // Get partner profile for current user
   app.get("/api/partners/me", async (req, res) => {
     try {
+      console.log('=== /api/partners/me DEBUG ===');
+      console.log('Session ID:', req.sessionID);
+      console.log('User authenticated:', req.isAuthenticated());
+      console.log('User from session:', req.user);
+      console.log('User ID:', req.user?.id);
+      
       if (!req.isAuthenticated()) {
+        console.log('User not authenticated, returning 401');
         return res.status(401).json({ message: "Authentication required" });
       }
 
+      console.log('Looking for partner with userId:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
       
       if (!partner) {
+        console.log('Partner not found for userId:', req.user!.id);
         return res.status(404).json({ message: "Partner not found" });
       }
 
