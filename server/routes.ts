@@ -393,7 +393,7 @@ export function registerRoutes(app: Express): Server {
       const service = await storage.createService({
         name,
         description,
-        categoryId: 1, // Default category if not specified
+        category,
         createdBy: req.user!.id,
       });
 
@@ -770,70 +770,11 @@ export function registerRoutes(app: Express): Server {
         };
 
         // Check if partner already exists
-        let partner;
         const existingPartner = await storage.getPartnerByUserId(user.id);
         if (existingPartner) {
-          partner = await storage.updatePartner(existingPartner.id, partnerData);
+          await storage.updatePartner(existingPartner.id, partnerData);
         } else {
-          partner = await storage.createPartner(partnerData);
-        }
-
-        // Process services from application and add to service pool
-        if (application.services && partner) {
-          console.log('Processing services from application:', application.services);
-          
-          // Parse services - split by newlines and clean up
-          const serviceLines = application.services
-            .split(/[\r\n]+/)
-            .map(s => s.trim())
-            .filter(s => s.length > 0 && s !== '*' && s !== '-' && s !== '•');
-
-          console.log('Parsed service lines:', serviceLines);
-
-          for (const serviceLine of serviceLines) {
-            try {
-              // Clean service name (remove bullets, asterisks, etc.)
-              const serviceName = serviceLine.replace(/^[\*\-•\s]+/, '').trim();
-              
-              if (serviceName.length === 0) continue;
-
-              console.log('Processing service:', serviceName);
-
-              // Check if service already exists in pool
-              let service = await storage.getServiceByName(serviceName);
-              
-              if (!service) {
-                // Create new service in pool
-                service = await storage.createService({
-                  name: serviceName,
-                  description: '', // No description from application
-                  categoryId: 1, // Default general category
-                  isActive: true,
-                  createdBy: user.id
-                });
-                console.log('Created new service in pool:', service.name);
-              } else {
-                console.log('Service already exists in pool:', service.name);
-              }
-
-              // Add service to partner's selected services
-              try {
-                await storage.addPartnerService(partner.id, service.id);
-                console.log('Added service to partner:', service.name);
-              } catch (error: any) {
-                // Ignore duplicate key errors
-                if (!error.message?.includes('duplicate key')) {
-                  console.error('Error adding service to partner:', error);
-                }
-              }
-              
-            } catch (serviceError) {
-              console.error('Error processing service:', serviceLine, serviceError);
-              // Continue with other services
-            }
-          }
-
-          console.log('Finished processing services for partner:', partner.id);
+          await storage.createPartner(partnerData);
         }
 
         // Update user's available user types if they're not already set
@@ -1170,145 +1111,6 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error creating message:', error);
       res.status(500).json({ error: 'Failed to send message' });
-    }
-  });
-
-  // Get all services with categories
-  app.get('/api/services', async (req, res) => {
-    try {
-      const services = await storage.getServicesWithCategories();
-      res.json(services);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      res.status(500).json({ error: 'Failed to fetch services' });
-    }
-  });
-
-  // Service Categories Management (Master Admin only)
-  app.get('/api/admin/service-categories', async (req, res) => {
-    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
-      return res.sendStatus(403);
-    }
-    
-    try {
-      const categories = await storage.getServiceCategories();
-      res.json(categories);
-    } catch (error) {
-      console.error('Error fetching service categories:', error);
-      res.status(500).json({ error: 'Failed to fetch service categories' });
-    }
-  });
-
-  app.post('/api/admin/service-categories', async (req, res) => {
-    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
-      return res.sendStatus(403);
-    }
-    
-    try {
-      const category = await storage.createServiceCategory(req.body);
-      res.status(201).json(category);
-    } catch (error) {
-      console.error('Error creating service category:', error);
-      res.status(500).json({ error: 'Failed to create service category' });
-    }
-  });
-
-  app.patch('/api/admin/service-categories/:id', async (req, res) => {
-    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
-      return res.sendStatus(403);
-    }
-    
-    try {
-      const id = parseInt(req.params.id);
-      const category = await storage.updateServiceCategory(id, req.body);
-      if (!category) {
-        return res.status(404).json({ error: 'Service category not found' });
-      }
-      res.json(category);
-    } catch (error) {
-      console.error('Error updating service category:', error);
-      res.status(500).json({ error: 'Failed to update service category' });
-    }
-  });
-
-  app.delete('/api/admin/service-categories/:id', async (req, res) => {
-    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
-      return res.sendStatus(403);
-    }
-    
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteServiceCategory(id);
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error deleting service category:', error);
-      res.status(500).json({ error: 'Failed to delete service category' });
-    }
-  });
-
-  // Service Management (Master Admin only)
-  app.get('/api/admin/services', async (req, res) => {
-    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
-      return res.sendStatus(403);
-    }
-    
-    try {
-      const services = await storage.getServicesWithCategories();
-      res.json(services);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      res.status(500).json({ error: 'Failed to fetch services' });
-    }
-  });
-
-  app.post('/api/admin/services', async (req, res) => {
-    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
-      return res.sendStatus(403);
-    }
-    
-    try {
-      const serviceData = {
-        ...req.body,
-        createdBy: req.user.id,
-      };
-      const service = await storage.createService(serviceData);
-      res.status(201).json(service);
-    } catch (error) {
-      console.error('Error creating service:', error);
-      res.status(500).json({ error: 'Failed to create service' });
-    }
-  });
-
-  app.patch('/api/admin/services/:id', async (req, res) => {
-    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
-      return res.sendStatus(403);
-    }
-    
-    try {
-      const id = parseInt(req.params.id);
-      const service = await storage.updateService(id, req.body);
-      if (!service) {
-        return res.status(404).json({ error: 'Service not found' });
-      }
-      res.json(service);
-    } catch (error) {
-      console.error('Error updating service:', error);
-      res.status(500).json({ error: 'Failed to update service' });
-    }
-  });
-
-  app.delete('/api/admin/services/:id', async (req, res) => {
-    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
-      return res.sendStatus(403);
-    }
-    
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteService(id);
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error deleting service:', error);
-      res.status(500).json({ error: 'Failed to delete service' });
     }
   });
 
@@ -2899,23 +2701,13 @@ export function registerRoutes(app: Express): Server {
     
     try {
       const user = req.user;
-      const { partnerId } = req.query;
+      const partner = await storage.getPartnerByUserId(user!.id);
       
-      let targetPartnerId: number;
-      
-      if (partnerId) {
-        // Fetch services for a specific partner (for quote request forms)
-        targetPartnerId = parseInt(partnerId as string);
-      } else {
-        // Fetch services for current user's partner (for dashboard)
-        const partner = await storage.getPartnerByUserId(user!.id);
-        if (!partner) {
-          return res.status(404).json({ message: "Partner not found" });
-        }
-        targetPartnerId = partner.id;
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
       }
 
-      const selectedServices = await storage.getPartnerSelectedServices(targetPartnerId);
+      const selectedServices = await storage.getPartnerSelectedServices(partner.id);
       res.json(selectedServices);
     } catch (error) {
       console.error('Error fetching partner services:', error);

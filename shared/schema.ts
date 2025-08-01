@@ -80,7 +80,6 @@ export const services = pgTable("services", {
   name: text("name").notNull().unique(),
   description: text("description"),
   category: text("category"),
-  categoryId: integer("category_id").references(() => serviceCategories.id),
   isActive: boolean("is_active").default(true),
   createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -558,6 +557,8 @@ export const insertUserEmailPreferencesSchema = createInsertSchema(userEmailPref
 });
 
 // Types for services system
+export type Service = typeof services.$inferSelect;
+export type InsertService = z.infer<typeof insertServiceSchema>;
 export type PartnerOfferedService = typeof partnerOfferedServices.$inferSelect;
 export type InsertPartnerOfferedService = z.infer<typeof insertPartnerOfferedServiceSchema>;
 
@@ -574,8 +575,6 @@ export type QuoteRequest = typeof quoteRequests.$inferSelect;
 export type InsertQuoteRequest = z.infer<typeof insertQuoteRequestSchema>;
 export type ServiceCategory = typeof serviceCategories.$inferSelect;
 export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
-export type Service = typeof services.$inferSelect;
-export type InsertService = z.infer<typeof insertServiceSchema>;
 export type PartnerService = typeof partnerServices.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type PartnerFollower = typeof partnerFollowers.$inferSelect;

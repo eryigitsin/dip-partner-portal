@@ -667,8 +667,6 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(serviceCategories).orderBy(asc(serviceCategories.sortOrder));
   }
 
-
-
   async createServiceCategory(category: InsertServiceCategory): Promise<ServiceCategory> {
     const [newCategory] = await db
       .insert(serviceCategories)
@@ -718,7 +716,6 @@ export class DatabaseStorage implements IStorage {
         name,
         description: null,
         category: null,
-        categoryId: null,
         isActive: true,
         createdBy: null,
         createdAt: new Date(),
@@ -1302,14 +1299,13 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async createService(data: { name: string; description: string; categoryId?: number; isActive: boolean; createdBy: number }): Promise<Service> {
+  async createService(data: { name: string; description: string; categoryId: number; isActive: boolean; createdBy: number }): Promise<any> {
     const [service] = await db
       .insert(services)
       .values({
         name: data.name,
         description: data.description,
-        category: 'general',
-        categoryId: data.categoryId || null,
+        category: 'general', // Services table uses category string field
         isActive: data.isActive,
         createdBy: data.createdBy
       })
@@ -1317,51 +1313,23 @@ export class DatabaseStorage implements IStorage {
     return service;
   }
 
-  async updateService(id: number, updates: Partial<InsertService>): Promise<Service | undefined> {
+  async updateService(id: number, updates: any): Promise<any> {
     const [service] = await db
       .update(services)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({
+        name: updates.name,
+        description: updates.description,
+        category: updates.category || 'general',
+        isActive: updates.isActive
+      })
       .where(eq(services.id, id))
       .returning();
-    return service || undefined;
-  }
-
-  async deleteService(id: number): Promise<void> {
-    await db.delete(services).where(eq(services.id, id));
-  }
-
-  async createServiceCategory(category: InsertServiceCategory): Promise<ServiceCategory> {
-    const [created] = await db
-      .insert(serviceCategories)
-      .values(category)
-      .returning();
-    return created;
-  }
-
-  async updateServiceCategory(id: number, category: Partial<InsertServiceCategory>): Promise<ServiceCategory | undefined> {
-    const [updated] = await db
-      .update(serviceCategories)
-      .set(category)
-      .where(eq(serviceCategories.id, id))
-      .returning();
-    return updated || undefined;
-  }
-
-  async deleteServiceCategory(id: number): Promise<void> {
-    await db.delete(serviceCategories).where(eq(serviceCategories.id, id));
+    return service;
   }
 
   // Partner Services Pool Management implementation
   async getAllServices(): Promise<Service[]> {
     return await db.select().from(services).where(eq(services.isActive, true));
-  }
-
-  async getServicesWithCategories(): Promise<Service[]> {
-    return await db
-      .select()
-      .from(services)
-      .where(eq(services.isActive, true))
-      .orderBy(asc(services.name));
   }
 
   async getPartnerSelectedServices(partnerId: number): Promise<Array<{ id: number; name: string; description?: string; category?: string }>> {
