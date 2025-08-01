@@ -1227,23 +1227,13 @@ export default function AdminDashboard() {
           
           {editingPartner && (
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Şirket Adı</Label>
-                  <Input
-                    id="companyName"
-                    value={partnerFormData.companyName || ''}
-                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, companyName: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="companyAddress">Şirket Adresi</Label>
-                  <Input
-                    id="companyAddress"
-                    value={partnerFormData.companyAddress || ''}
-                    onChange={(e) => setPartnerFormData(prev => ({ ...prev, companyAddress: e.target.value }))}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Şirket Adı</Label>
+                <Input
+                  id="companyName"
+                  value={partnerFormData.companyName || ''}
+                  onChange={(e) => setPartnerFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -1376,6 +1366,28 @@ export default function AdminDashboard() {
                   id="companyAddress"
                   value={partnerFormData.companyAddress || ''}
                   onChange={(e) => setPartnerFormData(prev => ({ ...prev, companyAddress: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="targetMarkets">Hedef Pazarlar</Label>
+                <Textarea
+                  id="targetMarkets"
+                  value={partnerFormData.targetMarkets || ''}
+                  onChange={(e) => setPartnerFormData(prev => ({ ...prev, targetMarkets: e.target.value }))}
+                  placeholder="Hedef pazarları giriniz (örn: Avrupa, Amerika, Asya)"
+                  rows={2}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="dipAdvantages">DİP'e Özel Avantajlar</Label>
+                <Textarea
+                  id="dipAdvantages"
+                  value={partnerFormData.dipAdvantages || ''}
+                  onChange={(e) => setPartnerFormData(prev => ({ ...prev, dipAdvantages: e.target.value }))}
+                  placeholder="DİP üyelerine sunduğunuz özel avantajları açıklayın"
                   rows={3}
                 />
               </div>
