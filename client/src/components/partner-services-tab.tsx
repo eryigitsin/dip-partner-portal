@@ -85,7 +85,7 @@ export function PartnerServicesTab() {
   // Add service mutation
   const addServiceMutation = useMutation({
     mutationFn: (serviceId: number) =>
-      apiRequest("/api/partner/services", "POST", { serviceId }),
+      apiRequest("POST", "/api/partner/services", { serviceId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/services"] });
       setIsAddDialogOpen(false);
@@ -106,7 +106,7 @@ export function PartnerServicesTab() {
   // Remove service mutation
   const removeServiceMutation = useMutation({
     mutationFn: (serviceId: number) =>
-      apiRequest(`/api/partner/services/${serviceId}`, "DELETE"),
+      apiRequest("DELETE", `/api/partner/services/${serviceId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/services"] });
       toast({
@@ -126,7 +126,7 @@ export function PartnerServicesTab() {
   // Create new service mutation
   const createServiceMutation = useMutation({
     mutationFn: (serviceData: { name: string; description?: string; category?: string }) =>
-      apiRequest("/api/partner/services/new", "POST", serviceData),
+      apiRequest("POST", "/api/partner/services/new", serviceData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/services"] });
       queryClient.invalidateQueries({ queryKey: ["/api/services"] });
