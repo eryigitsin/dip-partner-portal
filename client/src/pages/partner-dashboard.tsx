@@ -1017,6 +1017,7 @@ export default function PartnerDashboard() {
       <FeedbackModal
         isOpen={isFeedbackModalOpen}
         onClose={() => setIsFeedbackModalOpen(false)}
+        source="partner"
       />
     </div>
   );

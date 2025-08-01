@@ -40,7 +40,8 @@ import {
   ImageIcon,
   MessageSquare,
   User,
-  Flag
+  Flag,
+  Handshake
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -819,24 +820,28 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="feedback" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Geri Bildirimler
-                </CardTitle>
-                <CardDescription>
-                  Kullanıcılardan gelen geri bildirimleri inceleyin ve yönetin
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {feedbackList.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    Henüz geri bildirim bulunmamaktadır
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {feedbackList.map((feedback: any) => (
+            {/* Feedback Categories Header */}
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* User Feedback */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Kullanıcı Geri Bildirimleri
+                  </CardTitle>
+                  <CardDescription>
+                    Kullanıcılardan gelen platform geri bildirimleri
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {feedbackList.filter((f: any) => f.source !== 'partner').length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <MessageSquare className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                      <p>Henüz kullanıcı geri bildirimi bulunmamaktadır</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {feedbackList.filter((f: any) => f.source !== 'partner').map((feedback: any) => (
                       <Card key={feedback.id} className="border-l-4 border-l-blue-500">
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start mb-3">
@@ -942,11 +947,143 @@ export default function AdminDashboard() {
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Partner Feedback */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Handshake className="h-5 w-5" />
+                    Partner Geri Bildirimleri
+                  </CardTitle>
+                  <CardDescription>
+                    Partnerlerden gelen sistem geri bildirimleri
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {feedbackList.filter((f: any) => f.source === 'partner').length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Handshake className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                      <p>Henüz partner geri bildirimi bulunmamaktadır</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {feedbackList.filter((f: any) => f.source === 'partner').map((feedback: any) => (
+                        <Card key={feedback.id} className="border-l-4 border-l-orange-500">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex items-center gap-2">
+                                <Badge variant={
+                                  feedback.category === 'bug' ? 'destructive' : 
+                                  feedback.category === 'feature' ? 'secondary' :
+                                  feedback.category === 'complaint' ? 'destructive' :
+                                  'default'
+                                }>
+                                  {feedback.category === 'request' && 'İstek / Öneri'}
+                                  {feedback.category === 'bug' && 'Hata Bildirme'}
+                                  {feedback.category === 'feature' && 'Özellik Talebi'}
+                                  {feedback.category === 'complaint' && 'Şikayet'}
+                                  {feedback.category === 'other' && 'Diğer'}
+                                </Badge>
+                                <Badge 
+                                  variant={
+                                    feedback.status === 'new' ? 'default' :
+                                    feedback.status === 'reviewed' ? 'secondary' :
+                                    feedback.status === 'resolved' ? 'outline' :
+                                    'default'
+                                  }
+                                  className={
+                                    feedback.status === 'new' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                                    feedback.status === 'reviewed' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                                    feedback.status === 'resolved' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                                    'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                  }
+                                >
+                                  {feedback.status === 'new' && 'Yeni'}
+                                  {feedback.status === 'reviewed' && 'İncelendi'}
+                                  {feedback.status === 'resolved' && 'Çözüldü'}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {new Date(feedback.createdAt).toLocaleDateString('tr-TR', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2 mb-3">
+                              <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-1">
+                                  <User className="h-4 w-4" />
+                                  <span className="font-medium">{feedback.name}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Mail className="h-4 w-4" />
+                                  <a 
+                                    href={`mailto:${feedback.email}`}
+                                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                                  >
+                                    {feedback.email}
+                                  </a>
+                                </div>
+                                {feedback.phone && (
+                                  <div className="flex items-center gap-1">
+                                    <Phone className="h-4 w-4" />
+                                    <a 
+                                      href={`tel:${feedback.phone}`}
+                                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                                    >
+                                      {feedback.phone}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                              <p className="text-sm leading-relaxed">{feedback.message}</p>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <Select
+                                value={feedback.status}
+                                onValueChange={(status) => 
+                                  updateFeedbackStatusMutation.mutate({ id: feedback.id, status })
+                                }
+                              >
+                                <SelectTrigger className="w-[150px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="new">Yeni</SelectItem>
+                                  <SelectItem value="reviewed">İncelendi</SelectItem>
+                                  <SelectItem value="resolved">Çözüldü</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              
+                              {feedback.category === 'bug' && (
+                                <Button size="sm" variant="outline" className="text-red-600">
+                                  <Flag className="h-4 w-4 mr-1" />
+                                  Öncelikli
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

@@ -365,7 +365,8 @@ export const feedback = pgTable("feedback", {
   phone: text("phone"),
   category: text("category").notNull(), // request, bug, feature, complaint, other
   message: text("message").notNull(),
-  status: text("status").default("open"), // open, in_progress, resolved, closed
+  status: text("status").default("new"), // new, reviewed, resolved
+  source: text("source").default("user").notNull(), // user, partner
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

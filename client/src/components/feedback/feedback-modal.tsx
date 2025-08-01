@@ -13,9 +13,10 @@ import { CheckCircle } from "lucide-react";
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
+  source?: 'user' | 'partner';
 }
 
-export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
+export function FeedbackModal({ isOpen, onClose, source = 'user' }: FeedbackModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,7 +29,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
   const feedbackMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest('POST', '/api/feedback', data);
+      return await apiRequest('POST', '/api/feedback', { ...data, source });
     },
     onSuccess: () => {
       setShowSuccess(true);

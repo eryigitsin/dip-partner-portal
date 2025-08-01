@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save, Handshake, Briefcase } from 'lucide-react';
+import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save, Handshake, Briefcase, MessageSquare } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserProfile, CompanyBillingInfo, Partner } from '@shared/schema';
@@ -18,12 +18,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { PartnerApplicationDialog } from '@/components/forms/partner-application-dialog';
+import { FeedbackModal } from '@/components/feedback/feedback-modal';
 
 export default function UserPanel() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
   const [partnerApplicationOpen, setPartnerApplicationOpen] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
 
   // Fetch user profile data
   const { data: userProfile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -373,31 +375,60 @@ export default function UserPanel() {
               </CardContent>
             </Card>
 
-            {/* Partner Application Call-to-Action */}
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 mt-6">
-              <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Handshake className="h-6 w-6 text-blue-600" />
+            {/* Call-to-Action Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {/* Partner Application CTA */}
+              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Handshake className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">İş Ortağı Ol</h3>
+                      <p className="text-gray-600 mb-4 text-sm">
+                        DİP üyelerine sunabileceğiniz hizmetleriniz varsa iş ortaklığı başvurusu yapın.
+                      </p>
+                      <Button 
+                        onClick={() => setPartnerApplicationOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-700 w-full"
+                      >
+                        <Briefcase className="h-4 w-4 mr-2" />
+                        İş Ortağı Ol
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">İş Ortağı Ol</h3>
-                    <p className="text-gray-600 mb-4">
-                      Eğer DİP üyelerine sunabileceğiniz hizmetleriniz varsa iş ortaklığı başvurusu yapabilirsiniz.
-                    </p>
-                    <Button 
-                      onClick={() => setPartnerApplicationOpen(true)}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Briefcase className="h-4 w-4 mr-2" />
-                      İş Ortağı Ol
-                    </Button>
+                </CardContent>
+              </Card>
+
+              {/* Feedback Form CTA */}
+              <Card className="bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200">
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <MessageSquare className="h-6 w-6 text-orange-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Geri Bildirim Formu</h3>
+                      <p className="text-gray-600 mb-4 text-sm">
+                        Platform hakkında görüş, öneri ve şikayetlerinizi bizimle paylaşın.
+                      </p>
+                      <Button 
+                        onClick={() => setFeedbackModalOpen(true)}
+                        className="bg-orange-600 hover:bg-orange-700 w-full"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Geri Bildirim Gönder
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Company Tab */}
@@ -700,6 +731,12 @@ export default function UserPanel() {
         onOpenChange={setPartnerApplicationOpen}
         prefilledData={getPrefilledData()}
         onSuccess={handlePartnerApplicationSuccess}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
       />
     </div>
   );
