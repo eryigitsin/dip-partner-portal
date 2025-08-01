@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ServiceAutocomplete } from '@/components/ui/service-autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
@@ -48,6 +49,17 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
   const [workType, setWorkType] = useState<'project' | 'monthly'>('monthly');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [serviceDropdownOpen, setServiceDropdownOpen] = useState(false);
+  const [currentServiceInput, setCurrentServiceInput] = useState('');
+
+  // Fetch partner's services from the database
+  const { data: partnerServicesData = [] } = useQuery({
+    queryKey: [`/api/partners/${partner.id}/services`],
+    queryFn: async () => {
+      const response = await fetch(`/api/partners/${partner.id}/services`);
+      if (!response.ok) throw new Error('Partner services could not be loaded');
+      return response.json();
+    },
+  });
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -184,21 +196,39 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     quoteRequestMutation.mutate(finalData);
   };
 
-  // Parse partner services from legacy text field
+  // Get partner services - prioritize database services, fallback to legacy text field
   const getPartnerServices = () => {
+    // Use database services if available
+    if (partnerServicesData && partnerServicesData.length > 0) {
+      return partnerServicesData.map((service: any) => service.name);
+    }
+    
+    // Fallback to legacy text field parsing
     if (!partner.services) return [];
     
-    // Split by common delimiters and clean up
     const services = partner.services
       .split(/[\r\n\*\-•]+/)
       .map(s => s.trim())
       .filter(s => s.length > 0 && s !== '*' && s !== '-' && s !== '•')
-      .slice(0, 10); // Limit to 10 services for UI
+      .slice(0, 10);
     
     return services;
   };
 
   const partnerServices = getPartnerServices();
+
+  // Handle adding service to selected list
+  const handleAddService = (serviceName: string) => {
+    if (serviceName.trim() && !selectedServices.includes(serviceName.trim())) {
+      setSelectedServices([...selectedServices, serviceName.trim()]);
+      setCurrentServiceInput('');
+    }
+  };
+
+  // Handle removing service from selected list
+  const handleRemoveService = (serviceToRemove: string) => {
+    setSelectedServices(selectedServices.filter(service => service !== serviceToRemove));
+  };
 
   return (
     <Form {...form}>
@@ -281,90 +311,58 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
           )}
         />
 
-        {/* Multiple Service Selection with Dropdown */}
-        {partnerServices.length > 0 && (
-          <div className="space-y-3">
-            <FormLabel>Hizmet Seçimi * (Birden fazla seçim yapabilirsiniz)</FormLabel>
-            <Select open={serviceDropdownOpen} onOpenChange={setServiceDropdownOpen}>
-              <SelectTrigger onClick={() => setServiceDropdownOpen(!serviceDropdownOpen)}>
-                <SelectValue placeholder={
-                  selectedServices.length === 0 
-                    ? "Hizmet seçiniz..." 
-                    : `${selectedServices.length} hizmet seçildi`
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2 space-y-2">
-                  {partnerServices.map((service, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded">
-                      <Checkbox
-                        id={`service-${index}`}
-                        checked={selectedServices.includes(service)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedServices(prev => [...prev, service]);
-                          } else {
-                            setSelectedServices(prev => prev.filter(s => s !== service));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`service-${index}`}
-                        className="text-sm font-medium leading-none cursor-pointer flex-1"
-                      >
-                        {service}
-                      </label>
-                    </div>
-                  ))}
-                  <div className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded">
-                    <Checkbox
-                      id="service-other"
-                      checked={selectedServices.includes('Diğer')}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedServices(prev => [...prev, 'Diğer']);
-                        } else {
-                          setSelectedServices(prev => prev.filter(s => s !== 'Diğer'));
-                        }
-                      }}
-                    />
-                    <label 
-                      htmlFor="service-other"
-                      className="text-sm font-medium leading-none cursor-pointer flex-1"
-                    >
-                      Diğer (Açıklama kısmında belirtiniz)
-                    </label>
-                  </div>
-                </div>
-              </SelectContent>
-            </Select>
-            {selectedServices.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedServices.map((service, index) => (
-                  <span 
-                    key={index}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                  >
-                    {service}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedServices(prev => prev.filter(s => s !== service))}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            {selectedServices.length === 0 && (
-              <p className="text-sm text-red-600">En az bir hizmet seçiniz</p>
+        {/* Service Selection with Autocomplete */}
+        <div className="space-y-3">
+          <FormLabel>Hizmet Seçimi * (Birden fazla seçim yapabilirsiniz)</FormLabel>
+          <div className="space-y-2">
+            <ServiceAutocomplete
+              partnerServices={partnerServices}
+              partnerId={partner.id}
+              value={currentServiceInput}
+              onChange={setCurrentServiceInput}
+              onServiceSelect={handleAddService}
+              placeholder="Hizmet adı yazın veya mevcut hizmetlerden seçin..."
+              className="w-full"
+            />
+            {currentServiceInput.trim() && !selectedServices.includes(currentServiceInput.trim()) && (
+              <Button
+                type="button"
+                onClick={() => handleAddService(currentServiceInput)}
+                className="w-full"
+                variant="outline"
+              >
+                "{currentServiceInput}" hizmetini listeye ekle
+              </Button>
             )}
           </div>
-        )}
+          
+          {selectedServices.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedServices.map((service, index) => (
+                <span 
+                  key={index}
+                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                >
+                  {service}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveService(service)}
+                    className="ml-1 text-blue-600 hover:text-blue-800"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          
+          {selectedServices.length === 0 && (
+            <p className="text-sm text-red-600">En az bir hizmet seçiniz</p>
+          )}
+        </div>
 
-        {/* Fallback for partners without structured services */}
-        {partnerServices.length === 0 && (
+        {/* Fallback service input when no services are available */}
+        {partnerServices.length === 0 && selectedServices.length === 0 && (
           <FormField
             control={form.control}
             name="serviceNeeded"
