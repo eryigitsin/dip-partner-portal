@@ -48,6 +48,7 @@ export function PartnerServicesTab() {
   const [newServiceDescription, setNewServiceDescription] = useState("");
   const [newServiceCategory, setNewServiceCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -136,6 +137,7 @@ export function PartnerServicesTab() {
   const handleAddService = (serviceId: number) => {
     addServiceMutation.mutate(serviceId);
     setSearchQuery(""); // Clear search after adding
+    setShowSuggestions(false);
   };
 
   const handleRemoveService = (serviceId: number) => {
@@ -321,12 +323,16 @@ export function PartnerServicesTab() {
                       <Input
                         placeholder="Hizmet ara... (örn: pazarlama, analiz, e-ticaret)"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setShowSuggestions(true);
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
                         className="pl-10"
                       />
                       
                       {/* Search Suggestions */}
-                      {searchQuery.length >= 2 && searchSuggestions.length > 0 && filteredServices.length > 0 && (
+                      {searchQuery.length >= 2 && searchSuggestions.length > 0 && filteredServices.length > 0 && showSuggestions && (
                         <div className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
                           <div className="p-2 text-xs text-gray-500 border-b">
                             <Search className="inline h-3 w-3 mr-1" />
@@ -336,7 +342,10 @@ export function PartnerServicesTab() {
                             <button
                               key={index}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-dip-blue hover:text-white transition-colors border-b last:border-b-0 flex items-center"
-                              onClick={() => setSearchQuery(suggestion)}
+                              onClick={() => {
+                                setSearchQuery(suggestion);
+                                setShowSuggestions(false);
+                              }}
                             >
                               <Search className="h-3 w-3 mr-2 opacity-60" />
                               <span className="capitalize">{suggestion}</span>
@@ -346,7 +355,10 @@ export function PartnerServicesTab() {
                       )}
                     </div>
 
-                    <div className="max-h-96 overflow-y-auto space-y-3">
+                    <div 
+                      className="max-h-96 overflow-y-auto space-y-3"
+                      onClick={() => setShowSuggestions(false)}
+                    >
                       {availableServices.length === 0 ? (
                         <p className="text-center text-gray-500 py-4">
                           Tüm mevcut hizmetler zaten seçili
@@ -366,7 +378,10 @@ export function PartnerServicesTab() {
                                 <button
                                   key={word}
                                   className="px-2 py-1 bg-gray-100 hover:bg-dip-blue hover:text-white text-xs rounded transition-colors"
-                                  onClick={() => setSearchQuery(word)}
+                                  onClick={() => {
+                                    setSearchQuery(word);
+                                    setShowSuggestions(false);
+                                  }}
                                 >
                                   {word}
                                 </button>
