@@ -329,7 +329,6 @@ export default function PartnerDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -580,9 +579,7 @@ export default function PartnerDashboard() {
                                 </div>
                               </div>
                             ))}
-                            <div className="text-center text-xs text-gray-500 mt-2">
-                              Detaylı istatistikler eklenecektir. Talepleriniz için lütfen "Geribildirim Formu"nu kullanın.
-                            </div>
+                            <div className="text-center text-xs text-gray-500 mt-2">Detaylı istatistikler eklenecektir. Talepleriniz için lütfen "Geri Bildirim Formu"nu kullanın.</div>
                             <div className="text-center mt-3">
                               <Button
                                 size="sm"
@@ -984,9 +981,7 @@ export default function PartnerDashboard() {
 
         </Tabs>
       </div>
-
       <Footer />
-
       {/* Quote Request Detail Modal */}
       {selectedQuoteRequest && (
         <QuoteRequestDetailModal
@@ -998,7 +993,6 @@ export default function PartnerDashboard() {
           quoteRequest={selectedQuoteRequest}
         />
       )}
-
       {/* Quote Response Dialog */}
       {selectedQuoteRequest && (
         <QuoteResponseDialog
@@ -1019,7 +1013,6 @@ export default function PartnerDashboard() {
           }}
         />
       )}
-
       {/* Feedback Modal */}
       <FeedbackModal
         isOpen={isFeedbackModalOpen}
