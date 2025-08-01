@@ -393,9 +393,15 @@ export function registerRoutes(app: Express): Server {
       const service = await storage.createService({
         name,
         description,
-        category,
+        categoryId: 1, // Default category ID
+        isActive: true,
         createdBy: req.user!.id,
       });
+      
+      // Update category separately if provided
+      if (category && category !== 'Genel') {
+        await storage.updateService(service.id, { category });
+      }
 
       res.json(service);
     } catch (error) {
@@ -2649,14 +2655,18 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/admin/services", requireAuth, requireMasterAdmin, async (req, res) => {
     try {
-      const { name, description, categoryId } = req.body;
+      const { name, description, category } = req.body;
       const service = await storage.createService({ 
         name, 
         description, 
-        categoryId, 
+        categoryId: 1, // Default category ID for compatibility
         isActive: true, 
         createdBy: req.user!.id 
       });
+      // Update the category field separately if provided
+      if (category && category !== 'Genel') {
+        await storage.updateService(service.id, { category });
+      }
       res.json(service);
     } catch (error) {
       console.error('Error creating service:', error);

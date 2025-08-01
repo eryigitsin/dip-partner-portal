@@ -675,59 +675,7 @@ export class DatabaseStorage implements IStorage {
     return newCategory;
   }
 
-  // Services management
-  async getAllServices(): Promise<Service[]> {
-    try {
-      // Get all unique services from partners' service lists
-      const partnerData = await db.select({ services: partners.services }).from(partners).where(and(
-        eq(partners.isApproved, true),
-        eq(partners.isActive, true)
-      ));
-      
-      const allServiceNames = new Set<string>();
-      
-      // Extract services from each partner
-      partnerData.forEach(partner => {
-        if (partner.services) {
-          try {
-            const servicesList = JSON.parse(partner.services);
-            if (Array.isArray(servicesList)) {
-              servicesList.forEach(service => {
-                if (typeof service === 'string' && service.trim()) {
-                  allServiceNames.add(service.trim());
-                }
-              });
-            }
-          } catch {
-            // If not JSON, try splitting by newlines
-            const servicesList = partner.services.split('\n');
-            servicesList.forEach(service => {
-              if (service.trim()) {
-                allServiceNames.add(service.trim());
-              }
-            });
-          }
-        }
-      });
-      
-      // Convert to Service objects for consistent API response
-      const servicesList = Array.from(allServiceNames).sort().map((name, index) => ({
-        id: index + 1,
-        name,
-        description: null,
-        category: null,
-        isActive: true,
-        createdBy: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }));
-      
-      return servicesList;
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      return [];
-    }
-  }
+
 
   async getServiceByName(name: string): Promise<Service | undefined> {
     const [service] = await db.select().from(services).where(eq(services.name, name)).limit(1);
@@ -1294,7 +1242,7 @@ export class DatabaseStorage implements IStorage {
       id: service.id,
       name: service.name,
       description: service.description || '',
-      category: service.category || '',
+      category: service.category || 'Genel',
       categoryId: 1, // Services use category text field, default to 1 for UI compatibility
       isActive: service.isActive !== null ? service.isActive : true
     }));
@@ -1306,7 +1254,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         name: data.name,
         description: data.description,
-        category: 'general', // Services table uses category string field
+        category: 'Genel', // Services table uses category string field
         isActive: data.isActive,
         createdBy: data.createdBy
       })
@@ -1320,7 +1268,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         name: updates.name,
         description: updates.description,
-        category: updates.category || 'general',
+        category: updates.category || 'Genel',
         isActive: updates.isActive
       })
       .where(eq(services.id, id))
