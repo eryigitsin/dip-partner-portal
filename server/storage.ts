@@ -1532,7 +1532,10 @@ export class DatabaseStorage implements IStorage {
   async createFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
     const [newFeedback] = await db
       .insert(feedback)
-      .values(feedbackData)
+      .values({
+        ...feedbackData,
+        status: 'new' // Override status to comply with constraint
+      })
       .returning();
     return newFeedback;
   }
