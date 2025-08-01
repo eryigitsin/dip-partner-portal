@@ -20,6 +20,8 @@ import {
   marketingContacts,
   systemConfig,
   feedback,
+  markets,
+  partnerSelectedMarkets,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -38,6 +40,10 @@ import {
   type InsertServiceCategory,
   type Service,
   type InsertService,
+  type Market,
+  type InsertMarket,
+  type PartnerSelectedMarket,
+  type InsertPartnerSelectedMarket,
   type SmsOtpCode,
   type InsertSmsOtpCode,
   type TempUserRegistration,
@@ -204,7 +210,14 @@ export interface IStorage {
   removePartnerService(partnerId: number, serviceId: number): Promise<void>;
   createServiceInPool(data: { name: string; description?: string; category?: string; createdBy: number }): Promise<Service>;
   getServicesByIds(serviceIds: number[]): Promise<Service[]>;
-  getPartnersOfferingService(serviceId: number): Promise<Array<{ partner: Partner; user: User }>>
+  getPartnersOfferingService(serviceId: number): Promise<Array<{ partner: Partner; user: User }>>;
+
+  // Partner Markets Pool Management
+  getAllMarkets(): Promise<Market[]>;
+  getPartnerSelectedMarkets(partnerId: number): Promise<Array<{ id: number; name: string; nameEn?: string; region?: string }>>;
+  addPartnerMarket(partnerId: number, marketId: number): Promise<void>;
+  removePartnerMarket(partnerId: number, marketId: number): Promise<void>;
+  createMarketInPool(data: { name: string; nameEn?: string; region?: string; createdBy: number }): Promise<Market>;
 
   // Feedback methods
   getFeedback(): Promise<Feedback[]>;
@@ -1523,6 +1536,61 @@ export class DatabaseStorage implements IStorage {
       partner: row.partners,
       user: row.users
     }));
+  }
+
+  // Markets Pool Management
+  async getAllMarkets(): Promise<Market[]> {
+    return await db.select().from(markets).where(eq(markets.isActive, true)).orderBy(asc(markets.name));
+  }
+
+  async getPartnerSelectedMarkets(partnerId: number): Promise<Array<{ id: number; name: string; nameEn?: string; region?: string }>> {
+    const selectedMarkets = await db
+      .select({
+        id: markets.id,
+        name: markets.name,
+        nameEn: markets.nameEn,
+        region: markets.region
+      })
+      .from(partnerSelectedMarkets)
+      .innerJoin(markets, eq(partnerSelectedMarkets.marketId, markets.id))
+      .where(and(
+        eq(partnerSelectedMarkets.partnerId, partnerId),
+        eq(markets.isActive, true)
+      ))
+      .orderBy(asc(markets.name));
+
+    return selectedMarkets;
+  }
+
+  async addPartnerMarket(partnerId: number, marketId: number): Promise<void> {
+    await db
+      .insert(partnerSelectedMarkets)
+      .values({
+        partnerId,
+        marketId
+      })
+      .onConflictDoNothing();
+  }
+
+  async removePartnerMarket(partnerId: number, marketId: number): Promise<void> {
+    await db.delete(partnerSelectedMarkets).where(and(
+      eq(partnerSelectedMarkets.partnerId, partnerId),
+      eq(partnerSelectedMarkets.marketId, marketId)
+    ));
+  }
+
+  async createMarketInPool(data: { name: string; nameEn?: string; region?: string; createdBy: number }): Promise<Market> {
+    const [market] = await db
+      .insert(markets)
+      .values({
+        name: data.name,
+        nameEn: data.nameEn,
+        region: data.region,
+        isActive: true,
+        createdBy: data.createdBy
+      })
+      .returning();
+    return market;
   }
 
   // Feedback methods

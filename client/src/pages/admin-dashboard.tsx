@@ -20,6 +20,7 @@ import { QuoteRequestsEmbedded } from "@/components/admin/quote-requests-embedde
 import { PartnerInspectionModal } from "@/components/admin/partner-inspection-modal";
 import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
 import { AdminServiceManagement } from "@/components/admin/admin-service-management";
+import { AdminMarketsManagement } from "@/components/admin/admin-markets-management";
 import { PartnerApplication, Partner, QuoteRequest } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -1348,6 +1349,11 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 <Label>Hizmetler</Label>
                 <AdminServiceManagement partnerId={editingPartner?.id} />
+              </div>
+
+              <div className="space-y-4">
+                <Label>Hedef Pazarlar</Label>
+                <AdminMarketsManagement partnerId={editingPartner?.id} />
               </div>
               
               <div className="space-y-2">

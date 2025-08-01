@@ -3111,6 +3111,99 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Markets API endpoints
+  app.get("/api/markets", async (req, res) => {
+    try {
+      const markets = await storage.getAllMarkets();
+      res.json(markets);
+    } catch (error) {
+      console.error('Error fetching markets:', error);
+      res.status(500).json({ message: 'Failed to fetch markets' });
+    }
+  });
+
+  // Admin: Add market to specific partner
+  app.post("/api/partners/:partnerId/markets", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const user = req.user;
+    if (!user || !["master_admin", "editor_admin"].includes(user.userType)) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { partnerId } = req.params;
+      const { marketId } = req.body;
+      
+      if (!marketId) {
+        return res.status(400).json({ message: "Market ID is required" });
+      }
+
+      await storage.addPartnerMarket(parseInt(partnerId), marketId);
+      res.json({ success: true, message: "Market added to partner successfully" });
+    } catch (error) {
+      console.error('Error adding market to partner:', error);
+      res.status(500).json({ message: 'Failed to add market to partner' });
+    }
+  });
+
+  // Admin: Remove market from specific partner
+  app.delete("/api/partners/:partnerId/markets/:marketId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const user = req.user;
+    if (!user || !["master_admin", "editor_admin"].includes(user.userType)) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { partnerId, marketId } = req.params;
+      await storage.removePartnerMarket(parseInt(partnerId), parseInt(marketId));
+      res.json({ success: true, message: "Market removed from partner successfully" });
+    } catch (error) {
+      console.error('Error removing market from partner:', error);
+      res.status(500).json({ message: 'Failed to remove market from partner' });
+    }
+  });
+
+  // Get specific partner's markets endpoint
+  app.get("/api/partners/:partnerId/markets", async (req, res) => {
+    try {
+      const { partnerId } = req.params;
+      const selectedMarkets = await storage.getPartnerSelectedMarkets(parseInt(partnerId));
+      res.json(selectedMarkets);
+    } catch (error) {
+      console.error('Error fetching partner markets:', error);
+      res.status(500).json({ message: 'Failed to fetch partner markets' });
+    }
+  });
+
+  // Create new market in pool
+  app.post("/api/partner/markets/new", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      const { name, nameEn, region } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: "Market name is required" });
+      }
+
+      const newMarket = await storage.createMarketInPool({
+        name,
+        nameEn,
+        region,
+        createdBy: user!.id
+      });
+
+      res.json({ success: true, market: newMarket, message: "Market created successfully" });
+    } catch (error) {
+      console.error('Error creating new market:', error);
+      res.status(500).json({ message: 'Failed to create market' });
+    }
+  });
+
   // Register admin API routes
   (async () => {
     const adminModule = await import('./admin-routes.js');

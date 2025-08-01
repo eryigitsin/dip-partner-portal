@@ -128,6 +128,26 @@ export const partnerServices = pgTable("partner_services", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Markets/Regions pool for target markets
+export const markets = pgTable("markets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  nameEn: text("name_en"),
+  region: text("region"), // Europe, Asia, Americas, Africa, etc.
+  isActive: boolean("is_active").default(true),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Partner selected markets - many-to-many relationship between partners and target markets
+export const partnerSelectedMarkets = pgTable("partner_selected_markets", {
+  id: serial("id").primaryKey(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  marketId: integer("market_id").references(() => markets.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Partner posts
 export const partnerPosts = pgTable("partner_posts", {
   id: serial("id").primaryKey(),
@@ -430,6 +450,15 @@ export const partnerOfferedServicesRelations = relations(partnerOfferedServices,
   service: one(services, { fields: [partnerOfferedServices.serviceId], references: [services.id] }),
 }));
 
+export const marketsRelations = relations(markets, ({ many }) => ({
+  partnerMarkets: many(partnerSelectedMarkets),
+}));
+
+export const partnerSelectedMarketsRelations = relations(partnerSelectedMarkets, ({ one }) => ({
+  partner: one(partners, { fields: [partnerSelectedMarkets.partnerId], references: [partners.id] }),
+  market: one(markets, { fields: [partnerSelectedMarkets.marketId], references: [markets.id] }),
+}));
+
 export const partnersRelations = relations(partners, ({ one, many }) => ({
   user: one(users, {
     fields: [partners.userId],
@@ -437,6 +466,7 @@ export const partnersRelations = relations(partners, ({ one, many }) => ({
   }),
   services: many(partnerServices),
   offeredServices: many(partnerOfferedServices),
+  selectedMarkets: many(partnerSelectedMarkets),
   quoteRequests: many(quoteRequests),
   followers: many(partnerFollowers),
 }));
@@ -486,6 +516,10 @@ export const messagesRelations = relations(messages, ({ one }) => ({
 // Insert schemas for services system
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPartnerOfferedServiceSchema = createInsertSchema(partnerOfferedServices).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Insert schemas for markets system
+export const insertMarketSchema = createInsertSchema(markets).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPartnerSelectedMarketSchema = createInsertSchema(partnerSelectedMarkets).omit({ id: true, createdAt: true });
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -590,6 +624,12 @@ export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
 export type PartnerOfferedService = typeof partnerOfferedServices.$inferSelect;
 export type InsertPartnerOfferedService = z.infer<typeof insertPartnerOfferedServiceSchema>;
+
+// Types for markets system
+export type Market = typeof markets.$inferSelect;
+export type InsertMarket = z.infer<typeof insertMarketSchema>;
+export type PartnerSelectedMarket = typeof partnerSelectedMarkets.$inferSelect;
+export type InsertPartnerSelectedMarket = z.infer<typeof insertPartnerSelectedMarketSchema>;
 
 // Types
 export type User = typeof users.$inferSelect;
