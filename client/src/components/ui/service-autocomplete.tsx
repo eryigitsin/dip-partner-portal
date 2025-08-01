@@ -27,7 +27,7 @@ export function ServiceAutocomplete({
   useEffect(() => {
     if (value.length > 0) {
       // Combine partner services and all services for filtering
-      const allServicesList = [...new Set([...partnerServices, ...allServices])];
+      const allServicesList = Array.from(new Set([...partnerServices, ...allServices]));
       const filtered = allServicesList.filter(service =>
         service.toLowerCase().includes(value.toLowerCase())
       );

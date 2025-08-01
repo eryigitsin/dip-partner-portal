@@ -424,11 +424,13 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="applications">Başvurular</TabsTrigger>
             <TabsTrigger value="partners">Partnerler</TabsTrigger>
             <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
+            <TabsTrigger value="service-categories">Hizmet Kategorileri</TabsTrigger>
+            <TabsTrigger value="services">Hizmet Havuzu</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -785,6 +787,46 @@ export default function AdminDashboard() {
 
           <TabsContent value="quotes" className="space-y-6">
             <QuoteRequestsEmbedded />
+          </TabsContent>
+
+          <TabsContent value="service-categories" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Hizmet Kategorileri</CardTitle>
+                <CardDescription>
+                  Hizmet havuzundaki kategorileri yönetin. Kategoriler opsiyoneldir.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-muted-foreground">
+                  Detaylı kategori yönetimi için{" "}
+                  <a href="/admin/service-categories" className="text-blue-600 hover:underline">
+                    Hizmet Kategorileri sayfasını
+                  </a>{" "}
+                  ziyaret edin.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="services" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Hizmet Havuzu</CardTitle>
+                <CardDescription>
+                  Platform genelinde kullanılan hizmetleri yönetin.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-muted-foreground">
+                  Detaylı hizmet yönetimi için{" "}
+                  <a href="/admin/services" className="text-blue-600 hover:underline">
+                    Hizmet Havuzu sayfasını
+                  </a>{" "}
+                  ziyaret edin.
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

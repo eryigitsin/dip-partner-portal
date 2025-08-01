@@ -1173,6 +1173,145 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get all services with categories
+  app.get('/api/services', async (req, res) => {
+    try {
+      const services = await storage.getServicesWithCategories();
+      res.json(services);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      res.status(500).json({ error: 'Failed to fetch services' });
+    }
+  });
+
+  // Service Categories Management (Master Admin only)
+  app.get('/api/admin/service-categories', async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const categories = await storage.getServiceCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching service categories:', error);
+      res.status(500).json({ error: 'Failed to fetch service categories' });
+    }
+  });
+
+  app.post('/api/admin/service-categories', async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const category = await storage.createServiceCategory(req.body);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error('Error creating service category:', error);
+      res.status(500).json({ error: 'Failed to create service category' });
+    }
+  });
+
+  app.patch('/api/admin/service-categories/:id', async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const category = await storage.updateServiceCategory(id, req.body);
+      if (!category) {
+        return res.status(404).json({ error: 'Service category not found' });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error('Error updating service category:', error);
+      res.status(500).json({ error: 'Failed to update service category' });
+    }
+  });
+
+  app.delete('/api/admin/service-categories/:id', async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteServiceCategory(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting service category:', error);
+      res.status(500).json({ error: 'Failed to delete service category' });
+    }
+  });
+
+  // Service Management (Master Admin only)
+  app.get('/api/admin/services', async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const services = await storage.getServicesWithCategories();
+      res.json(services);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      res.status(500).json({ error: 'Failed to fetch services' });
+    }
+  });
+
+  app.post('/api/admin/services', async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const serviceData = {
+        ...req.body,
+        createdBy: req.user.id,
+      };
+      const service = await storage.createService(serviceData);
+      res.status(201).json(service);
+    } catch (error) {
+      console.error('Error creating service:', error);
+      res.status(500).json({ error: 'Failed to create service' });
+    }
+  });
+
+  app.patch('/api/admin/services/:id', async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      const service = await storage.updateService(id, req.body);
+      if (!service) {
+        return res.status(404).json({ error: 'Service not found' });
+      }
+      res.json(service);
+    } catch (error) {
+      console.error('Error updating service:', error);
+      res.status(500).json({ error: 'Failed to update service' });
+    }
+  });
+
+  app.delete('/api/admin/services/:id', async (req, res) => {
+    if (!req.isAuthenticated() || req.user.userType !== 'master_admin') {
+      return res.sendStatus(403);
+    }
+    
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteService(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      res.status(500).json({ error: 'Failed to delete service' });
+    }
+  });
+
 
 
   // Get application with documents
