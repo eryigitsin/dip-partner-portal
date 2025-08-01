@@ -12,7 +12,9 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  MessageSquare,
+  CheckCircle2
 } from 'lucide-react';
 
 interface QuoteRequest {
@@ -26,7 +28,7 @@ interface QuoteRequest {
   serviceNeeded: string;
   budget: string;
   message: string;
-  status: 'pending' | 'responded' | 'accepted' | 'completed' | 'rejected';
+  status: 'pending' | 'responded' | 'quote_sent' | 'accepted' | 'completed' | 'rejected';
   createdAt: string;
   updatedAt: string;
   partner?: {
@@ -75,6 +77,8 @@ export function QuoteRequestsEmbedded() {
   // Filter requests by status
   const filteredRequests = selectedStatus === 'all' 
     ? quoteRequests 
+    : selectedStatus === 'responded' 
+    ? quoteRequests.filter(req => req.status === 'responded' || req.status === 'quote_sent')
     : quoteRequests.filter(req => req.status === selectedStatus);
 
   // Calculate statistics
@@ -218,7 +222,7 @@ export function QuoteRequestsEmbedded() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-gray-500">
-                        {(request.status as any) === 'quote_sent' ? 'Partner tarafından yanıtlandı' : 
+                        {request.status === 'quote_sent' ? 'Partner tarafından yanıtlandı' : 
                          request.status === 'pending' ? 'Partner yanıtı bekleniyor' :
                          request.status === 'accepted' ? 'Müşteri tarafından kabul edildi' :
                          request.status === 'completed' ? 'Proje tamamlandı' :
