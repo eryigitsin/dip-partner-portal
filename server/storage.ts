@@ -693,6 +693,7 @@ export class DatabaseStorage implements IStorage {
         subtotal: Math.round(response.subtotal * 100), // Convert to cents
         taxAmount: Math.round(response.taxAmount * 100),
         totalAmount: Math.round(response.total * 100),
+        validUntil: response.validUntil ? new Date(response.validUntil) : null, // Convert string to Date
         createdAt: new Date(),
         updatedAt: new Date()
       })
