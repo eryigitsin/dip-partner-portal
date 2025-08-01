@@ -53,6 +53,9 @@ export function PartnerServicesTab() {
   const [isNewServiceDialogOpen, setIsNewServiceDialogOpen] = useState(false);
   const [isServicePartnersDialogOpen, setIsServicePartnersDialogOpen] = useState(false);
   const [newServiceName, setNewServiceName] = useState("");
+  const [servicesHelpDismissed, setServicesHelpDismissed] = useState(() => {
+    return localStorage.getItem('servicesHelpDismissed') === 'true';
+  });
   const [newServiceDescription, setNewServiceDescription] = useState("");
   const [newServiceCategory, setNewServiceCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -155,6 +158,11 @@ export function PartnerServicesTab() {
 
   const handleRemoveService = (serviceId: number) => {
     removeServiceMutation.mutate(serviceId);
+  };
+
+  const dismissServicesHelp = () => {
+    setServicesHelpDismissed(true);
+    localStorage.setItem('servicesHelpDismissed', 'true');
   };
 
   const handleCreateNewService = () => {
@@ -547,15 +555,26 @@ export function PartnerServicesTab() {
           <Separator />
 
           {/* Instructions */}
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Nasıl Çalışır?</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• <strong>Havuzdan Seç:</strong> Mevcut hizmet havuzundan istediğiniz hizmetleri seçin</li>
-              <li>• <strong>Yeni Hizmet:</strong> Havuzda olmayan bir hizmet oluşturun (havuza otomatik eklenir)</li>
-              <li>• <strong>Hizmet Etiketleri:</strong> Hizmetlerinize tıklayarak o hizmeti sunan diğer partnerleri görün</li>
-              <li>• <strong>Kaldırma:</strong> Hizmet üzerine gelip X'e tıklayarak kendi hizmetlerinizden kaldırabilirsiniz (havuzdan silinmez)</li>
-            </ul>
-          </div>
+          {!servicesHelpDismissed && (
+            <div className="bg-blue-50 p-4 rounded-lg relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-blue-100"
+                title="Artık Gösterme"
+                onClick={dismissServicesHelp}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <h4 className="font-medium text-blue-900 mb-2">Nasıl Çalışır?</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• <strong>Havuzdan Seç:</strong> Mevcut hizmet havuzundan istediğiniz hizmetleri seçin.</li>
+                <li>• <strong>Yeni Hizmet:</strong> Havuzda olmayan bir hizmet oluşturun. Bu işlemi teklif hazırlama aşamasında da yapabilirsiniz.</li>
+                <li>• <strong>Hizmet Etiketleri:</strong> Hizmetlerinize tıklayarak o hizmeti sunan diğer partnerleri görün.</li>
+                <li>• <strong>Kaldırma:</strong> Hizmet üzerine gelip X'e tıklayarak kendi hizmetlerinizden kaldırabilirsiniz.</li>
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
 

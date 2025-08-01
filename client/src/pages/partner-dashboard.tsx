@@ -35,7 +35,8 @@ import {
   Copy,
   Send,
   Activity,
-  Timer
+  Timer,
+  X
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -46,6 +47,9 @@ export default function PartnerDashboard() {
   const [selectedQuoteRequest, setSelectedQuoteRequest] = useState<QuoteRequest | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isResponseDialogOpen, setIsResponseDialogOpen] = useState(false);
+  const [quotesHelpDismissed, setQuotesHelpDismissed] = useState(() => {
+    return localStorage.getItem('quotesHelpDismissed') === 'true';
+  });
 
 
   const { data: partner } = useQuery<Partner>({
@@ -81,6 +85,11 @@ export default function PartnerDashboard() {
   const handleSendQuote = (request: QuoteRequest) => {
     setSelectedQuoteRequest(request);
     setIsResponseDialogOpen(true);
+  };
+
+  const dismissQuotesHelp = () => {
+    setQuotesHelpDismissed(true);
+    localStorage.setItem('quotesHelpDismissed', 'true');
   };
 
 
@@ -306,13 +315,13 @@ export default function PartnerDashboard() {
                     <div>
                       <h4 className="text-sm font-medium mb-2">Son Takipçiler</h4>
                       <div className="space-y-2">
-                        {followers.length === 0 ? (
+                        {(followers as any[]).length === 0 ? (
                           <div className="text-center text-sm text-gray-500 py-4">
                             Henüz takipçiniz bulunmuyor
                           </div>
                         ) : (
                           <>
-                            {followers.slice(0, 2).map((follower: any) => (
+                            {(followers as any[]).slice(0, 2).map((follower: any) => (
                               <div key={follower.id} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
                                 <div>
                                   <div className="font-medium">
@@ -414,6 +423,27 @@ export default function PartnerDashboard() {
           </TabsContent>
 
           <TabsContent value="quotes" className="space-y-6">
+            {/* Instructions for Quotes */}
+            {!quotesHelpDismissed && (
+              <div className="bg-green-50 p-4 rounded-lg relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-green-100"
+                  title="Artık Gösterme"
+                  onClick={dismissQuotesHelp}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <h4 className="font-medium text-green-900 mb-2">Nasıl Çalışır?</h4>
+                <ul className="text-sm text-green-800 space-y-1">
+                  <li>• <strong>Talebi İncele:</strong> Gelen teklif taleplerinin detaylarını "Detaylar" butonuyla görüntüleyin.</li>
+                  <li>• <strong>Teklif Hazırla:</strong> "Teklif Hazırla" butonuyla profesyonel PDF teklif oluşturun.</li>
+                  <li>• <strong>Durum Takibi:</strong> Teklif durumları otomatik güncellenir (Bekleyen, İnceleniyor, Gönderildi).</li>
+                  <li>• <strong>İletişim:</strong> Müşteri bilgileri ile doğrudan iletişim kurabilirsiniz.</li>
+                </ul>
+              </div>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle>Teklif Talepleri</CardTitle>
