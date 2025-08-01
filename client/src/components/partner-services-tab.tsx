@@ -520,20 +520,13 @@ export function PartnerServicesTab() {
               <div className="flex flex-wrap gap-2">
                 {(partnerServices as PartnerService[]).map((service: PartnerService) => (
                   <div key={service.id} className="relative group">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="cursor-pointer hover:bg-dip-blue hover:text-white transition-colors"
-                        onClick={() => handleServiceTagClick(service)}
-                      >
-                        {service.name}
-                      </Badge>
-                      {service.category && (
-                        <Badge variant="outline" className="text-xs">
-                          {service.category}
-                        </Badge>
-                      )}
-                    </div>
+                    <Badge
+                      variant="secondary"
+                      className="pr-8 cursor-pointer hover:bg-dip-blue hover:text-white transition-colors"
+                      onClick={() => handleServiceTagClick(service)}
+                    >
+                      {service.name}
+                    </Badge>
                     <Button
                       size="sm"
                       variant="ghost"

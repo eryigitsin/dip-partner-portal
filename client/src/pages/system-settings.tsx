@@ -845,7 +845,11 @@ export default function SystemSettings() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3">
                               <span className="font-medium">{service.name}</span>
-                              <Badge variant="outline">{service.category}</Badge>
+                              {service.category && (
+                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                  {service.category}
+                                </Badge>
+                              )}
                               <Badge variant={service.isActive ? 'default' : 'secondary'}>
                                 {service.isActive ? 'Aktif' : 'Pasif'}
                               </Badge>
