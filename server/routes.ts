@@ -2770,6 +2770,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get specific partner's services endpoint
+  app.get("/api/partners/:partnerId/services", async (req, res) => {
+    try {
+      const { partnerId } = req.params;
+      const selectedServices = await storage.getPartnerSelectedServices(parseInt(partnerId));
+      res.json(selectedServices);
+    } catch (error) {
+      console.error('Error fetching partner services:', error);
+      res.status(500).json({ message: 'Failed to fetch partner services' });
+    }
+  });
+
   app.post("/api/partner/services/new", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     

@@ -59,6 +59,11 @@ interface Partner {
   serviceCategory: string;
   services: string;
   dipAdvantages: string;
+  address?: string;
+  shortDescription?: string;
+  businessType?: string;
+  companyAddress?: string;
+  targetMarkets?: string;
   city: string;
   country: string;
   companySize: string;
@@ -72,7 +77,10 @@ interface Partner {
   followersCount: number;
   isApproved: boolean;
   isActive: boolean;
+  username?: string;
+  profileViews?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface PartnerPost {
@@ -1083,7 +1091,7 @@ export default function PartnerProfile() {
                     <CardTitle>Sunulan Hizmetler</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-700 leading-relaxed">{partner.services}</p>
+                    <PartnerServicesDisplay partnerId={partner.id} />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1218,5 +1226,112 @@ export default function PartnerProfile() {
       
       <Footer />
     </div>
+  );
+}
+
+// Partner Services Display Component
+function PartnerServicesDisplay({ partnerId }: { partnerId: number }) {
+  const [selectedServicePartners, setSelectedServicePartners] = useState<any[]>([]);
+  const [isPartnersDialogOpen, setIsPartnersDialogOpen] = useState(false);
+  const [selectedServiceName, setSelectedServiceName] = useState('');
+
+  // Fetch partner's selected services
+  const { data: partnerServices = [] } = useQuery<Array<{ id: number; name: string; description?: string; category?: string }>>({
+    queryKey: ['/api/partner/services', partnerId],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/partners/${partnerId}/services`);
+      return res.json();
+    }
+  });
+
+  // Handle service click to show all partners offering this service
+  const handleServiceClick = async (serviceName: string) => {
+    try {
+      setSelectedServiceName(serviceName);
+      const res = await apiRequest('GET', `/api/services/${encodeURIComponent(serviceName)}/partners`);
+      const data = await res.json();
+      setSelectedServicePartners(data);
+      setIsPartnersDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching service partners:', error);
+    }
+  };
+
+  if (partnerServices.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Henüz hizmet eklenmemiş.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-2">
+        {partnerServices.map((service) => (
+          <Button
+            key={service.id}
+            variant="outline"
+            size="sm"
+            className="rounded-full hover:bg-blue-50 hover:border-blue-300 cursor-pointer"
+            onClick={() => handleServiceClick(service.name)}
+          >
+            {service.name}
+          </Button>
+        ))}
+      </div>
+
+      {/* Partners Dialog */}
+      <Dialog open={isPartnersDialogOpen} onOpenChange={setIsPartnersDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedServiceName} Hizmeti Sunan Partnerler</DialogTitle>
+            <DialogDescription>
+              Bu hizmeti sunan tüm iş ortakları aşağıda listelenmiştir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {selectedServicePartners.map((item: any) => {
+              const partner = item.partner;
+              return (
+                <Card key={partner.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={partner.logo} alt={partner.companyName} />
+                        <AvatarFallback>
+                          {partner.companyName.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg truncate">{partner.companyName}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{partner.serviceCategory}</p>
+                        <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {partner.city}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {partner.foundingYear}
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => window.open(`/partner/${partner.username || partner.id}`, '_blank')}
+                        >
+                          Profili Görüntüle
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
