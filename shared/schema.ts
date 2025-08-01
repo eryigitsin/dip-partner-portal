@@ -71,6 +71,7 @@ export const partners = pgTable("partners", {
   followersCount: integer("followers_count").default(0),
   profileViews: integer("profile_views").default(0),
   username: text("username").unique(),
+  usernameChanged: boolean("username_changed").default(false), // Track if username has been changed once
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

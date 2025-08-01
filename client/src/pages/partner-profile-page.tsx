@@ -1,12 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Partner } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useState } from "react";
 import { 
   Copy,
   MapPin,
@@ -16,12 +20,15 @@ import {
   Building,
   User,
   Eye,
-  Calendar
+  Calendar,
+  Edit
 } from "lucide-react";
 
 export default function PartnerProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
 
   const { data: partner, isLoading } = useQuery<Partner>({
     queryKey: ["/api/partners", "me"],
@@ -31,6 +38,41 @@ export default function PartnerProfilePage() {
       return response.json();
     },
     enabled: !!user && (user.activeUserType || user.userType) === "partner",
+  });
+
+  const updateUsernameMutation = useMutation({
+    mutationFn: async (username: string) => {
+      const response = await fetch("/api/partners/me/username", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update username");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partners", "me"] });
+      setIsUsernameDialogOpen(false);
+      setNewUsername("");
+      toast({
+        title: "Başarılı",
+        description: "Kullanıcı adı başarıyla güncellendi",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Kullanıcı adı güncellenirken hata oluştu",
+        variant: "destructive",
+      });
+    },
   });
 
   if (!user || (user.activeUserType || user.userType) !== "partner") {
@@ -93,23 +135,78 @@ export default function PartnerProfilePage() {
                   >
                     https://partner.dip.tc/partner/{partner?.username || partner?.id}
                   </a>
-                  <Button 
-                    onClick={() => {
-                      const url = `https://partner.dip.tc/partner/${partner?.username || partner?.id}`;
-                      navigator.clipboard.writeText(url).then(() => {
-                        toast({
-                          title: "Başarılı",
-                          description: "URL kopyalandı",
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={() => {
+                        const url = `https://partner.dip.tc/partner/${partner?.username || partner?.id}`;
+                        navigator.clipboard.writeText(url).then(() => {
+                          toast({
+                            title: "Başarılı",
+                            description: "URL kopyalandı",
+                          });
                         });
-                      });
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="ml-2"
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Profili Paylaş
-                  </Button>
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Kopyala
+                    </Button>
+                    <Dialog open={isUsernameDialogOpen} onOpenChange={setIsUsernameDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setNewUsername(partner?.username || "")}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Değiştir
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Kullanıcı Adını Değiştir</DialogTitle>
+                          <DialogDescription>
+                            Kullanıcı adınız profil URL'nizde görünür. Sadece küçük harf, rakam ve tire (-) kullanabilirsiniz.
+                            {partner?.usernameChanged && (
+                              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+                                ⚠️ Kullanıcı adınızı daha önce değiştirmiştiniz. Tekrar değiştiremezsiniz.
+                              </div>
+                            )}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="username">Yeni Kullanıcı Adı</Label>
+                            <Input
+                              id="username"
+                              value={newUsername}
+                              onChange={(e) => setNewUsername(e.target.value)}
+                              placeholder="kullanici-adi"
+                              disabled={partner?.usernameChanged || updateUsernameMutation.isPending}
+                            />
+                            <p className="text-sm text-gray-500 mt-1">
+                              https://partner.dip.tc/partner/{newUsername || "kullanici-adi"}
+                            </p>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsUsernameDialogOpen(false)}
+                          >
+                            İptal
+                          </Button>
+                          <Button
+                            onClick={() => updateUsernameMutation.mutate(newUsername)}
+                            disabled={!newUsername.trim() || partner?.usernameChanged || updateUsernameMutation.isPending}
+                          >
+                            {updateUsernameMutation.isPending ? "Güncelleniyor..." : "Güncelle"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               </div>
             </CardContent>

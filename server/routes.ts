@@ -896,6 +896,59 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update partner username (one-time only)
+  app.patch("/api/partners/me/username", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      if (!req.user || (req.user.userType !== "partner" && req.user.activeUserType !== "partner")) {
+        return res.status(403).json({ message: "Partner access required" });
+      }
+
+      const { username } = req.body;
+      if (!username || typeof username !== 'string' || username.trim().length === 0) {
+        return res.status(400).json({ message: "Valid username is required" });
+      }
+
+      // Clean username (lowercase, remove spaces, special chars)
+      const cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9-]/g, '');
+      if (cleanUsername.length < 3) {
+        return res.status(400).json({ message: "Username must be at least 3 characters" });
+      }
+
+      const partner = await storage.getPartnerByUserId(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      // Check if username has already been changed
+      if (partner.usernameChanged) {
+        return res.status(400).json({ 
+          message: "Kullanıcı adı bir kez değiştirilebilir. Bir talebiniz varsa yönetici ile iletişime geçin." 
+        });
+      }
+
+      // Check if username is already taken
+      const existingPartner = await storage.getPartnerByUsername(cleanUsername);
+      if (existingPartner && existingPartner.id !== partner.id) {
+        return res.status(400).json({ message: "Bu kullanıcı adı zaten kullanılıyor" });
+      }
+
+      // Update username and mark as changed
+      await storage.updatePartner(partner.id, { 
+        username: cleanUsername, 
+        usernameChanged: true 
+      });
+
+      res.json({ message: "Kullanıcı adı başarıyla güncellendi", username: cleanUsername });
+    } catch (error) {
+      console.error('Error updating username:', error);
+      res.status(500).json({ message: "Failed to update username" });
+    }
+  });
+
   // Partner following
   app.post("/api/partners/:id/follow", async (req, res) => {
     try {
