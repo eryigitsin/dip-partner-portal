@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, X, Tag, Users } from "lucide-react";
+import { Plus, X, Tag, Users, Search } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -47,6 +47,7 @@ export function PartnerServicesTab() {
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceDescription, setNewServiceDescription] = useState("");
   const [newServiceCategory, setNewServiceCategory] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -134,6 +135,7 @@ export function PartnerServicesTab() {
 
   const handleAddService = (serviceId: number) => {
     addServiceMutation.mutate(serviceId);
+    setSearchQuery(""); // Clear search after adding
   };
 
   const handleRemoveService = (serviceId: number) => {
@@ -166,6 +168,112 @@ export function PartnerServicesTab() {
   const availableServices = (allServices as Service[]).filter(
     (service: Service) => !(partnerServices as PartnerService[]).some((ps: PartnerService) => ps.id === service.id)
   );
+
+  // Helper function for fuzzy search (tolerates typos)
+  const fuzzyMatch = (text: string, query: string): boolean => {
+    const textLower = text.toLowerCase();
+    const queryLower = query.toLowerCase();
+    
+    // Exact match
+    if (textLower.includes(queryLower)) return true;
+    
+    // Turkish character replacements
+    const turkishMap: Record<string, string> = {
+      'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+      'c': 'ç', 'g': 'ğ', 'i': 'ı', 'o': 'ö', 's': 'ş', 'u': 'ü'
+    };
+    
+    let normalizedText = textLower;
+    let normalizedQuery = queryLower;
+    
+    Object.entries(turkishMap).forEach(([from, to]) => {
+      normalizedText = normalizedText.replace(new RegExp(from, 'g'), to);
+      normalizedQuery = normalizedQuery.replace(new RegExp(from, 'g'), to);
+    });
+    
+    if (normalizedText.includes(normalizedQuery)) return true;
+    
+    // Single character typo tolerance
+    if (queryLower.length >= 3) {
+      for (let i = 0; i < queryLower.length; i++) {
+        const modified = queryLower.slice(0, i) + queryLower.slice(i + 1);
+        if (textLower.includes(modified)) return true;
+      }
+    }
+    
+    // Keyboard proximity typos (common Turkish keyboard mistakes)
+    const keyboardMap: Record<string, string[]> = {
+      'e': ['r', 'w', 's', 'd'],
+      'r': ['e', 't', 'd', 'f'],
+      't': ['r', 'y', 'f', 'g'],
+      'i': ['u', 'o', 'k', 'j'],
+      'a': ['s', 'q', 'z'],
+      's': ['a', 'd', 'w', 'e'],
+      'd': ['s', 'f', 'e', 'r'],
+      'n': ['m', 'b', 'h', 'j'],
+      'm': ['n', 'k', 'j'],
+    };
+    
+    if (queryLower.length >= 3) {
+      for (let i = 0; i < queryLower.length; i++) {
+        const char = queryLower[i];
+        const alternatives = keyboardMap[char] || [];
+        
+        for (const alt of alternatives) {
+          const modified = queryLower.slice(0, i) + alt + queryLower.slice(i + 1);
+          if (textLower.includes(modified)) return true;
+        }
+      }
+    }
+    
+    return false;
+  };
+
+  // Filter services based on search query with fuzzy matching
+  const filteredServices = availableServices.filter((service: Service) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    
+    return (
+      fuzzyMatch(service.name, query) ||
+      (service.description && fuzzyMatch(service.description, query)) ||
+      (service.category && fuzzyMatch(service.category, query))
+    );
+  });
+
+  // Smart suggestions based on partial input
+  const getSearchSuggestions = () => {
+    if (!searchQuery.trim() || searchQuery.length < 2) return [];
+    
+    const suggestions = new Set<string>();
+    const query = searchQuery.toLowerCase();
+    
+    availableServices.forEach((service: Service) => {
+      // Add service name if it starts with query
+      if (service.name.toLowerCase().startsWith(query)) {
+        suggestions.add(service.name);
+      }
+      
+      // Add category if it starts with query
+      if (service.category && service.category.toLowerCase().startsWith(query)) {
+        suggestions.add(service.category);
+      }
+      
+      // Add words from description that start with query
+      if (service.description) {
+        const words = service.description.toLowerCase().split(/\s+/);
+        words.forEach(word => {
+          if (word.startsWith(query) && word.length > query.length) {
+            suggestions.add(word);
+          }
+        });
+      }
+    });
+    
+    return Array.from(suggestions).slice(0, 5);
+  };
+
+  const searchSuggestions = getSearchSuggestions();
 
   if (partnerServicesLoading || servicesLoading) {
     return (
@@ -206,13 +314,68 @@ export function PartnerServicesTab() {
                     <DialogHeader>
                       <DialogTitle>Hizmet Havuzundan Seç</DialogTitle>
                     </DialogHeader>
+                    
+                    {/* Search Input */}
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Hizmet ara... (örn: pazarlama, analiz, e-ticaret)"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                      
+                      {/* Search Suggestions */}
+                      {searchQuery.length >= 2 && searchSuggestions.length > 0 && filteredServices.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                          <div className="p-2 text-xs text-gray-500 border-b">
+                            <Search className="inline h-3 w-3 mr-1" />
+                            Öneriler ({searchSuggestions.length}):
+                          </div>
+                          {searchSuggestions.map((suggestion, index) => (
+                            <button
+                              key={index}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-dip-blue hover:text-white transition-colors border-b last:border-b-0 flex items-center"
+                              onClick={() => setSearchQuery(suggestion)}
+                            >
+                              <Search className="h-3 w-3 mr-2 opacity-60" />
+                              <span className="capitalize">{suggestion}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="max-h-96 overflow-y-auto space-y-3">
                       {availableServices.length === 0 ? (
                         <p className="text-center text-gray-500 py-4">
                           Tüm mevcut hizmetler zaten seçili
                         </p>
+                      ) : filteredServices.length === 0 ? (
+                        <div className="text-center text-gray-500 py-8">
+                          <Search className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                          <p className="text-lg font-medium mb-2">Arama sonucu bulunamadı</p>
+                          <p className="text-sm mb-4">
+                            "{searchQuery}" için sonuç bulunamadı. 
+                          </p>
+                          <div className="text-xs text-gray-400 space-y-1">
+                            <p>💡 İpucu: Yazım hatalarına toleranslıyız!</p>
+                            <p>Deneyebileceğiniz kelimeler:</p>
+                            <div className="flex flex-wrap gap-1 justify-center">
+                              {["pazarlama", "analiz", "e-ticaret", "lojistik", "danışmanlık"].map(word => (
+                                <button
+                                  key={word}
+                                  className="px-2 py-1 bg-gray-100 hover:bg-dip-blue hover:text-white text-xs rounded transition-colors"
+                                  onClick={() => setSearchQuery(word)}
+                                >
+                                  {word}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       ) : (
-                        availableServices.map((service: Service) => (
+                        filteredServices.map((service: Service) => (
                           <div
                             key={service.id}
                             className="flex items-center justify-between p-3 border rounded-lg"
