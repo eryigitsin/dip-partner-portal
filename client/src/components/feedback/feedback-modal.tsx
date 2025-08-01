@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { CheckCircle } from "lucide-react";
@@ -24,6 +24,43 @@ export function FeedbackModal({ isOpen, onClose, source = 'user' }: FeedbackModa
     category: '',
     message: ''
   });
+
+  // Get current user data
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/user'],
+    enabled: isOpen,
+  });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ['/api/user/profile'],
+    enabled: isOpen && !!currentUser,
+  });
+
+  const { data: billingInfo } = useQuery({
+    queryKey: ['/api/user/billing'],
+    enabled: isOpen && !!currentUser,
+  });
+
+  // Auto-fill form when modal opens and user data is available
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      const profile = userProfile as any;
+      const billing = billingInfo as any;
+      
+      const name = profile?.firstName && profile?.lastName 
+        ? `${profile.firstName} ${profile.lastName}`.trim()
+        : profile?.firstName || '';
+      
+      const phone = profile?.phone || billing?.phone || '';
+      
+      setFormData(prev => ({
+        ...prev,
+        name: name || prev.name,
+        email: (currentUser as any)?.email || prev.email,
+        phone: phone || prev.phone,
+      }));
+    }
+  }, [isOpen, currentUser, userProfile, billingInfo]);
   const [showSuccess, setShowSuccess] = useState(false);
   const { toast } = useToast();
 
