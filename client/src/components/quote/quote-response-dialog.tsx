@@ -75,7 +75,7 @@ export function QuoteResponseDialog({
   // Get partner data for services
   const { data: partner } = useQuery<Partner>({
     queryKey: ["/api/partners", "me"],
-    enabled: !!user && user.userType === "partner",
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
   const generateQuoteTitle = () => {
@@ -296,6 +296,7 @@ export function QuoteResponseDialog({
                       <div className="col-span-5">
                         <label className="text-sm font-medium">Hizmet Adı</label>
                         <ServiceAutocomplete
+                          partnerId={partner?.id}
                           partnerServices={partner?.services ? partner.services.split(',').map(s => s.trim()) : []}
                           value={item.description}
                           onChange={(value) => updateItem(index, 'description', value)}
