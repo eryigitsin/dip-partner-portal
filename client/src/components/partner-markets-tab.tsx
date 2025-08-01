@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -27,11 +28,30 @@ export function PartnerMarketsTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [showNewMarketDialog, setShowNewMarketDialog] = useState(false);
+  const [showInfoCard, setShowInfoCard] = useState(true);
   const [newMarketData, setNewMarketData] = useState({
     name: "",
     nameEn: "",
     region: ""
   });
+
+  // Check if info card should be hidden for this partner
+  useEffect(() => {
+    if (user?.id) {
+      const hideInfoCard = localStorage.getItem(`partner-markets-info-hidden-${user.id}`);
+      if (hideInfoCard === 'true') {
+        setShowInfoCard(false);
+      }
+    }
+  }, [user?.id]);
+
+  // Hide info card and remember preference
+  const hideInfoCard = () => {
+    if (user?.id) {
+      localStorage.setItem(`partner-markets-info-hidden-${user.id}`, 'true');
+      setShowInfoCard(false);
+    }
+  };
 
   // Partner data is not needed for partner-level endpoints
   // The API endpoints use the authenticated user's partner automatically
@@ -129,26 +149,47 @@ export function PartnerMarketsTab() {
   return (
     <div className="space-y-6">
       {/* Info Card */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardContent className="pt-6">
-          <div className="flex items-start space-x-3">
-            <Info className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-medium text-blue-800 mb-2">
-                Hedef Pazarlar Nedir?
-              </h3>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>Hedef pazarlar, hizmet verdiğiniz ülke ve bölgeleri belirtir. Bu bilgiler:</p>
-                <ul className="list-disc list-inside ml-2 space-y-1">
-                  <li>Müşterilerin size uygun partneri bulmasını kolaylaştırır</li>
-                  <li>Profilinizde pazarlara özel filtreleme sağlar</li>
-                  <li>İlgili müşteri taleplerinin size yönlendirilmesini artırır</li>
-                </ul>
+      {showInfoCard && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-3">
+                <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-blue-800 mb-2">
+                    Hedef Pazarlar Nedir?
+                  </h3>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>Hedef pazarlar, hizmet verdiğiniz ülke ve bölgeleri belirtir. Bu bilgiler:</p>
+                    <ul className="list-disc list-inside ml-2 space-y-1">
+                      <li>Müşterilerin size uygun partneri bulmasını kolaylaştırır.</li>
+                      <li>Profilinizde pazarlara özel filtreleme sağlar.</li>
+                      <li>İlgili müşteri taleplerinin size yönlendirilmesini artırır.</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={hideInfoCard}
+                      className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Tekrar Gösterme</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Current Markets */}
       <Card>
