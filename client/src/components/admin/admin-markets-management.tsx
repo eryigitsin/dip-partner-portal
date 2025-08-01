@@ -46,7 +46,7 @@ export function AdminMarketsManagement({ partnerId }: AdminMarketsManagementProp
   // Add market to partner
   const addMarketMutation = useMutation({
     mutationFn: async (marketId: number) => {
-      return apiRequest(`/api/partners/${partnerId}/markets`, 'POST', { marketId });
+      return apiRequest('POST', `/api/partners/${partnerId}/markets`, { marketId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partners', partnerId, 'markets'] });
@@ -67,7 +67,7 @@ export function AdminMarketsManagement({ partnerId }: AdminMarketsManagementProp
   // Remove market from partner
   const removeMarketMutation = useMutation({
     mutationFn: async (marketId: number) => {
-      return apiRequest(`/api/partners/${partnerId}/markets/${marketId}`, 'DELETE');
+      return apiRequest('DELETE', `/api/partners/${partnerId}/markets/${marketId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partners', partnerId, 'markets'] });
@@ -88,7 +88,7 @@ export function AdminMarketsManagement({ partnerId }: AdminMarketsManagementProp
   // Create new market
   const createMarketMutation = useMutation({
     mutationFn: async (marketData: { name: string; nameEn?: string; region?: string }) => {
-      return apiRequest('/api/partner/markets/new', 'POST', marketData);
+      return apiRequest('POST', '/api/partner/markets/new', marketData);
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/markets'] });
