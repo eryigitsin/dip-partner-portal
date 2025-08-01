@@ -1750,7 +1750,12 @@ export function registerRoutes(app: Express): Server {
       }
 
       const partnerId = parseInt(req.params.id);
+      console.log('Creating post for partner ID:', partnerId);
+      console.log('Request body:', req.body);
+      console.log('User ID:', req.user!.id);
+      
       const partner = await storage.getPartner(partnerId);
+      console.log('Found partner:', partner ? `${partner.companyName} (${partner.id})` : 'null');
       
       if (!partner || partner.userId !== req.user!.id) {
         return res.status(403).json({ message: "You can only create posts for your own partner profile" });
@@ -1760,11 +1765,15 @@ export function registerRoutes(app: Express): Server {
         partnerId,
         ...req.body
       };
+      
+      console.log('Post data to insert:', postData);
 
       const newPost = await storage.createPartnerPost(postData);
+      console.log('Created post:', newPost);
       res.json(newPost);
     } catch (error) {
       console.error('Error creating partner post:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       res.status(500).json({ message: "Failed to create partner post" });
     }
   });

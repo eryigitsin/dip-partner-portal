@@ -177,11 +177,9 @@ export default function PartnerProfile() {
     mutationFn: async () => {
       if (!partner?.id) return;
       if (isFollowing) {
-        const res = await apiRequest('DELETE', `/api/partners/${partner.id}/follow`);
-        return res.json();
+        return await apiRequest('DELETE', `/api/partners/${partner.id}/follow`);
       } else {
-        const res = await apiRequest('POST', `/api/partners/${partner.id}/follow`);
-        return res.json();
+        return await apiRequest('POST', `/api/partners/${partner.id}/follow`);
       }
     },
     onSuccess: () => {
@@ -209,11 +207,10 @@ export default function PartnerProfile() {
   // Send message mutation
   const messageMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/messages', {
+      return await apiRequest('POST', '/api/messages', {
         receiverId: partner?.userId,
         message
       });
-      return res.json();
     },
     onSuccess: () => {
       toast({
@@ -236,8 +233,7 @@ export default function PartnerProfile() {
   const updatePartnerMutation = useMutation({
     mutationFn: async (updates: any) => {
       console.log('Updating partner with data:', updates);
-      const res = await apiRequest('PATCH', `/api/partners/${partner?.id}`, updates);
-      return res.json();
+      return await apiRequest('PATCH', `/api/partners/${partner?.id}`, updates);
     },
     onSuccess: (updatedPartner) => {
       console.log('Partner update successful:', updatedPartner);
@@ -262,8 +258,10 @@ export default function PartnerProfile() {
   // Create post mutation
   const createPostMutation = useMutation({
     mutationFn: async (postData: any) => {
-      const res = await apiRequest('POST', `/api/partners/${partner?.id}/posts`, postData);
-      return res.json();
+      console.log('🌐 API Request: POST /api/partners/' + partner?.id + '/posts');
+      console.log('📦 Request data:', postData);
+      const response = await apiRequest('POST', `/api/partners/${partner?.id}/posts`, postData);
+      return response;
     },
     onSuccess: () => {
       toast({
