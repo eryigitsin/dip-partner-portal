@@ -141,6 +141,8 @@ export default function PartnerProfile() {
     enabled: !!identifier,
   });
 
+
+
   // Fetch partner posts
   const { data: posts = [], isLoading: postsLoading } = useQuery<PartnerPost[]>({
     queryKey: ['/api/partners', partner?.id, 'posts'],
