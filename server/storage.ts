@@ -346,12 +346,7 @@ export class DatabaseStorage implements IStorage {
     console.log('Looking for partner with userId:', userId);
     try {
       const [partner] = await db.select().from(partners).where(eq(partners.userId, userId));
-      console.log('Found partner:', partner);
-      if (!partner) {
-        // Let's see all partners to debug
-        const allPartners = await db.select().from(partners);
-        console.log('All partners in database:', allPartners.map(p => ({ id: p.id, userId: p.userId, companyName: p.companyName })));
-      }
+      console.log('Database query result:', partner);
       return partner || undefined;
     } catch (error) {
       console.error('Error in getPartnerByUserId:', error);

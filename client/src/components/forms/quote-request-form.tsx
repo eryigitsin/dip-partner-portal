@@ -198,20 +198,13 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
 
   // Get partner services - prioritize database services, fallback to legacy text field
   const getPartnerServices = () => {
-    console.log('🔍 Debug partnerServicesData:', partnerServicesData);
-    
     // Use database services if available
     if (partnerServicesData && partnerServicesData.length > 0) {
-      const serviceNames = partnerServicesData.map((service: any) => service.name);
-      console.log('📋 Using database services:', serviceNames);
-      return serviceNames;
+      return partnerServicesData.map((service: any) => service.name);
     }
     
     // Fallback to legacy text field parsing
-    if (!partner.services) {
-      console.log('⚠️ No services found in database or legacy field');
-      return [];
-    }
+    if (!partner.services) return [];
     
     const services = partner.services
       .split(/[\r\n\*\-•]+/)
@@ -219,12 +212,10 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       .filter(s => s.length > 0 && s !== '*' && s !== '-' && s !== '•')
       .slice(0, 10);
     
-    console.log('📝 Using legacy services:', services);
     return services;
   };
 
   const partnerServices = getPartnerServices();
-  console.log('🎯 Final partnerServices:', partnerServices);
 
   // Handle adding service to selected list
   const handleAddService = (serviceName: string) => {
