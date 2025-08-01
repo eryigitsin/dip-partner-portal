@@ -38,10 +38,12 @@ export function SatisfactionRatingModal({
 
     setIsSubmitting(true);
     try {
-      await apiRequest({
-        url: `/api/quote-requests/${quoteRequestId}/satisfaction`,
+      await apiRequest(`/api/quote-requests/${quoteRequestId}/satisfaction`, {
         method: "POST",
-        data: { rating: selectedRating }
+        body: JSON.stringify({ rating: selectedRating }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       toast({

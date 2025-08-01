@@ -57,6 +57,9 @@ export default function PartnerDashboard() {
   });
   const [isUsernameChangeDialogOpen, setIsUsernameChangeDialogOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
+  const [performanceHelpDismissed, setPerformanceHelpDismissed] = useState(() => {
+    return localStorage.getItem('performanceHelpDismissed') === 'true';
+  });
 
   // Helper functions for performance calculations
   const calculateProfileCompletion = (partner: Partner | undefined) => {
@@ -116,6 +119,11 @@ export default function PartnerDashboard() {
     });
     
     return Math.round(totalScore / ratedQuotes.length);
+  };
+
+  const handleDismissPerformanceHelp = () => {
+    setPerformanceHelpDismissed(true);
+    localStorage.setItem('performanceHelpDismissed', 'true');
   };
 
 
@@ -781,26 +789,37 @@ export default function PartnerDashboard() {
 
           <TabsContent value="performance" className="space-y-6">
             {/* How It Works Section */}
-            <Card className="border-blue-200 bg-blue-50">
-              <CardContent className="pt-6">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <BarChart3 className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-blue-800 mb-2">
-                      Nasıl Çalışır?
-                    </h3>
-                    <div className="text-sm text-blue-700 space-y-1">
-                      <p><strong>Profil Tamamlama:</strong> Logo (%25), kapak fotoğrafı (%25), açıklama (%25) ve kullanıcı adı (%25) ile hesaplanır.</p>
-                      <p><strong>Yanıt Hızı:</strong> Teklif taleplerini ne kadar hızlı yanıtladığınıza göre hesaplanır (30dk içinde %100, 2 saat içinde %85, vb.).</p>
-                      <p><strong>Müşteri Memnuniyeti:</strong> Teklif sonrası müşteri anketlerine verilen cevaplara göre hesaplanır (%0-100 arası).</p>
-                      <p><strong>Hedefler:</strong> Yönetici tarafından belirlenen aylık hedeflerinizi gösterir. Hedefleriniz için yönetici ile iletişime geçebilirsiniz.</p>
+            {!performanceHelpDismissed && (
+              <Card className="border-blue-200 bg-blue-50 relative">
+                <CardContent className="pt-6">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
                     </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-blue-800 mb-2">
+                        Nasıl Çalışır?
+                      </h3>
+                      <div className="text-sm text-blue-700 space-y-1">
+                        <p><strong>Profil Tamamlama:</strong> Logo (%25), kapak fotoğrafı (%25), açıklama (%25) ve kullanıcı adı (%25) ile hesaplanır.</p>
+                        <p><strong>Yanıt Hızı:</strong> Teklif taleplerini ne kadar hızlı yanıtladığınıza göre hesaplanır (30dk içinde %100, 2 saat içinde %85, vb.).</p>
+                        <p><strong>Müşteri Memnuniyeti:</strong> Teklif sonrası müşteri anketlerine verilen cevaplara göre hesaplanır (%0-100 arası).</p>
+                        <p><strong>Hedefler:</strong> Yönetici tarafından belirlenen aylık hedeflerinizi gösterir. Hedefleriniz için yönetici ile iletişime geçebilirsiniz.</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                      onClick={handleDismissPerformanceHelp}
+                      title="Tekrar Gösterilmesin"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Performance Scores and Monthly Goals */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
