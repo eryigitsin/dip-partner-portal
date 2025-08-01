@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, X, Tag, Users, Search } from "lucide-react";
+import { Plus, X, Tag, Users, Search, Settings } from "lucide-react";
+import { TooltipNoDelay, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip-no-delay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -315,24 +316,41 @@ export function PartnerServicesTab() {
     <>
       {/* Instructions */}
       {!servicesHelpDismissed && (
-        <div className="bg-blue-50 p-4 rounded-lg relative mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-blue-100"
-            title="Artık Gösterme"
-            onClick={dismissServicesHelp}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          <h4 className="font-medium text-blue-900 mb-2">Nasıl Çalışır?</h4>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• <strong>Havuzdan Seç:</strong> Mevcut hizmet havuzundan istediğiniz hizmetleri seçin.</li>
-            <li>• <strong>Yeni Hizmet:</strong> Havuzda olmayan bir hizmet oluşturun. Bu işlemi teklif hazırlama aşamasında da yapabilirsiniz.</li>
-            <li>• <strong>Hizmet Etiketleri:</strong> Hizmetlerinize tıklayarak o hizmeti sunan diğer partnerleri görün.</li>
-            <li>• <strong>Kaldırma:</strong> Hizmet üzerine gelip X'e tıklayarak kendi hizmetlerinizden kaldırabilirsiniz.</li>
-          </ul>
-        </div>
+        <Card className="border-blue-200 bg-blue-50 relative mb-6">
+          <CardContent className="pt-6">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <Settings className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-blue-800 mb-2">
+                  Nasıl Çalışır?
+                </h3>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p><strong>Havuzdan Seç:</strong> Mevcut hizmet havuzundan istediğiniz hizmetleri seçin.</p>
+                  <p><strong>Yeni Hizmet:</strong> Havuzda olmayan bir hizmet oluşturun. Bu işlemi teklif hazırlama aşamasında da yapabilirsiniz.</p>
+                  <p><strong>Hizmet Etiketleri:</strong> Hizmetlerinize tıklayarak o hizmeti sunan diğer partnerleri görün.</p>
+                  <p><strong>Kaldırma:</strong> Hizmet üzerine gelip X'e tıklayarak kendi hizmetlerinizden kaldırabilirsiniz.</p>
+                </div>
+              </div>
+              <TooltipNoDelay delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                    onClick={dismissServicesHelp}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Tekrar Gösterilmesin</p>
+                </TooltipContent>
+              </TooltipNoDelay>
+            </div>
+          </CardContent>
+        </Card>
       )}
       
       <Card>

@@ -17,6 +17,7 @@ import { PartnerServicesTab } from "@/components/partner-services-tab";
 import { QuoteRequest, Partner } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { TooltipNoDelay, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip-no-delay";
 import { 
   BarChart3, 
   Users, 
@@ -669,23 +670,40 @@ export default function PartnerDashboard() {
           <TabsContent value="quotes" className="space-y-6">
             {/* Instructions for Quotes */}
             {!quotesHelpDismissed && (
-              <div className="bg-green-50 p-4 rounded-lg relative">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-green-100"
-                  title="Artık Gösterme"
-                  onClick={dismissQuotesHelp}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-                <h4 className="font-medium text-green-900 mb-2">Nasıl Çalışır?</h4>
-                <ul className="text-sm text-green-800 space-y-1">
-                  <li>• <strong>Talebi İncele:</strong> Gelen teklif taleplerinin detaylarını "Detaylar" butonuyla görüntüleyin.</li>
-                  <li>• <strong>Teklif Hazırla:</strong> "Teklif Hazırla" butonuyla profesyonel PDF teklif oluşturun.</li>
-                  <li>• <strong>Durum Takibi:</strong> Teklif durumları otomatik güncellenir (Bekleyen, İnceleniyor, Gönderildi).</li>
-                </ul>
-              </div>
+              <Card className="border-blue-200 bg-blue-50 relative">
+                <CardContent className="pt-6">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <MessageSquare className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-blue-800 mb-2">
+                        Nasıl Çalışır?
+                      </h3>
+                      <div className="text-sm text-blue-700 space-y-1">
+                        <p><strong>Talebi İncele:</strong> Gelen teklif taleplerinin detaylarını "Detaylar" butonuyla görüntüleyin.</p>
+                        <p><strong>Teklif Hazırla:</strong> "Teklif Hazırla" butonuyla profesyonel PDF teklif oluşturun.</p>
+                        <p><strong>Durum Takibi:</strong> Teklif durumları otomatik güncellenir (Bekleyen, İnceleniyor, Gönderildi).</p>
+                      </div>
+                    </div>
+                    <TooltipNoDelay delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                          onClick={dismissQuotesHelp}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Tekrar Gösterilmesin</p>
+                      </TooltipContent>
+                    </TooltipNoDelay>
+                  </div>
+                </CardContent>
+              </Card>
             )}
             <Card>
               <CardHeader>
@@ -807,15 +825,21 @@ export default function PartnerDashboard() {
                         <p><strong>Hedefler:</strong> Yönetici tarafından belirlenen aylık hedeflerinizi gösterir. Hedefleriniz için yönetici ile iletişime geçebilirsiniz.</p>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-2 right-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
-                      onClick={handleDismissPerformanceHelp}
-                      title="Tekrar Gösterilmesin"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <TooltipNoDelay delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                          onClick={handleDismissPerformanceHelp}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Tekrar Gösterilmesin</p>
+                      </TooltipContent>
+                    </TooltipNoDelay>
                   </div>
                 </CardContent>
               </Card>

@@ -112,7 +112,7 @@ function App() {
       <LanguageProvider>
         <SupabaseAuthProvider>
           <AuthProvider>
-            <TooltipProvider>
+            <TooltipProvider delayDuration={0}>
               <InitApp />
               <Toaster />
               <Router />
