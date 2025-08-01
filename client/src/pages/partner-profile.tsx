@@ -141,6 +141,17 @@ export default function PartnerProfile() {
     enabled: !!identifier,
   });
 
+  // Update editData when partner data is loaded
+  useEffect(() => {
+    if (partner) {
+      setEditData({
+        logo: '',
+        coverImage: '',
+        description: partner.description || ''
+      });
+    }
+  }, [partner]);
+
 
 
   // Fetch partner posts
@@ -436,10 +447,8 @@ export default function PartnerProfile() {
           lastModified: Date.now()
         });
         formData.append(cropField, croppedFile);
-        // Only include description if it has changed
-        if (editData.description !== partner?.description) {
-          formData.append('description', editData.description);
-        }
+        // Don't automatically include description during image crop
+        // Description updates are handled separately
 
         console.log('Uploading to:', `/api/partners/${partner?.id}`);
         console.log('FormData entries:');
@@ -481,7 +490,19 @@ export default function PartnerProfile() {
   }, [selectedFile, crop, cropField, editData.description, partner?.id, identifier, queryClient, toast]);
 
   const handleUpdateProfile = () => {
-    updatePartnerMutation.mutate(editData);
+    // Only include changed fields in the update
+    const updates: any = {};
+    if (editData.description !== partner?.description) {
+      updates.description = editData.description;
+    }
+    
+    // Only mutate if there are actual changes
+    if (Object.keys(updates).length > 0) {
+      updatePartnerMutation.mutate(updates);
+    } else {
+      // Close dialog if no changes were made
+      setIsEditDialogOpen(false);
+    }
   };
 
 
@@ -577,14 +598,22 @@ export default function PartnerProfile() {
                     <p className="text-xs text-gray-500 mt-1">En iyi sonuç için 1200x400px boyutunda yükleyin</p>
                   </div>
                   <div>
-                    <Label htmlFor="description">Açıklama</Label>
+                    <Label htmlFor="description">Açıklama (HTML destekli)</Label>
                     <Textarea
                       id="description"
                       value={editData.description}
                       onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                      placeholder="Şirket açıklaması"
-                      rows={4}
+                      placeholder="Şirket açıklaması - HTML etiketleri kullanabilirsiniz: <b>kalın</b>, <i>italik</i>, <u>altı çizili</u>, <br/> yeni satır, <p>paragraf</p>"
+                      rows={6}
+                      className="font-mono text-sm"
                     />
+                    <div className="mt-2 p-3 border rounded-md bg-gray-50">
+                      <Label className="text-xs text-gray-600 mb-2 block">Önizleme:</Label>
+                      <div 
+                        className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: editData.description || 'Açıklama yok...' }}
+                      />
+                    </div>
                   </div>
                   <Button onClick={handleUpdateProfile} className="w-full" disabled={updatePartnerMutation.isPending}>
                     {updatePartnerMutation.isPending ? (
@@ -840,7 +869,10 @@ export default function PartnerProfile() {
                     <CardTitle>Şirket Hakkında</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-700 leading-relaxed">{partner.description}</p>
+                    <div 
+                      className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: partner.description || '' }}
+                    />
                   </CardContent>
                 </Card>
                 
