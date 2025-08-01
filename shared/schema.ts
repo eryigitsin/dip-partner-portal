@@ -59,6 +59,7 @@ export const partners = pgTable("partners", {
   foundingYear: text("founding_year"),
   sectorExperience: text("sector_experience"),
   targetMarkets: text("target_markets"),
+  contactPerson: text("contact_person"),
   website: text("website"),
   linkedinProfile: text("linkedin_profile"),
   twitterProfile: text("twitter_profile"),
