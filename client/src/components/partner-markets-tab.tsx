@@ -33,17 +33,8 @@ export function PartnerMarketsTab() {
     region: ""
   });
 
-  // Fetch partner data to get partner ID
-  const { data: partnerData } = useQuery({
-    queryKey: ['/api/partners/me'],
-    queryFn: async () => {
-      const res = await apiRequest('GET', '/api/partners/me');
-      return res.json();
-    },
-    enabled: !!user
-  });
-
-  const partnerId = partnerData?.id;
+  // Partner data is not needed for partner-level endpoints
+  // The API endpoints use the authenticated user's partner automatically
 
   // Fetch all available markets
   const { data: allMarkets = [] } = useQuery<Market[]>({
@@ -134,18 +125,6 @@ export function PartnerMarketsTab() {
 
   // Get unique regions for filter
   const regions = Array.from(new Set(allMarkets.map(m => m.region).filter(Boolean)));
-
-  if (!partnerId) {
-    return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="text-center text-gray-500">
-            Partner bilgileri yükleniyor...
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6">
