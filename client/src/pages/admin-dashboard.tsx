@@ -19,6 +19,7 @@ import { ApplicationDetailDialog } from "@/components/forms/application-detail-d
 import { QuoteRequestsEmbedded } from "@/components/admin/quote-requests-embedded";
 import { PartnerInspectionModal } from "@/components/admin/partner-inspection-modal";
 import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
+import { AdminServiceManagement } from "@/components/admin/admin-service-management";
 import { PartnerApplication, Partner, QuoteRequest } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -1354,16 +1355,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="services">Hizmetler</Label>
-                <Textarea
-                  id="services"
-                  value={typeof partnerFormData.services === 'string' ? partnerFormData.services : JSON.stringify(partnerFormData.services || [])}
-                  onChange={(e) => setPartnerFormData(prev => ({ ...prev, services: e.target.value }))}
-                  rows={3}
-                  placeholder="Hizmetleri JSON array formatında veya her satırda bir hizmet olacak şekilde giriniz"
-                />
-                <p className="text-xs text-gray-500">Not: Hizmetler JSON array formatında olmalıdır: ["Hizmet 1", "Hizmet 2"] veya her satırda bir hizmet</p>
+              <div className="space-y-4">
+                <Label>Hizmetler</Label>
+                <AdminServiceManagement partnerId={editingPartner?.id} />
               </div>
               
               <div className="space-y-2">

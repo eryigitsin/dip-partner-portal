@@ -3013,6 +3013,50 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin: Add service to specific partner
+  app.post("/api/partners/:partnerId/services", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const user = req.user;
+    if (!user || !["master_admin", "editor_admin"].includes(user.userType)) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { partnerId } = req.params;
+      const { serviceId } = req.body;
+      
+      if (!serviceId) {
+        return res.status(400).json({ message: "Service ID is required" });
+      }
+
+      await storage.addPartnerService(parseInt(partnerId), serviceId);
+      res.json({ success: true, message: "Service added to partner successfully" });
+    } catch (error) {
+      console.error('Error adding service to partner:', error);
+      res.status(500).json({ message: 'Failed to add service to partner' });
+    }
+  });
+
+  // Admin: Remove service from specific partner
+  app.delete("/api/partners/:partnerId/services/:serviceId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    const user = req.user;
+    if (!user || !["master_admin", "editor_admin"].includes(user.userType)) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { partnerId, serviceId } = req.params;
+      await storage.removePartnerService(parseInt(partnerId), parseInt(serviceId));
+      res.json({ success: true, message: "Service removed from partner successfully" });
+    } catch (error) {
+      console.error('Error removing service from partner:', error);
+      res.status(500).json({ message: 'Failed to remove service from partner' });
+    }
+  });
+
   app.post("/api/partner/services/new", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
