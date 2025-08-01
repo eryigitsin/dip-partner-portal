@@ -2547,7 +2547,7 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const user = req.user;
-      if (!user || user.userType !== 'partner') {
+      if (!user || (user.userType !== 'partner' && user.activeUserType !== 'partner')) {
         return res.status(403).json({ error: 'Only partners can create quote responses' });
       }
 
