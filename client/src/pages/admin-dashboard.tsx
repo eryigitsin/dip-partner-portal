@@ -1361,6 +1361,16 @@ export default function AdminDashboard() {
               </div>
               
               <div className="space-y-2">
+                <Label htmlFor="contactPerson">İletişim Kişisi</Label>
+                <Input
+                  id="contactPerson"
+                  value={partnerFormData.contactPerson || ''}
+                  onChange={(e) => setPartnerFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                  placeholder="İletişim kişisi adı"
+                />
+              </div>
+              
+              <div className="space-y-2">
                 <Label htmlFor="companyAddress">Şirket Adresi</Label>
                 <Textarea
                   id="companyAddress"
