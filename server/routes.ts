@@ -936,16 +936,28 @@ export function registerRoutes(app: Express): Server {
   // Get partner followers
   app.get("/api/partners/me/followers", async (req, res) => {
     try {
+      console.log('=== /api/partners/me/followers called ===');
+      console.log('User authenticated:', req.isAuthenticated());
+      console.log('User object:', req.user);
+      
       if (!req.isAuthenticated()) {
+        console.log('User not authenticated, returning 401');
         return res.status(401).json({ message: "Authentication required" });
       }
 
+      console.log('Looking for partner with userId:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
+      console.log('Partner found:', partner ? { id: partner.id, companyName: partner.companyName } : 'null');
+      
       if (!partner) {
+        console.log('Partner not found for userId:', req.user!.id);
         return res.status(404).json({ message: "Partner not found" });
       }
 
+      console.log('Fetching followers for partnerId:', partner.id);
       const followers = await storage.getPartnerFollowers(partner.id);
+      console.log('Followers found:', followers.length, followers);
+      
       res.json(followers);
     } catch (error) {
       console.error('Error fetching partner followers:', error);
@@ -970,12 +982,18 @@ export function registerRoutes(app: Express): Server {
       console.log('Looking for partner with userId:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
       console.log('Partner query result:', partner);
+      console.log('Partner found?', !!partner);
       
       if (!partner) {
         console.log('Partner not found for userId:', req.user!.id);
-        // Let's also check what partners exist
+        console.log('Checking all partners in system...');
         const allPartners = await storage.getPartners({});
-        console.log('All partners:', allPartners.map(p => ({ id: p.id, userId: p.userId, companyName: p.companyName })));
+        console.log('All partners in system:');
+        allPartners.forEach(p => {
+          console.log(`  ID: ${p.id}, UserID: ${p.userId}, Company: ${p.companyName}`);
+        });
+        console.log('Current user ID:', req.user!.id);
+        console.log('Current user type:', req.user!.activeUserType || req.user!.userType);
         return res.status(404).json({ message: "Partner not found" });
       }
 
