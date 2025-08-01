@@ -278,6 +278,8 @@ export default function PartnerDashboard() {
         return "bg-yellow-100 text-yellow-800";
       case "responded":
         return "bg-blue-100 text-blue-800";
+      case "quote_sent":
+        return "bg-green-100 text-green-800";
       case "accepted":
         return "bg-green-100 text-green-800";
       case "rejected":
@@ -295,6 +297,8 @@ export default function PartnerDashboard() {
         return <Clock className="h-4 w-4" />;
       case "responded":
         return <MessageSquare className="h-4 w-4" />;
+      case "quote_sent":
+        return <Send className="h-4 w-4" />;
       case "accepted":
         return <CheckCircle className="h-4 w-4" />;
       case "rejected":
@@ -312,6 +316,8 @@ export default function PartnerDashboard() {
         return "Beklemede";
       case "responded":
         return "Yanıtlandı";
+      case "quote_sent":
+        return "Teklif Gönderildi";
       case "accepted":
         return "Kabul Edildi";
       case "rejected":
@@ -801,6 +807,17 @@ export default function PartnerDashboard() {
                                 >
                                   <Send className="h-4 w-4 mr-2" />
                                   Teklif Hazırla
+                                </Button>
+                              )}
+                              {quote.status === "quote_sent" && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  disabled
+                                  className="text-green-600 border-green-200"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Teklif Gönderildi
                                 </Button>
                               )}
                             </div>

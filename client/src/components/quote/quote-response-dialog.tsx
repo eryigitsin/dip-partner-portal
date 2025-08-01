@@ -207,9 +207,7 @@ export function QuoteResponseDialog({
   };
 
   const onSubmit = async (data: z.infer<typeof quoteResponseSchema>) => {
-    console.log('Form submit started', data);
-    console.log('Form errors:', form.formState.errors);
-    console.log('Items:', items);
+
     
     setIsSubmitting(true);
     try {
@@ -220,7 +218,7 @@ export function QuoteResponseDialog({
         items: items.filter(item => item.description.trim() !== ""),
       };
       
-      console.log('Quote data to send:', quoteData);
+
 
       const response = await apiRequest("POST", "/api/quote-responses", quoteData);
       
@@ -262,13 +260,7 @@ export function QuoteResponseDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form 
-            onSubmit={(e) => {
-              console.log('Form submit event triggered');
-              form.handleSubmit(onSubmit)(e);
-            }} 
-            className="space-y-6"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Quote Header */}
             <Card>
               <CardHeader>
