@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -24,8 +24,25 @@ import {
   Send,
   DollarSign,
   Building,
-  Calendar
+  Calendar,
+  Tag
 } from "lucide-react";
+
+interface Service {
+  id: number;
+  name: string;
+  description?: string;
+  category?: string;
+}
+
+interface PartnerService {
+  id: number;
+  partnerId: number;
+  serviceId: number;
+  service: Service;
+  isCustom: boolean;
+  createdAt: string;
+}
 
 interface QuoteItem {
   description: string;
@@ -70,12 +87,54 @@ export function QuoteResponseDialog({
 }: QuoteResponseDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServiceDescription, setNewServiceDescription] = useState("");
+  const [isAddingNewService, setIsAddingNewService] = useState(false);
 
   // Get partner data for services
   const { data: partner } = useQuery<Partner>({
     queryKey: ["/api/partners", "me"],
     enabled: !!user && user.userType === "partner",
+  });
+
+  // Fetch partner's services from the service pool
+  const { data: partnerServices = [] } = useQuery<PartnerService[]>({
+    queryKey: ['/api/partner/services'],
+    enabled: !!user && user.userType === "partner",
+  });
+
+  // Fetch all services for suggestions
+  const { data: allServices = [] } = useQuery<Service[]>({
+    queryKey: ['/api/services'],
+    enabled: !!user && user.userType === "partner",
+  });
+
+  // Add new service to pool mutation
+  const addNewServiceMutation = useMutation({
+    mutationFn: async (serviceData: { name: string; description?: string }) => {
+      const response = await apiRequest('POST', '/api/partner/services/new', serviceData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/services'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+      setNewServiceName("");
+      setNewServiceDescription("");
+      setIsAddingNewService(false);
+      toast({
+        title: "Başarılı",
+        description: "Yeni hizmet havuza eklendi",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Hizmet eklenirken bir hata oluştu",
+        variant: "destructive",
+      });
+    },
   });
 
   const generateQuoteTitle = () => {
@@ -275,6 +334,72 @@ export function QuoteResponseDialog({
               </CardContent>
             </Card>
 
+            {/* Add New Service Card */}
+            {isAddingNewService && (
+              <Card className="border-dashed border-dip-blue">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <div className="flex items-center">
+                      <Tag className="h-5 w-5 mr-2" />
+                      Yeni Hizmet Ekle
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsAddingNewService(false)}
+                    >
+                      ✕
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Hizmet Adı *</label>
+                    <Input
+                      value={newServiceName}
+                      onChange={(e) => setNewServiceName(e.target.value)}
+                      placeholder="Örn: SEO Optimizasyonu, Logo Tasarımı..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Hizmet Açıklaması</label>
+                    <Textarea
+                      value={newServiceDescription}
+                      onChange={(e) => setNewServiceDescription(e.target.value)}
+                      placeholder="Hizmet hakkında kısa açıklama..."
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (newServiceName.trim()) {
+                          addNewServiceMutation.mutate({
+                            name: newServiceName.trim(),
+                            description: newServiceDescription.trim() || undefined
+                          });
+                        }
+                      }}
+                      disabled={!newServiceName.trim() || addNewServiceMutation.isPending}
+                      size="sm"
+                    >
+                      {addNewServiceMutation.isPending ? "Ekleniyor..." : "Havuza Ekle"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsAddingNewService(false)}
+                      size="sm"
+                    >
+                      İptal
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Quote Items */}
             <Card>
               <CardHeader>
@@ -294,12 +419,25 @@ export function QuoteResponseDialog({
                   {items.map((item, index) => (
                     <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 border rounded-lg">
                       <div className="col-span-5">
-                        <label className="text-sm font-medium">Hizmet Adı</label>
+                        <label className="text-sm font-medium flex items-center justify-between">
+                          <span>Hizmet Adı</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsAddingNewService(true)}
+                            className="text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Yeni Hizmet
+                          </Button>
+                        </label>
                         <ServiceAutocomplete
-                          partnerServices={partner?.services ? partner.services.split(',').map(s => s.trim()) : []}
+                          partnerServices={partnerServices.map(ps => ps.service.name)}
+                          allServices={allServices.map(s => s.name)}
                           value={item.description}
                           onChange={(value) => updateItem(index, 'description', value)}
-                          placeholder="Hizmetlerinizden seçin."
+                          placeholder="Hizmet havuzundan seçin veya yeni hizmet yazın..."
                         />
                       </div>
                       

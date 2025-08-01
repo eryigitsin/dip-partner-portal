@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -16,8 +17,25 @@ import {
   Building,
   User,
   Eye,
-  Calendar
+  Calendar,
+  Tag
 } from "lucide-react";
+
+interface Service {
+  id: number;
+  name: string;
+  description?: string;
+  category?: string;
+}
+
+interface PartnerService {
+  id: number;
+  partnerId: number;
+  serviceId: number;
+  service: Service;
+  isCustom: boolean;
+  createdAt: string;
+}
 
 export default function PartnerProfilePage() {
   const { user } = useAuth();
@@ -28,6 +46,17 @@ export default function PartnerProfilePage() {
     queryFn: async () => {
       const response = await fetch("/api/partners/me");
       if (!response.ok) throw new Error("Failed to fetch partner data");
+      return response.json();
+    },
+    enabled: !!user && (user.activeUserType || user.userType) === "partner",
+  });
+
+  // Fetch partner's services from the service pool
+  const { data: partnerServices = [], isLoading: servicesLoading } = useQuery<PartnerService[]>({
+    queryKey: ['/api/partner/services'],
+    queryFn: async () => {
+      const response = await fetch('/api/partner/services');
+      if (!response.ok) throw new Error('Partner hizmetleri yüklenemedi');
       return response.json();
     },
     enabled: !!user && (user.activeUserType || user.userType) === "partner",
@@ -226,6 +255,49 @@ export default function PartnerProfilePage() {
                   <p className="text-sm text-gray-600">Üyelik Yılı</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Services Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Tag className="mr-2 h-5 w-5" />
+                Hizmetler
+              </CardTitle>
+              <CardDescription>
+                {partnerServices.length > 0 
+                  ? `${partnerServices.length} hizmet sunuluyor`
+                  : 'Henüz hizmet eklenmemiş'
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {servicesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin w-6 h-6 border-2 border-dip-blue border-t-transparent rounded-full" />
+                </div>
+              ) : partnerServices.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {partnerServices.map((partnerService: PartnerService) => (
+                    <Badge
+                      key={partnerService.id}
+                      variant="outline"
+                      className="bg-dip-blue bg-opacity-10 text-dip-blue border-dip-blue hover:bg-dip-blue hover:text-white transition-colors cursor-default"
+                    >
+                      {partnerService.service.name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Tag className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-lg font-medium mb-2">Henüz hizmet eklenmemiş</p>
+                  <p className="text-sm">
+                    Hizmetlerinizi eklemek için dashboard'unuzdaki Hizmetler sekmesini kullanın.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

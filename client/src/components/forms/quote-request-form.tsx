@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,12 +8,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest } from '@/lib/queryClient';
 import { insertQuoteRequestSchema, Partner } from '@shared/schema';
 import { z } from 'zod';
 import { useState } from 'react';
+
+interface Service {
+  id: number;
+  name: string;
+  description?: string;
+  category?: string;
+}
+
+interface PartnerService {
+  id: number;
+  partnerId: number;
+  serviceId: number;
+  service: Service;
+  isCustom: boolean;
+  createdAt: string;
+}
 
 const formSchema = z.object({
   partnerId: z.number(),
@@ -48,6 +65,16 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
   const [workType, setWorkType] = useState<'project' | 'monthly'>('monthly');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [serviceDropdownOpen, setServiceDropdownOpen] = useState(false);
+
+  // Fetch partner's services from the service pool
+  const { data: partnerServicesData = [] } = useQuery<PartnerService[]>({
+    queryKey: ['/api/partner/services', partner.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/partner/services?partnerId=${partner.id}`);
+      if (!response.ok) throw new Error('Partner hizmetleri yüklenemedi');
+      return response.json();
+    },
+  });
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -155,7 +182,7 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
       serviceInfo = selectedServices.join(', ');
       console.log('🔧 Using structured services:', selectedServices);
     } else {
-      serviceInfo = data.serviceNeeded;
+      serviceInfo = data.serviceNeeded || '';
       console.log('📝 Using manual service input:', data.serviceNeeded);
     }
     
@@ -184,8 +211,14 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
     quoteRequestMutation.mutate(finalData);
   };
 
-  // Parse partner services from legacy text field
+  // Get partner services from the new service pool system
   const getPartnerServices = () => {
+    // First priority: services from the service pool
+    if (partnerServicesData.length > 0) {
+      return partnerServicesData.map(ps => ps.service.name);
+    }
+    
+    // Fallback: legacy text field services
     if (!partner.services) return [];
     
     // Split by common delimiters and clean up
@@ -281,84 +314,113 @@ export function QuoteRequestForm({ partner, onSuccess, onCancel }: QuoteRequestF
           )}
         />
 
-        {/* Multiple Service Selection with Dropdown */}
+        {/* Service Selection from Service Pool */}
         {partnerServices.length > 0 && (
-          <div className="space-y-3">
-            <FormLabel>Hizmet Seçimi * (Birden fazla seçim yapabilirsiniz)</FormLabel>
-            <Select open={serviceDropdownOpen} onOpenChange={setServiceDropdownOpen}>
-              <SelectTrigger onClick={() => setServiceDropdownOpen(!serviceDropdownOpen)}>
-                <SelectValue placeholder={
-                  selectedServices.length === 0 
-                    ? "Hizmet seçiniz..." 
-                    : `${selectedServices.length} hizmet seçildi`
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2 space-y-2">
-                  {partnerServices.map((service, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded">
-                      <Checkbox
-                        id={`service-${index}`}
-                        checked={selectedServices.includes(service)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedServices(prev => [...prev, service]);
-                          } else {
-                            setSelectedServices(prev => prev.filter(s => s !== service));
-                          }
-                        }}
-                      />
-                      <label 
-                        htmlFor={`service-${index}`}
-                        className="text-sm font-medium leading-none cursor-pointer flex-1"
-                      >
-                        {service}
-                      </label>
+          <div className="space-y-4">
+            <div>
+              <FormLabel className="text-base font-medium">
+                {partner.companyName} Hizmetleri * 
+              </FormLabel>
+              <p className="text-sm text-gray-600 mt-1">
+                İhtiyacınız olan hizmetleri seçin (birden fazla seçim yapabilirsiniz)
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {partnerServices.map((serviceName, index) => {
+                const serviceData = partnerServicesData.find(ps => ps.service.name === serviceName);
+                return (
+                  <div 
+                    key={index}
+                    className={`border rounded-lg p-3 cursor-pointer transition-all hover:border-dip-blue ${
+                      selectedServices.includes(serviceName) 
+                        ? 'border-dip-blue bg-dip-blue bg-opacity-5' 
+                        : 'border-gray-200'
+                    }`}
+                    onClick={() => {
+                      if (selectedServices.includes(serviceName)) {
+                        setSelectedServices(prev => prev.filter(s => s !== serviceName));
+                      } else {
+                        setSelectedServices(prev => [...prev, serviceName]);
+                      }
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <Checkbox
+                            checked={selectedServices.includes(serviceName)}
+                            onChange={() => {}} // Handled by parent div click
+                            className="mr-3"
+                          />
+                          <h4 className="font-medium text-gray-900">{serviceName}</h4>
+                        </div>
+                        {serviceData?.service.description && (
+                          <p className="text-sm text-gray-600 mt-1 ml-6">
+                            {serviceData.service.description}
+                          </p>
+                        )}
+                        {serviceData?.service.category && (
+                          <Badge variant="secondary" className="mt-2 ml-6">
+                            {serviceData.service.category}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                  <div className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded">
-                    <Checkbox
-                      id="service-other"
-                      checked={selectedServices.includes('Diğer')}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedServices(prev => [...prev, 'Diğer']);
-                        } else {
-                          setSelectedServices(prev => prev.filter(s => s !== 'Diğer'));
-                        }
-                      }}
-                    />
-                    <label 
-                      htmlFor="service-other"
-                      className="text-sm font-medium leading-none cursor-pointer flex-1"
-                    >
-                      Diğer (Açıklama kısmında belirtiniz)
-                    </label>
+                  </div>
+                );
+              })}
+              
+              {/* Other option */}
+              <div 
+                className={`border rounded-lg p-3 cursor-pointer transition-all hover:border-dip-blue ${
+                  selectedServices.includes('Diğer') 
+                    ? 'border-dip-blue bg-dip-blue bg-opacity-5' 
+                    : 'border-gray-200'
+                }`}
+                onClick={() => {
+                  if (selectedServices.includes('Diğer')) {
+                    setSelectedServices(prev => prev.filter(s => s !== 'Diğer'));
+                  } else {
+                    setSelectedServices(prev => [...prev, 'Diğer']);
+                  }
+                }}
+              >
+                <div className="flex items-center">
+                  <Checkbox
+                    checked={selectedServices.includes('Diğer')}
+                    onChange={() => {}} // Handled by parent div click
+                    className="mr-3"
+                  />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Diğer</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Yukarıda bulunmayan bir hizmet (açıklama kısmında belirtiniz)
+                    </p>
                   </div>
                 </div>
-              </SelectContent>
-            </Select>
+              </div>
+            </div>
+            
             {selectedServices.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedServices.map((service, index) => (
-                  <span 
-                    key={index}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                  >
-                    {service}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedServices(prev => prev.filter(s => s !== service))}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm font-medium text-green-800 mb-2">
+                  Seçilen Hizmetler ({selectedServices.length}):
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedServices.map((service, index) => (
+                    <Badge key={index} variant="outline" className="text-green-700 border-green-300">
+                      {service}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
+            
             {selectedServices.length === 0 && (
-              <p className="text-sm text-red-600">En az bir hizmet seçiniz</p>
+              <p className="text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                ⚠️ En az bir hizmet seçiniz
+              </p>
             )}
           </div>
         )}

@@ -393,7 +393,7 @@ export function registerRoutes(app: Express): Server {
       const service = await storage.createService({
         name,
         description,
-        category,
+        categoryId: 1, // Default category if not specified
         createdBy: req.user!.id,
       });
 
@@ -770,11 +770,70 @@ export function registerRoutes(app: Express): Server {
         };
 
         // Check if partner already exists
+        let partner;
         const existingPartner = await storage.getPartnerByUserId(user.id);
         if (existingPartner) {
-          await storage.updatePartner(existingPartner.id, partnerData);
+          partner = await storage.updatePartner(existingPartner.id, partnerData);
         } else {
-          await storage.createPartner(partnerData);
+          partner = await storage.createPartner(partnerData);
+        }
+
+        // Process services from application and add to service pool
+        if (application.services && partner) {
+          console.log('Processing services from application:', application.services);
+          
+          // Parse services - split by newlines and clean up
+          const serviceLines = application.services
+            .split(/[\r\n]+/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0 && s !== '*' && s !== '-' && s !== '•');
+
+          console.log('Parsed service lines:', serviceLines);
+
+          for (const serviceLine of serviceLines) {
+            try {
+              // Clean service name (remove bullets, asterisks, etc.)
+              const serviceName = serviceLine.replace(/^[\*\-•\s]+/, '').trim();
+              
+              if (serviceName.length === 0) continue;
+
+              console.log('Processing service:', serviceName);
+
+              // Check if service already exists in pool
+              let service = await storage.getServiceByName(serviceName);
+              
+              if (!service) {
+                // Create new service in pool
+                service = await storage.createService({
+                  name: serviceName,
+                  description: '', // No description from application
+                  categoryId: 1, // Default general category
+                  isActive: true,
+                  createdBy: user.id
+                });
+                console.log('Created new service in pool:', service.name);
+              } else {
+                console.log('Service already exists in pool:', service.name);
+              }
+
+              // Add service to partner's selected services
+              try {
+                await storage.addPartnerService(partner.id, service.id);
+                console.log('Added service to partner:', service.name);
+              } catch (error: any) {
+                // Ignore duplicate key errors
+                if (!error.message?.includes('duplicate key')) {
+                  console.error('Error adding service to partner:', error);
+                }
+              }
+              
+            } catch (serviceError) {
+              console.error('Error processing service:', serviceLine, serviceError);
+              // Continue with other services
+            }
+          }
+
+          console.log('Finished processing services for partner:', partner.id);
         }
 
         // Update user's available user types if they're not already set
@@ -2701,13 +2760,23 @@ export function registerRoutes(app: Express): Server {
     
     try {
       const user = req.user;
-      const partner = await storage.getPartnerByUserId(user!.id);
+      const { partnerId } = req.query;
       
-      if (!partner) {
-        return res.status(404).json({ message: "Partner not found" });
+      let targetPartnerId: number;
+      
+      if (partnerId) {
+        // Fetch services for a specific partner (for quote request forms)
+        targetPartnerId = parseInt(partnerId as string);
+      } else {
+        // Fetch services for current user's partner (for dashboard)
+        const partner = await storage.getPartnerByUserId(user!.id);
+        if (!partner) {
+          return res.status(404).json({ message: "Partner not found" });
+        }
+        targetPartnerId = partner.id;
       }
 
-      const selectedServices = await storage.getPartnerSelectedServices(partner.id);
+      const selectedServices = await storage.getPartnerSelectedServices(targetPartnerId);
       res.json(selectedServices);
     } catch (error) {
       console.error('Error fetching partner services:', error);

@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 
 interface ServiceAutocompleteProps {
   partnerServices: string[];
+  allServices?: string[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -13,6 +14,7 @@ interface ServiceAutocompleteProps {
 
 export function ServiceAutocomplete({
   partnerServices,
+  allServices = [],
   value,
   onChange,
   placeholder,
@@ -24,14 +26,18 @@ export function ServiceAutocomplete({
 
   useEffect(() => {
     if (value.length > 0) {
-      const filtered = partnerServices.filter(service =>
+      // Combine partner services and all services for filtering
+      const allServicesList = [...new Set([...partnerServices, ...allServices])];
+      const filtered = allServicesList.filter(service =>
         service.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredServices(filtered);
     } else {
-      setFilteredServices(partnerServices);
+      // Show partner services first, then all services
+      const combined = [...partnerServices, ...allServices.filter(s => !partnerServices.includes(s))];
+      setFilteredServices(combined);
     }
-  }, [value, partnerServices]);
+  }, [value, partnerServices, allServices]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -57,7 +63,7 @@ export function ServiceAutocomplete({
   };
 
   const handleInputFocus = () => {
-    if (partnerServices.length > 0) {
+    if (partnerServices.length > 0 || allServices.length > 0) {
       setIsOpen(true);
     }
   };
