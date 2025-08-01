@@ -11,6 +11,8 @@ import {
 import { useLanguage } from '@/contexts/language-context';
 import { useAuth } from '@/hooks/use-auth';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
+import { useQuery } from '@tanstack/react-query';
+import { Partner } from '@shared/schema';
 import { AccountTypeSelector } from '@/components/account-type-selector';
 import { t } from '@/lib/i18n';
 import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2 } from 'lucide-react';
@@ -24,6 +26,19 @@ export function Header() {
   const { user, logoutMutation } = useAuth();
   const { signOut } = useSupabaseAuth();
   const [location] = useLocation();
+
+  // Get partner data for current user (if they are a partner)
+  const { data: partner } = useQuery<Partner>({
+    queryKey: ["/api/partners", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch("/api/partners");
+      if (!response.ok) return null;
+      const partners = await response.json();
+      return partners.find((p: Partner) => p.userId === user.id) || null;
+    },
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
+  });
 
   // Check if user has multiple account types available - include current type + available types
   const allUserTypes = user ? [user.userType, ...(user.availableUserTypes || [])] : [];
@@ -210,7 +225,7 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href="/partner-profile" className="flex items-center">
+                        <Link href={`/partner/${partner?.username || partner?.id || 'unknown'}`} className="flex items-center">
                           <User className="mr-2 h-4 w-4" />
                           <span>Profil</span>
                         </Link>
