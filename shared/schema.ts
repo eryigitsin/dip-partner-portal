@@ -264,10 +264,11 @@ export const partnerFollowers = pgTable("partner_followers", {
 // Messages between users and partners
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
-  conversationId: text("conversation_id").notNull(),
   senderId: integer("sender_id").references(() => users.id).notNull(),
   receiverId: integer("receiver_id").references(() => users.id).notNull(),
+  subject: text("subject"),
   message: text("message").notNull(),
+  attachments: jsonb("attachments"),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });

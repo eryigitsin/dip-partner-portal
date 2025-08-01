@@ -27,7 +27,7 @@ import EmailPreferences from "@/pages/email-preferences";
 import EmailSubscribers from "@/pages/admin/email-subscribers";
 import PartnerProfile from "@/pages/partner-profile";
 
-import PartnerStatisticsPage from "@/pages/partner-statistics-page";
+
 import TestUpload from "@/pages/test-upload";
 import { ProtectedRoute } from "./lib/protected-route";
 import { useQuery } from "@tanstack/react-query";
@@ -84,7 +84,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/partner-dashboard" component={PartnerDashboard} />
 
-      <ProtectedRoute path="/partner-statistics" component={PartnerStatisticsPage} />
+
       <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} />
       <ProtectedRoute path="/user-panel" component={UserPanel} />
       <ProtectedRoute path="/service-requests" component={ServiceRequests} />

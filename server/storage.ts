@@ -52,6 +52,8 @@ import {
   type InsertMarketingContact,
   type Feedback,
   type InsertFeedback,
+  type Message,
+  type InsertMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql } from "drizzle-orm";
@@ -208,6 +210,18 @@ export interface IStorage {
   getFeedback(): Promise<Feedback[]>;
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   updateFeedbackStatus(id: number, status: string): Promise<Feedback | undefined>;
+
+  // Message methods
+  getUserConversations(userId: number): Promise<Array<{
+    partnerId: number;
+    partner: Partner;
+    lastMessage: Message;
+    unreadCount: number;
+    messages: Message[];
+  }>>;
+  getConversationMessages(conversationId: string): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  markMessagesAsRead(conversationId: string, userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -888,15 +902,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tempUserRegistrations.phone, phone));
   }
 
-  async getUserConversations(userId: number): Promise<any[]> {
-    // Message conversations logic would go here
-    return [];
-  }
 
-  async createMessage(data: any): Promise<any> {
-    // Message creation logic would go here
-    return data;
-  }
 
   async getAdminUsers(): Promise<User[]> {
     return await db
@@ -1538,6 +1544,97 @@ export class DatabaseStorage implements IStorage {
       .where(eq(feedback.id, id))
       .returning();
     return updatedFeedback || undefined;
+  }
+
+  // Message methods
+  async getUserConversations(userId: number): Promise<Array<{
+    partnerId: number;
+    partner: Partner;
+    lastMessage: Message;
+    unreadCount: number;
+    messages: Message[];
+  }>> {
+    // Get all conversations for this user
+    const conversationsQuery = await db
+      .select()
+      .from(messages)
+      .where(or(eq(messages.senderId, userId), eq(messages.receiverId, userId)))
+      .orderBy(desc(messages.createdAt));
+
+    // Group by conversation and get partners
+    const conversationMap = new Map();
+    
+    for (const message of conversationsQuery) {
+      const partnerId = message.senderId === userId ? message.receiverId : message.senderId;
+      const conversationId = `${Math.min(userId, partnerId)}-${Math.max(userId, partnerId)}`;
+      
+      if (!conversationMap.has(conversationId)) {
+        const [partner] = await db.select().from(partners).where(eq(partners.userId, partnerId));
+        if (partner) {
+          conversationMap.set(conversationId, {
+            partnerId,
+            partner,
+            messages: [],
+            lastMessage: null,
+            unreadCount: 0
+          });
+        }
+      }
+      
+      const conversation = conversationMap.get(conversationId);
+      if (conversation) {
+        conversation.messages.push(message);
+        if (!conversation.lastMessage || (message.createdAt && conversation.lastMessage.createdAt && message.createdAt > conversation.lastMessage.createdAt)) {
+          conversation.lastMessage = message;
+        }
+        if (!message.isRead && message.receiverId === userId) {
+          conversation.unreadCount++;
+        }
+      }
+    }
+
+    return Array.from(conversationMap.values());
+  }
+
+  async getConversationMessages(conversationId: string): Promise<Message[]> {
+    // Extract user IDs from conversationId format: "userId1-userId2"
+    const [userId1, userId2] = conversationId.split('-').map(Number);
+    
+    return await db
+      .select()
+      .from(messages)
+      .where(
+        or(
+          and(eq(messages.senderId, userId1), eq(messages.receiverId, userId2)),
+          and(eq(messages.senderId, userId2), eq(messages.receiverId, userId1))
+        )
+      )
+      .orderBy(asc(messages.createdAt));
+  }
+
+  async createMessage(messageData: InsertMessage): Promise<Message> {
+    const [newMessage] = await db
+      .insert(messages)
+      .values(messageData)
+      .returning();
+    return newMessage;
+  }
+
+  async markMessagesAsRead(conversationId: string, userId: number): Promise<void> {
+    // Extract user IDs from conversationId format: "userId1-userId2"
+    const [userId1, userId2] = conversationId.split('-').map(Number);
+    
+    await db
+      .update(messages)
+      .set({ isRead: true })
+      .where(and(
+        or(
+          and(eq(messages.senderId, userId1), eq(messages.receiverId, userId2)),
+          and(eq(messages.senderId, userId2), eq(messages.receiverId, userId1))
+        ),
+        eq(messages.receiverId, userId),
+        eq(messages.isRead, false)
+      ));
   }
 
 }

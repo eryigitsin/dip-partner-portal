@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertPartnerApplicationSchema, insertQuoteRequestSchema, insertTempUserRegistrationSchema } from "@shared/schema";
+import { insertPartnerApplicationSchema, insertQuoteRequestSchema, insertTempUserRegistrationSchema, insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import { createNetGsmService } from "./netgsm";
 import { resendService } from './resend-service';
@@ -3050,5 +3050,76 @@ export function registerRoutes(app: Express): Server {
   })();
 
   const httpServer = createServer(app);
+  // Message endpoints
+  app.get("/api/user/conversations", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userId = req.user!.id;
+      const conversations = await storage.getUserConversations(userId);
+      res.json(conversations);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  app.get("/api/conversations/:conversationId/messages", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const { conversationId } = req.params;
+      const messages = await storage.getConversationMessages(conversationId);
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/messages", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userId = req.user!.id;
+      const { receiverId, content } = req.body;
+      
+      const messageData = {
+        senderId: userId,
+        receiverId: receiverId,
+        message: content, // Using 'message' field as per database schema
+        isRead: false,
+      };
+
+      const newMessage = await storage.createMessage(messageData);
+      res.json(newMessage);
+    } catch (error) {
+      console.error('Error creating message:', error);
+      res.status(500).json({ message: "Failed to create message" });
+    }
+  });
+
+  app.patch("/api/conversations/:conversationId/read", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const { conversationId } = req.params;
+      const userId = req.user!.id;
+      await storage.markMessagesAsRead(conversationId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ message: "Failed to mark messages as read" });
+    }
+  });
+
   return httpServer;
 }

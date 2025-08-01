@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Partner } from '@shared/schema';
 import { AccountTypeSelector } from '@/components/account-type-selector';
 import { t } from '@/lib/i18n';
-import { Menu, X, User, Settings, MessageCircle, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2 } from 'lucide-react';
+import { Menu, X, User, Settings, MessageCircle, MessageSquare, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2 } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 
@@ -42,7 +42,7 @@ export function Header() {
 
   // Check if user has multiple account types available - include current type + available types
   const allUserTypes = user ? [user.userType, ...(user.availableUserTypes || [])] : [];
-  const uniqueUserTypes = [...new Set(allUserTypes)];
+  const uniqueUserTypes = Array.from(new Set(allUserTypes));
   const hasMultipleAccountTypes = uniqueUserTypes.length > 1;
   
   // Always show account type switching for users with multiple types
@@ -231,9 +231,9 @@ export function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href="/partner-statistics" className="flex items-center">
-                          <BarChart3 className="mr-2 h-4 w-4" />
-                          <span>İstatistikler</span>
+                        <Link href="/messages" className="flex items-center">
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          <span>Mesajlar</span>
                         </Link>
                       </DropdownMenuItem>
                       {showAccountTypeSwitching && (
