@@ -457,10 +457,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get partner by ID or username
+  // Get partner by ID or username (but not "me" - that's handled separately)
   app.get("/api/partners/:identifier", async (req, res) => {
     try {
       const identifier = req.params.identifier;
+      
+      // Skip if identifier is "me" - that should be handled by the specific /me route
+      if (identifier === 'me') {
+        return res.status(404).json({ message: "Use /api/partners/me endpoint directly" });
+      }
+      
       let partner;
       
       // Check if identifier is numeric (ID) or string (username)
