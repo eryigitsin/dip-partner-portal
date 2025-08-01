@@ -73,7 +73,7 @@ export function QuoteResponseDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get partner data for services
-  const { data: partner } = useQuery<Partner>({
+  const { data: partner, isLoading: partnerLoading } = useQuery<Partner>({
     queryKey: ["/api/partners", "me"],
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
@@ -81,7 +81,7 @@ export function QuoteResponseDialog({
   // Get partner's selected services from the new system
   const { data: partnerServices = [] } = useQuery({
     queryKey: ["/api/partner/services"],
-    enabled: !!partner?.id,
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
   const generateQuoteTitle = () => {
@@ -302,8 +302,8 @@ export function QuoteResponseDialog({
                       <div className="col-span-5">
                         <label className="text-sm font-medium">Hizmet Adı</label>
                         <ServiceAutocomplete
-                          partnerId={partner?.id}
-                          partnerServices={partnerServices.map((service: any) => service.name)}
+                          partnerId={partner?.id || 0}
+                          partnerServices={Array.isArray(partnerServices) ? partnerServices.map((service: any) => service.name) : []}
                           value={item.description}
                           onChange={(value) => updateItem(index, 'description', value)}
                           placeholder="Hizmetlerinizden seçin."
