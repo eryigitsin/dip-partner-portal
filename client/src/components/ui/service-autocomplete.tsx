@@ -38,6 +38,7 @@ export function ServiceAutocomplete({
       );
       setFilteredServices(filtered);
     } else {
+      // Show all partner services when input is empty
       setFilteredServices(partnerServices);
     }
   }, [value, partnerServices]);
@@ -57,7 +58,7 @@ export function ServiceAutocomplete({
 
   const handleInputChange = (inputValue: string) => {
     onChange(inputValue);
-    setIsOpen(inputValue.length > 0);
+    setIsOpen(true);
   };
 
   const handleServiceSelect = (service: string) => {
@@ -67,9 +68,7 @@ export function ServiceAutocomplete({
   };
 
   const handleInputFocus = () => {
-    if (partnerServices.length > 0) {
-      setIsOpen(true);
-    }
+    setIsOpen(true);
   };
 
   // Add new service mutation
@@ -149,23 +148,30 @@ export function ServiceAutocomplete({
         </Button>
       )}
 
-      {isOpen && (filteredServices.length > 0 || isNewService) && (
+      {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-          {filteredServices.map((service, index) => (
-            <button
-              key={index}
-              type="button"
-              className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none text-sm"
-              onClick={() => handleServiceSelect(service)}
-            >
-              {service}
-            </button>
-          ))}
+          {/* Partner's existing services */}
+          {filteredServices.length > 0 && (
+            <>
+              {filteredServices.map((service, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none text-sm"
+                  onClick={() => handleServiceSelect(service)}
+                >
+                  {service}
+                </button>
+              ))}
+              {isNewService && <div className="border-t border-gray-100" />}
+            </>
+          )}
           
+          {/* Add new service option */}
           {isNewService && (
             <button
               type="button"
-              className="w-full px-3 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none text-sm border-t border-gray-100 text-blue-600 font-medium"
+              className="w-full px-3 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none text-sm text-blue-600 font-medium"
               onClick={handleAddNewService}
               disabled={addServiceMutation.isPending}
             >
@@ -175,9 +181,16 @@ export function ServiceAutocomplete({
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
-                <span>"{value}" hizmetini ekle</span>
+                <span>"{value}" hizmetini yeni olarak ekle</span>
               </div>
             </button>
+          )}
+
+          {/* Show message when no services and no new service to add */}
+          {filteredServices.length === 0 && !isNewService && (
+            <div className="px-3 py-2 text-sm text-gray-500">
+              Hizmet bulunamadı. Yeni hizmet eklemek için yazın.
+            </div>
           )}
         </div>
       )}
