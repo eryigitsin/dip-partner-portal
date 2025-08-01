@@ -1028,11 +1028,15 @@ export function registerRoutes(app: Express): Server {
   // Get partner profile for current user
   app.get("/api/partners/me", async (req, res) => {
     try {
+      console.log('GET /api/partners/me - User:', req.user);
+      
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
+      console.log('Fetching partner for userId:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
+      console.log('Partner found:', partner ? `ID: ${partner.id}, Username: ${partner.username}` : 'null');
       
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
