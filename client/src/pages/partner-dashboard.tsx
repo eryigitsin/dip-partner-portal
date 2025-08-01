@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -36,7 +37,9 @@ import {
   Send,
   Activity,
   Timer,
-  X
+  X,
+  Edit,
+  ExternalLink
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -50,16 +53,24 @@ export default function PartnerDashboard() {
   const [quotesHelpDismissed, setQuotesHelpDismissed] = useState(() => {
     return localStorage.getItem('quotesHelpDismissed') === 'true';
   });
+  const [isUsernameChangeDialogOpen, setIsUsernameChangeDialogOpen] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
 
 
   const { data: partner } = useQuery<Partner>({
-    queryKey: ["/api/partners", "me"],
+    queryKey: ["/api/partners", user?.id],
     queryFn: async () => {
-      const response = await fetch("/api/partners/me");
+      // Fetch all partners and find the one belonging to current user
+      const response = await fetch("/api/partners");
       if (!response.ok) {
-        throw new Error("Failed to fetch partner data");
+        throw new Error("Failed to fetch partners");
       }
-      return response.json();
+      const partners = await response.json();
+      const userPartner = partners.find((p: Partner) => p.userId === user?.id);
+      if (!userPartner) {
+        throw new Error("Partner profile not found");
+      }
+      return userPartner;
     },
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
@@ -71,9 +82,73 @@ export default function PartnerDashboard() {
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
-  // Get partner followers
+  // Username change mutation
+  const changeUsernameMutation = useMutation({
+    mutationFn: async (newUsername: string) => {
+      const response = await fetch("/api/partners/me/username", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username: newUsername })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update username");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Başarılı",
+        description: "Kullanıcı adınız güncellendi"
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/partners"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partners", user?.id] });
+      setIsUsernameChangeDialogOpen(false);
+      setNewUsername("");
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: error.message || "Kullanıcı adı güncellenemedi"
+      });
+    }
+  });
+
+  const handleUsernameChange = () => {
+    if (!newUsername.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Kullanıcı adı boş olamaz"
+      });
+      return;
+    }
+    changeUsernameMutation.mutate(newUsername.trim());
+  };
+
+  const copyProfileUrl = () => {
+    const profileUrl = `${window.location.origin}/partner/${partner?.username || partner?.id}`;
+    navigator.clipboard.writeText(profileUrl);
+    toast({
+      title: "Kopyalandı",
+      description: "Profil URL'niz panoya kopyalandı"
+    });
+  };
+
+  // Get partner followers  
   const { data: followers = [] } = useQuery({
-    queryKey: ["/api/partners/me/followers"],
+    queryKey: ["/api/partners", partner?.id, "followers"],
+    queryFn: async () => {
+      if (!partner?.id) return [];
+      const response = await fetch(`/api/partners/${partner.id}/followers`);
+      if (!response.ok) return [];
+      return response.json();
+    },
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")) && !!partner,
   });
 
@@ -253,6 +328,96 @@ export default function PartnerDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Profile URL Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ExternalLink className="h-5 w-5" />
+                  Profil URL'niz
+                </CardTitle>
+                <CardDescription>
+                  Profilinizin herkese açık bağlantısı. Bu URL'yi paylaşarak profilinize yönlendirebilirsiniz.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <code className="flex-1 text-sm">
+                    {window.location.origin}/partner/{partner?.username || partner?.id}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copyProfileUrl}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Kopyala
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div>
+                    <p className="text-sm font-medium">
+                      Kullanıcı adınız: <span className="font-mono">{partner?.username || 'Belirlenmemiş'}</span>
+                    </p>
+                    {partner?.usernameChanged ? (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Kullanıcı adı bir kez değiştirilebilir. Bir talebiniz varsa yönetici ile iletişime geçin.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-green-600 mt-1">
+                        Kullanıcı adınızı henüz değiştirebilirsiniz
+                      </p>
+                    )}
+                  </div>
+                  
+                  {!partner?.usernameChanged && (
+                    <Dialog open={isUsernameChangeDialogOpen} onOpenChange={setIsUsernameChangeDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Değiştir
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Kullanıcı Adını Değiştir</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="username">Yeni Kullanıcı Adı</Label>
+                            <Input
+                              id="username"
+                              value={newUsername}
+                              onChange={(e) => setNewUsername(e.target.value)}
+                              placeholder="yeni-kullanici-adi"
+                              pattern="[a-zA-Z0-9_-]+"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Sadece İngilizce harfler, rakamlar, alt çizgi ve tire kullanabilirsiniz
+                            </p>
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              onClick={() => setIsUsernameChangeDialogOpen(false)}
+                            >
+                              İptal
+                            </Button>
+                            <Button
+                              onClick={handleUsernameChange}
+                              disabled={changeUsernameMutation.isPending}
+                            >
+                              {changeUsernameMutation.isPending ? 'Güncelleniyor...' : 'Güncelle'}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Profile Statistics and Quote Status */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

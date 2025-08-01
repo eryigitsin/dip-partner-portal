@@ -26,7 +26,7 @@ import SystemSettings from "@/pages/system-settings";
 import EmailPreferences from "@/pages/email-preferences";
 import EmailSubscribers from "@/pages/admin/email-subscribers";
 import PartnerProfile from "@/pages/partner-profile";
-import PartnerProfilePage from "@/pages/partner-profile-page";
+
 import PartnerStatisticsPage from "@/pages/partner-statistics-page";
 import TestUpload from "@/pages/test-upload";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -83,7 +83,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/partner-dashboard" component={PartnerDashboard} />
-      <ProtectedRoute path="/partner-profile" component={PartnerProfilePage} />
+
       <ProtectedRoute path="/partner-statistics" component={PartnerStatisticsPage} />
       <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} />
       <ProtectedRoute path="/user-panel" component={UserPanel} />
