@@ -1007,16 +1007,22 @@ export function registerRoutes(app: Express): Server {
 
   // Get partner profile for current user
   app.get("/api/partners/me", async (req, res) => {
+    console.log('==== INSIDE /api/partners/me ENDPOINT ====');
+    console.log('Request path:', req.path);
+    console.log('Request user:', req.user);
+    console.log('Is authenticated:', req.isAuthenticated());
+    
     try {
-      console.log('GET /api/partners/me - User:', req.user);
-      
       if (!req.isAuthenticated()) {
+        console.log('User not authenticated, returning 401');
         return res.status(401).json({ message: "Authentication required" });
       }
 
       console.log('Fetching partner for userId:', req.user!.id);
+      
+      // Add Drizzle schema import debugging
       const partner = await storage.getPartnerByUserId(req.user!.id);
-      console.log('Partner found:', partner ? `ID: ${partner.id}, Username: ${partner.username}` : 'null');
+      console.log('Partner query result:', partner);
       
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
