@@ -25,12 +25,13 @@ export function Header() {
   const { signOut } = useSupabaseAuth();
   const [location] = useLocation();
 
-  // Check if user has multiple account types available
-  const hasMultipleAccountTypes = user?.availableUserTypes && user.availableUserTypes.length > 1;
+  // Check if user has multiple account types available - include current type + available types
+  const allUserTypes = user ? [user.userType, ...(user.availableUserTypes || [])] : [];
+  const uniqueUserTypes = [...new Set(allUserTypes)];
+  const hasMultipleAccountTypes = uniqueUserTypes.length > 1;
   
-  // For partners, always show account type switching if they have both user and partner types
-  const showAccountTypeSwitching = hasMultipleAccountTypes || 
-    (user?.userType === 'partner' && user?.availableUserTypes?.includes('user'));
+  // Always show account type switching for users with multiple types
+  const showAccountTypeSwitching = hasMultipleAccountTypes;
 
   const navigation = [
     { name: t('about', language), href: 'https://dip.tc/hakkimizda/', external: true },
@@ -414,7 +415,7 @@ export function Header() {
         <AccountTypeSelector
           isOpen={accountSelectorOpen}
           onClose={() => setAccountSelectorOpen(false)}
-          availableTypes={user.availableUserTypes || [user.userType]}
+          availableTypes={uniqueUserTypes}
           currentType={user.activeUserType || user.userType}
         />
       )}
