@@ -679,6 +679,27 @@ export class DatabaseStorage implements IStorage {
 
   async getServiceByName(name: string): Promise<Service | undefined> {
     const [service] = await db.select().from(services).where(eq(services.name, name)).limit(1);
+    
+    // If service doesn't exist, create it automatically
+    if (!service) {
+      try {
+        const [newService] = await db
+          .insert(services)
+          .values({
+            name: name.trim(),
+            description: '',
+            category: 'Genel',
+            isActive: true,
+            createdBy: 1 // System created
+          })
+          .returning();
+        return newService;
+      } catch (error) {
+        console.error('Error auto-creating service:', error);
+        return undefined;
+      }
+    }
+    
     return service;
   }
 
@@ -1282,6 +1303,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPartnerSelectedServices(partnerId: number): Promise<Array<{ id: number; name: string; description?: string; category?: string }>> {
+    // First check if partner has services migrated to the new system
     const selectedServices = await db
       .select({
         id: services.id,
@@ -1296,12 +1318,82 @@ export class DatabaseStorage implements IStorage {
         eq(services.isActive, true)
       ));
     
+    // If no services found in new system, migrate from old string format
+    if (selectedServices.length === 0) {
+      await this.migratePartnerServicesToNewSystem(partnerId);
+      
+      // Re-fetch after migration
+      const migratedServices = await db
+        .select({
+          id: services.id,
+          name: services.name,
+          description: services.description,
+          category: services.category
+        })
+        .from(partnerSelectedServices)
+        .innerJoin(services, eq(partnerSelectedServices.serviceId, services.id))
+        .where(and(
+          eq(partnerSelectedServices.partnerId, partnerId),
+          eq(services.isActive, true)
+        ));
+      
+      return migratedServices.map(service => ({
+        id: service.id,
+        name: service.name,
+        description: service.description || undefined,
+        category: service.category || undefined
+      }));
+    }
+    
     return selectedServices.map(service => ({
       id: service.id,
       name: service.name,
       description: service.description || undefined,
       category: service.category || undefined
     }));
+  }
+
+  async migratePartnerServicesToNewSystem(partnerId: number): Promise<void> {
+    try {
+      // Get partner's old string services
+      const [partner] = await db.select().from(partners).where(eq(partners.id, partnerId)).limit(1);
+      if (!partner || !partner.services) return;
+      
+      // Parse services - could be JSON array or newline-separated string
+      let servicesList: string[] = [];
+      try {
+        servicesList = JSON.parse(partner.services);
+      } catch {
+        servicesList = partner.services.split('\n').filter(s => s.trim());
+      }
+      
+      // For each service, ensure it exists in services table and add to partner_selected_services
+      for (const serviceName of servicesList) {
+        const trimmedName = serviceName.trim();
+        if (!trimmedName) continue;
+        
+        // Get or create the service
+        const service = await this.getServiceByName(trimmedName);
+        if (service) {
+          // Add to partner's selected services if not already exists
+          try {
+            await db
+              .insert(partnerSelectedServices)
+              .values({
+                partnerId,
+                serviceId: service.id
+              })
+              .onConflictDoNothing();
+          } catch (error) {
+            console.error(`Error adding service ${service.id} to partner ${partnerId}:`, error);
+          }
+        }
+      }
+      
+      console.log(`Migrated services for partner ${partnerId}`);
+    } catch (error) {
+      console.error('Error migrating partner services:', error);
+    }
   }
 
   async addPartnerService(partnerId: number, serviceId: number): Promise<void> {

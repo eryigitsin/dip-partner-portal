@@ -2817,10 +2817,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/services/:serviceId/partners", async (req, res) => {
+  app.get("/api/services/:serviceName/partners", async (req, res) => {
     try {
-      const { serviceId } = req.params;
-      const partnersWithUsers = await storage.getPartnersOfferingService(parseInt(serviceId));
+      const { serviceName } = req.params;
+      const decodedServiceName = decodeURIComponent(serviceName);
+      
+      // Find service by name first
+      const service = await storage.getServiceByName(decodedServiceName);
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+      
+      const partnersWithUsers = await storage.getPartnersOfferingService(service.id);
       res.json(partnersWithUsers);
     } catch (error) {
       console.error('Error fetching service partners:', error);
