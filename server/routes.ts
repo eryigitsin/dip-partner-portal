@@ -2431,6 +2431,31 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Admin only - delete feedback
+  app.delete("/api/admin/feedback/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      if (req.user!.userType !== 'master_admin') {
+        return res.status(403).json({ message: "Master admin access required" });
+      }
+
+      const feedbackId = parseInt(req.params.id);
+      
+      const deleted = await storage.deleteFeedback(feedbackId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Feedback not found" });
+      }
+      
+      res.json({ success: true, message: "Feedback deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting feedback:', error);
+      res.status(500).json({ message: "Failed to delete feedback" });
+    }
+  });
+
   // Marketing contact management routes
   app.get("/api/admin/marketing-contacts", async (req, res) => {
     if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {

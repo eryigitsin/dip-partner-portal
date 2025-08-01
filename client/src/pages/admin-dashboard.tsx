@@ -190,6 +190,27 @@ export default function AdminDashboard() {
     },
   });
 
+  // Feedback delete mutation
+  const deleteFeedbackMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/admin/feedback/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/feedback"] });
+      toast({
+        title: "Başarılı",
+        description: "Geri bildirim silindi",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Geri bildirim silinirken hata oluştu",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!user || !["master_admin", "editor_admin"].includes(user.userType)) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -968,6 +989,20 @@ export default function AdminDashboard() {
                                         </SelectContent>
                                       </Select>
                                       
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                        onClick={() => {
+                                          if (confirm('Bu geri bildirimi silmek istediğinizden emin misiniz?')) {
+                                            deleteFeedbackMutation.mutate(feedback.id);
+                                          }
+                                        }}
+                                        disabled={deleteFeedbackMutation.isPending}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                      
                                       {feedback.category === 'bug' && (
                                         <Button size="sm" variant="outline" className="text-red-600">
                                           <Flag className="h-4 w-4 mr-1" />
@@ -1129,6 +1164,20 @@ export default function AdminDashboard() {
                                           <SelectItem value="resolved">Çözüldü</SelectItem>
                                         </SelectContent>
                                       </Select>
+                                      
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                        onClick={() => {
+                                          if (confirm('Bu geri bildirimi silmek istediğinizden emin misiniz?')) {
+                                            deleteFeedbackMutation.mutate(feedback.id);
+                                          }
+                                        }}
+                                        disabled={deleteFeedbackMutation.isPending}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                       
                                       {feedback.category === 'bug' && (
                                         <Button size="sm" variant="outline" className="text-red-600">

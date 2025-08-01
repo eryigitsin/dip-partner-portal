@@ -210,6 +210,7 @@ export interface IStorage {
   getFeedback(): Promise<Feedback[]>;
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   updateFeedbackStatus(id: number, status: string): Promise<Feedback | undefined>;
+  deleteFeedback(id: number): Promise<boolean>;
 
   // Message methods
   getUserConversations(userId: number): Promise<Array<{
@@ -1547,6 +1548,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(feedback.id, id))
       .returning();
     return updatedFeedback || undefined;
+  }
+
+  async deleteFeedback(id: number): Promise<boolean> {
+    const result = await db
+      .delete(feedback)
+      .where(eq(feedback.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Message methods
