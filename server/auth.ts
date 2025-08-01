@@ -45,9 +45,12 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Always false for development to prevent session conflicts
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      httpOnly: true,
+      sameSite: 'lax'
     },
+    name: 'connect.sid', // Explicit session name
   };
 
   app.set("trust proxy", 1);
