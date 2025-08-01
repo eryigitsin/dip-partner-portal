@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Plus, X, Tag, Users, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -39,6 +40,13 @@ interface ServicePartner {
   };
 }
 
+interface Category {
+  id: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
 export function PartnerServicesTab() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -51,6 +59,12 @@ export function PartnerServicesTab() {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['/api/categories'],
+    queryFn: () => apiRequest('/api/categories'),
+  });
 
   // Fetch all services from pool
   const { data: allServices = [], isLoading: servicesLoading } = useQuery({
@@ -455,12 +469,21 @@ export function PartnerServicesTab() {
                       </div>
                       <div>
                         <Label htmlFor="serviceCategory">Kategori (İsteğe bağlı)</Label>
-                        <Input
-                          id="serviceCategory"
+                        <Select
                           value={newServiceCategory}
-                          onChange={(e) => setNewServiceCategory(e.target.value)}
-                          placeholder="Örn: Dijital Pazarlama"
-                        />
+                          onValueChange={setNewServiceCategory}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Kategori seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(categories as Category[])?.filter((cat: Category) => cat.isActive).map((category: Category) => (
+                              <SelectItem key={category.id} value={category.name}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="flex justify-end space-x-2">
                         <Button
@@ -497,13 +520,20 @@ export function PartnerServicesTab() {
               <div className="flex flex-wrap gap-2">
                 {(partnerServices as PartnerService[]).map((service: PartnerService) => (
                   <div key={service.id} className="relative group">
-                    <Badge
-                      variant="secondary"
-                      className="pr-8 cursor-pointer hover:bg-dip-blue hover:text-white transition-colors"
-                      onClick={() => handleServiceTagClick(service)}
-                    >
-                      {service.name}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-dip-blue hover:text-white transition-colors"
+                        onClick={() => handleServiceTagClick(service)}
+                      >
+                        {service.name}
+                      </Badge>
+                      {service.category && (
+                        <Badge variant="outline" className="text-xs">
+                          {service.category}
+                        </Badge>
+                      )}
+                    </div>
                     <Button
                       size="sm"
                       variant="ghost"

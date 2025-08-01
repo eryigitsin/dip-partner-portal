@@ -779,11 +779,21 @@ export default function SystemSettings() {
                       value={newService.name}
                       onChange={(e) => setNewService({ ...newService, name: e.target.value })}
                     />
-                    <Input
-                      placeholder="Kategori"
+                    <Select
                       value={newService.category}
-                      onChange={(e) => setNewService({ ...newService, category: e.target.value })}
-                    />
+                      onValueChange={(value) => setNewService({ ...newService, category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Kategori seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(categories as Category[])?.filter(cat => cat.isActive).map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Input
                       placeholder="Açıklama"
                       value={newService.description}
@@ -811,10 +821,21 @@ export default function SystemSettings() {
                               value={editingService.name}
                               onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
                             />
-                            <Input
+                            <Select
                               value={editingService.category}
-                              onChange={(e) => setEditingService({ ...editingService, category: e.target.value })}
-                            />
+                              onValueChange={(value) => setEditingService({ ...editingService, category: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Kategori seçin" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(categories as Category[])?.filter(cat => cat.isActive).map((category) => (
+                                  <SelectItem key={category.id} value={category.name}>
+                                    {category.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <Input
                               value={editingService.description}
                               onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
