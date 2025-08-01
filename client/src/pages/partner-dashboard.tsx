@@ -33,8 +33,11 @@ import {
   AlertCircle,
   Save,
   Copy,
-  Send
+  Send,
+  Activity,
+  Timer
 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export default function PartnerDashboard() {
   const { user } = useAuth();
@@ -236,63 +239,114 @@ export default function PartnerDashboard() {
               </Card>
             </div>
 
-            {/* Recent Quotes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Son Teklif Talepleri</CardTitle>
-                <CardDescription>
-                  En son gelen teklif talepleri ve durumları
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {quoteRequests.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Henüz teklif talebi yok
-                    </h3>
-                    <p className="text-gray-600">
-                      Müşteriler sizden teklif talep ettiğinde burada görünecekler.
-                    </p>
+            {/* Recent Developments */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Son Gelişmeler</CardTitle>
+                    <CardDescription>
+                      Teklif talepleri, takipçiler ve profil analizleri
+                    </CardDescription>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {quoteRequests.slice(0, 5).map((quote) => (
-                      <div key={quote.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="font-medium">
-                              {quote.fullName || ''}
-                            </h4>
-                            <Badge className={getStatusColor(quote.status || 'pending')}>
-                              <div className="flex items-center space-x-1">
-                                {getStatusIcon(quote.status || 'pending')}
-                                <span>{getStatusText(quote.status || 'pending')}</span>
-                              </div>
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">{quote.companyName || ''}</p>
-                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                            {quote.serviceNeeded || ''}
-                          </p>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setActiveTab("quotes")}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    İncele
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {quoteRequests.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Activity className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                      <p className="text-sm text-gray-600">
+                        Henüz aktivite bulunmuyor
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Son 30 günde:</span>
+                        <span className="font-medium">{quoteRequests.length} teklif talebi</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-green-50 rounded-lg">
+                          <div className="text-lg font-bold text-green-600">{acceptedQuotes}</div>
+                          <div className="text-xs text-green-600">Kabul Edildi</div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">
-                            {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('tr-TR') : 'Tarih belirtilmemiş'}
-                          </p>
-                          <div className="flex space-x-2 mt-2">
-                            <Button size="sm" variant="outline">
-                              <Eye className="h-4 w-4 mr-1" />
-                              Görüntüle
-                            </Button>
-                          </div>
+                        <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                          <div className="text-lg font-bold text-yellow-600">{pendingQuotes}</div>
+                          <div className="text-xs text-yellow-600">Bekliyor</div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <Users className="h-4 w-4 text-blue-500" />
+                            <span>Takipçiler</span>
+                          </div>
+                          <span className="font-medium">{partner?.followersCount || 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <Eye className="h-4 w-4 text-purple-500" />
+                            <span>Profil Görüntüleme</span>
+                          </div>
+                          <span className="font-medium">{partner?.profileViews || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Teklif Durumları</CardTitle>
+                  <CardDescription>
+                    Teklif talepleri dağılımı
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {quoteRequests.length === 0 ? (
+                    <div className="text-center py-8">
+                      <BarChart3 className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                      <p className="text-sm text-gray-600">
+                        Gösterilecek veri bulunmuyor
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="h-40">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Bekleyen', value: pendingQuotes, fill: '#f59e0b' },
+                              { name: 'Kabul Edilen', value: acceptedQuotes, fill: '#10b981' },
+                              { name: 'Tamamlanan', value: completedQuotes, fill: '#3b82f6' },
+                              { name: 'Reddedilen', value: quoteRequests.filter(q => q.status === 'rejected').length, fill: '#ef4444' }
+                            ]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={30}
+                            outerRadius={60}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            <Tooltip />
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="quotes" className="space-y-6">
