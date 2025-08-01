@@ -855,10 +855,11 @@ export default function PartnerProfile() {
           {/* Main Content */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="about" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="about">Hakkında</TabsTrigger>
                 <TabsTrigger value="posts">Paylaşımlar</TabsTrigger>
                 <TabsTrigger value="services">Hizmetler</TabsTrigger>
+                <TabsTrigger value="markets">Hedef Pazarlar</TabsTrigger>
               </TabsList>
               
               <TabsContent value="about" className="space-y-6">
@@ -1135,6 +1136,17 @@ export default function PartnerProfile() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              <TabsContent value="markets" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Hedef Pazarlar</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <PartnerMarketsDisplay partnerId={partner.id} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
 
@@ -1266,6 +1278,130 @@ export default function PartnerProfile() {
       
       <Footer />
     </div>
+  );
+}
+
+// Partner Markets Display Component
+function PartnerMarketsDisplay({ partnerId }: { partnerId: number }) {
+  const [selectedMarketPartners, setSelectedMarketPartners] = useState<any[]>([]);
+  const [isPartnersDialogOpen, setIsPartnersDialogOpen] = useState(false);
+  const [selectedMarketName, setSelectedMarketName] = useState('');
+
+  // Fetch partner's selected markets
+  const { data: partnerMarkets = [] } = useQuery<Array<{ id: number; name: string; nameEn?: string; region?: string }>>({
+    queryKey: ['/api/partners', partnerId, 'markets'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/partners/${partnerId}/markets`);
+      return res.json();
+    }
+  });
+
+  // Handle market click to show all partners in this market
+  const handleMarketClick = async (marketName: string) => {
+    try {
+      setSelectedMarketName(marketName);
+      // For now, we'll fetch all partners and filter client-side
+      // In a real implementation, you'd want a dedicated API endpoint
+      const res = await apiRequest('GET', '/api/partners');
+      const allPartners = await res.json();
+      
+      // Filter partners that have this market selected
+      const partnersInMarket = [];
+      for (const partner of allPartners) {
+        const marketRes = await apiRequest('GET', `/api/partners/${partner.id}/markets`);
+        const markets = await marketRes.json();
+        if (markets.some((m: any) => m.name === marketName)) {
+          partnersInMarket.push({ partner, user: { email: 'N/A' } }); // Mock user data structure
+        }
+      }
+      
+      setSelectedMarketPartners(partnersInMarket);
+      setIsPartnersDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching market partners:', error);
+    }
+  };
+
+  if (partnerMarkets.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">Henüz hedef pazar eklenmemiş.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-2">
+        {partnerMarkets.map((market) => (
+          <Button
+            key={market.id}
+            variant="outline"
+            size="sm"
+            className="rounded-full hover:bg-green-50 hover:border-green-300 cursor-pointer"
+            onClick={() => handleMarketClick(market.name)}
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            {market.name}
+            {market.region && (
+              <span className="ml-1 text-xs opacity-70">({market.region})</span>
+            )}
+          </Button>
+        ))}
+      </div>
+
+      {/* Partners Dialog */}
+      <Dialog open={isPartnersDialogOpen} onOpenChange={setIsPartnersDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedMarketName} Pazarında Faaliyet Gösteren Partnerler</DialogTitle>
+            <DialogDescription>
+              Bu pazarda faaliyet gösteren tüm iş ortakları aşağıda listelenmiştir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {selectedMarketPartners.map((item: any) => {
+              const partner = item.partner;
+              return (
+                <Card key={partner.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={partner.logo} alt={partner.companyName} />
+                        <AvatarFallback>
+                          {partner.companyName.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg truncate">{partner.companyName}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{partner.serviceCategory}</p>
+                        <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {partner.city}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {partner.foundingYear}
+                          </div>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => window.open(`/partner/${partner.username || partner.id}`, '_blank')}
+                        >
+                          Profili Görüntüle
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
