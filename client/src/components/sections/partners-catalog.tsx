@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/language-context';
 import { t } from '@/lib/i18n';
 import { Partner, ServiceCategory } from '@shared/schema';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Users, Eye } from 'lucide-react';
 
 interface PartnersCatalogProps {
   onQuoteRequest: (partner: Partner) => void;
@@ -259,8 +259,14 @@ export function PartnersCatalog({
                   )}
 
                   <div className="flex items-center justify-between mb-4 text-sm text-gray-500">
-                    <span>👥 {partner.followersCount} takipçi</span>
-                    <span>👁️ {partner.profileViews} görüntüleme</span>
+                    <div className="flex items-center space-x-1">
+                      <Users className="h-4 w-4" />
+                      <span>{partner.followersCount} takipçi</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Eye className="h-4 w-4" />
+                      <span>{partner.profileViews} görüntüleme</span>
+                    </div>
                   </div>
                   
                   <div className="flex space-x-3">
