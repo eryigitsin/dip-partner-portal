@@ -72,6 +72,10 @@ export const partners = pgTable("partners", {
   profileViews: integer("profile_views").default(0),
   username: text("username").unique(),
   usernameChanged: boolean("username_changed").default(false), // Track if username has been changed once
+  // Monthly targets set by admin
+  targetProfileViews: integer("target_profile_views").default(1000),
+  targetNewFollowers: integer("target_new_followers").default(50),
+  targetCompletedProjects: integer("target_completed_projects").default(10),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -167,6 +171,7 @@ export const quoteRequests = pgTable("quote_requests", {
   message: text("message"),
   projectDate: timestamp("project_date"),
   status: text("status").default("pending"), // pending, under_review, quote_sent, accepted, rejected, completed
+  responseTime: integer("response_time"), // Response time in minutes
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

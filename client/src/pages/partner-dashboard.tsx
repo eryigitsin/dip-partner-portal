@@ -39,7 +39,9 @@ import {
   Timer,
   X,
   Edit,
-  ExternalLink
+  ExternalLink,
+  Award,
+  Target
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -55,6 +57,47 @@ export default function PartnerDashboard() {
   });
   const [isUsernameChangeDialogOpen, setIsUsernameChangeDialogOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
+
+  // Helper functions for performance calculations
+  const calculateProfileCompletion = (partner: Partner | undefined) => {
+    if (!partner) return 0;
+    let score = 0;
+    if (partner.logo) score += 25;
+    if (partner.coverImage) score += 25;
+    if (partner.description) score += 25;
+    if (partner.username) score += 25;
+    return score;
+  };
+
+  const calculateResponseTimeScore = (quoteRequests: QuoteRequest[]) => {
+    if (quoteRequests.length === 0) return 100;
+    
+    let totalScore = 0;
+    let responseCount = 0;
+    
+    quoteRequests.forEach(quote => {
+      if (quote.status !== 'pending' && quote.responseTime) {
+        responseCount++;
+        const responseTimeMinutes = quote.responseTime;
+        
+        if (responseTimeMinutes <= 30) {
+          totalScore += 100;
+        } else if (responseTimeMinutes <= 120) {
+          totalScore += 85;
+        } else if (responseTimeMinutes <= 360) {
+          totalScore += 70;
+        } else if (responseTimeMinutes <= 720) {
+          totalScore += 50;
+        } else if (responseTimeMinutes <= 1440) {
+          totalScore += 25;
+        } else {
+          totalScore += 0;
+        }
+      }
+    });
+    
+    return responseCount > 0 ? Math.round(totalScore / responseCount) : 100;
+  };
 
 
   const { data: partner } = useQuery<Partner>({
@@ -730,18 +773,18 @@ export default function PartnerDashboard() {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Profil Tamamlama</span>
-                    <span className="text-sm font-bold text-green-600">%85</span>
+                    <span className="text-sm font-bold text-green-600">%{calculateProfileCompletion(partner)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '85%' }}></div>
+                    <div className="bg-green-600 h-2 rounded-full" style={{ width: `${calculateProfileCompletion(partner)}%` }}></div>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">Yanıt Hızı</span>
-                    <span className="text-sm font-bold text-blue-600">%{Math.round((acceptedQuotes / Math.max(quoteRequests.length, 1)) * 100)}</span>
+                    <span className="text-sm font-bold text-blue-600">%{calculateResponseTimeScore(quoteRequests)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.round((acceptedQuotes / Math.max(quoteRequests.length, 1)) * 100)}%` }}></div>
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${calculateResponseTimeScore(quoteRequests)}%` }}></div>
                   </div>
 
                   <div className="flex justify-between items-center">
@@ -764,30 +807,30 @@ export default function PartnerDashboard() {
                 <CardContent className="space-y-4">
                   <div className="border-l-4 border-blue-500 pl-4">
                     <h4 className="font-medium">Profil Görüntülenme</h4>
-                    <p className="text-sm text-gray-600">Hedef: 1000 / Mevcut: {partner?.profileViews || 0}</p>
+                    <p className="text-sm text-gray-600">Hedef: {partner?.targetProfileViews || 1000} / Mevcut: {partner?.profileViews || 0}</p>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
                         className="bg-blue-500 h-2 rounded-full" 
-                        style={{ width: `${Math.min(((partner?.profileViews || 0) / 1000) * 100, 100)}%` }}
+                        style={{ width: `${Math.min(((partner?.profileViews || 0) / (partner?.targetProfileViews || 1000)) * 100, 100)}%` }}
                       ></div>
                     </div>
                   </div>
 
                   <div className="border-l-4 border-green-500 pl-4">
                     <h4 className="font-medium">Yeni Takipçi</h4>
-                    <p className="text-sm text-gray-600">Hedef: 50 / Mevcut: {partner?.followersCount || 0}</p>
+                    <p className="text-sm text-gray-600">Hedef: {partner?.targetNewFollowers || 50} / Mevcut: {partner?.followersCount || 0}</p>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(((partner?.followersCount || 0) / 50) * 100, 100)}%` }}></div>
+                      <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(((partner?.followersCount || 0) / (partner?.targetNewFollowers || 50)) * 100, 100)}%` }}></div>
                     </div>
                   </div>
 
                   <div className="border-l-4 border-purple-500 pl-4">
                     <h4 className="font-medium">Tamamlanan Projeler</h4>
-                    <p className="text-sm text-gray-600">Hedef: 10 / Mevcut: {completedQuotes}</p>
+                    <p className="text-sm text-gray-600">Hedef: {partner?.targetCompletedProjects || 10} / Mevcut: {completedQuotes}</p>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
                         className="bg-purple-500 h-2 rounded-full" 
-                        style={{ width: `${Math.min((completedQuotes / 10) * 100, 100)}%` }}
+                        style={{ width: `${Math.min((completedQuotes / (partner?.targetCompletedProjects || 10)) * 100, 100)}%` }}
                       ></div>
                     </div>
                   </div>
