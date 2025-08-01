@@ -46,10 +46,7 @@ export function AdminMarketsManagement({ partnerId }: AdminMarketsManagementProp
   // Add market to partner
   const addMarketMutation = useMutation({
     mutationFn: async (marketId: number) => {
-      return apiRequest(`/api/partners/${partnerId}/markets`, {
-        method: 'POST',
-        body: { marketId }
-      });
+      return apiRequest(`/api/partners/${partnerId}/markets`, 'POST', { marketId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partners', partnerId, 'markets'] });
@@ -70,9 +67,7 @@ export function AdminMarketsManagement({ partnerId }: AdminMarketsManagementProp
   // Remove market from partner
   const removeMarketMutation = useMutation({
     mutationFn: async (marketId: number) => {
-      return apiRequest(`/api/partners/${partnerId}/markets/${marketId}`, {
-        method: 'DELETE'
-      });
+      return apiRequest(`/api/partners/${partnerId}/markets/${marketId}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partners', partnerId, 'markets'] });
@@ -93,12 +88,9 @@ export function AdminMarketsManagement({ partnerId }: AdminMarketsManagementProp
   // Create new market
   const createMarketMutation = useMutation({
     mutationFn: async (marketData: { name: string; nameEn?: string; region?: string }) => {
-      return apiRequest('/api/partner/markets/new', {
-        method: 'POST',
-        body: marketData
-      });
+      return apiRequest('/api/partner/markets/new', 'POST', marketData);
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/markets'] });
       // Automatically add new market to current partner
       if (partnerId && data.market) {
@@ -124,13 +116,13 @@ export function AdminMarketsManagement({ partnerId }: AdminMarketsManagementProp
     return <div className="text-sm text-gray-500">Partner seçiniz</div>;
   }
 
-  const partnerMarketIds = partnerMarkets.map((market: Market) => market.id);
-  const availableMarkets = allMarkets.filter((market: Market) => 
+  const partnerMarketIds = (partnerMarkets as Market[]).map((market: Market) => market.id);
+  const availableMarkets = (allMarkets as Market[]).filter((market: Market) => 
     !partnerMarketIds.includes(market.id) &&
     market.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredPartnerMarkets = partnerMarkets.filter((market: Market) =>
+  const filteredPartnerMarkets = (partnerMarkets as Market[]).filter((market: Market) =>
     market.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
