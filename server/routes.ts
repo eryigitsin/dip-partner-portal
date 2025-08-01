@@ -1005,26 +1005,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Get partner followers
-  app.get("/api/partners/me/followers", async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const partner = await storage.getPartnerByUserId(req.user!.id);
-      if (!partner) {
-        return res.status(404).json({ message: "Partner not found" });
-      }
-
-      const followers = await storage.getPartnerFollowers(partner.id);
-      res.json(followers);
-    } catch (error) {
-      console.error('Error fetching partner followers:', error);
-      res.status(500).json({ message: "Failed to fetch followers" });
-    }
-  });
-
   // Get partner profile for current user
   app.get("/api/partners/me", async (req, res) => {
     try {
@@ -1059,6 +1039,26 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error fetching partner profile:', error);
       res.status(500).json({ message: "Failed to fetch partner profile" });
+    }
+  });
+
+  // Get partner followers
+  app.get("/api/partners/me/followers", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const partner = await storage.getPartnerByUserId(req.user!.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const followers = await storage.getPartnerFollowers(partner.id);
+      res.json(followers);
+    } catch (error) {
+      console.error('Error fetching partner followers:', error);
+      res.status(500).json({ message: "Failed to fetch followers" });
     }
   });
 
