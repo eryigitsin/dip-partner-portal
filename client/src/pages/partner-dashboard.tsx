@@ -279,9 +279,10 @@ export default function PartnerDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
+            <TabsTrigger value="performance">Performans</TabsTrigger>
             <TabsTrigger value="services">Hizmetler</TabsTrigger>
           </TabsList>
 
@@ -715,6 +716,127 @@ export default function PartnerDashboard() {
           </TabsContent>
 
 
+
+          <TabsContent value="performance" className="space-y-6">
+            {/* Performance Scores and Monthly Goals */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Award className="mr-2 h-5 w-5" />
+                    Performans Skorları
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Profil Tamamlama</span>
+                    <span className="text-sm font-bold text-green-600">%85</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '85%' }}></div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Yanıt Hızı</span>
+                    <span className="text-sm font-bold text-blue-600">%{Math.round((acceptedQuotes / Math.max(quoteRequests.length, 1)) * 100)}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${Math.round((acceptedQuotes / Math.max(quoteRequests.length, 1)) * 100)}%` }}></div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Müşteri Memnuniyeti</span>
+                    <span className="text-sm font-bold text-purple-600">%92</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-purple-600 h-2 rounded-full" style={{ width: '92%' }}></div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Target className="mr-2 h-5 w-5" />
+                    Bu Ay Hedefleri
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="border-l-4 border-blue-500 pl-4">
+                    <h4 className="font-medium">Profil Görüntülenme</h4>
+                    <p className="text-sm text-gray-600">Hedef: 1000 / Mevcut: {partner?.profileViews || 0}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full" 
+                        style={{ width: `${Math.min(((partner?.profileViews || 0) / 1000) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div className="border-l-4 border-green-500 pl-4">
+                    <h4 className="font-medium">Yeni Takipçi</h4>
+                    <p className="text-sm text-gray-600">Hedef: 50 / Mevcut: {partner?.followersCount || 0}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(((partner?.followersCount || 0) / 50) * 100, 100)}%` }}></div>
+                    </div>
+                  </div>
+
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h4 className="font-medium">Tamamlanan Projeler</h4>
+                    <p className="text-sm text-gray-600">Hedef: 10 / Mevcut: {completedQuotes}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-purple-500 h-2 rounded-full" 
+                        style={{ width: `${Math.min((completedQuotes / 10) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Activities */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Son Aktiviteler
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                    <div>
+                      <p className="text-sm font-medium">Yeni teklif talebi alındı</p>
+                      <p className="text-xs text-gray-500">2 saat önce</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                    <div>
+                      <p className="text-sm font-medium">Proje tamamlandı</p>
+                      <p className="text-xs text-gray-500">1 gün önce</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
+                    <div>
+                      <p className="text-sm font-medium">Yeni takipçi kazanıldı</p>
+                      <p className="text-xs text-gray-500">2 gün önce</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+                    <div>
+                      <p className="text-sm font-medium">Profil güncellendi</p>
+                      <p className="text-xs text-gray-500">3 gün önce</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="services" className="space-y-6">
             <PartnerServicesTab />
