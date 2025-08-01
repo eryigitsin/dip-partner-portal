@@ -970,7 +970,6 @@ export function registerRoutes(app: Express): Server {
     try {
       console.log('=== /api/partners/me called ===');
       console.log('Session ID:', req.sessionID);
-      console.log('Session data:', req.session);
       console.log('User authenticated:', req.isAuthenticated());
       console.log('User object:', req.user);
       
@@ -981,19 +980,14 @@ export function registerRoutes(app: Express): Server {
 
       console.log('Looking for partner with userId:', req.user!.id);
       const partner = await storage.getPartnerByUserId(req.user!.id);
+      console.log('Partner query result type:', typeof partner);
       console.log('Partner query result:', partner);
-      console.log('Partner found?', !!partner);
+      console.log('Partner exists?', !!partner);
+      console.log('Partner ID:', partner?.id);
       
       if (!partner) {
         console.log('Partner not found for userId:', req.user!.id);
-        console.log('Checking all partners in system...');
-        const allPartners = await storage.getPartners({});
-        console.log('All partners in system:');
-        allPartners.forEach(p => {
-          console.log(`  ID: ${p.id}, UserID: ${p.userId}, Company: ${p.companyName}`);
-        });
-        console.log('Current user ID:', req.user!.id);
-        console.log('Current user type:', req.user!.activeUserType || req.user!.userType);
+        console.log('This should not happen based on the previous log!');
         return res.status(404).json({ message: "Partner not found" });
       }
 
