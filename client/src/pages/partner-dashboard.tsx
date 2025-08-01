@@ -183,12 +183,10 @@ export default function PartnerDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
-            <TabsTrigger value="profile">Profil</TabsTrigger>
             <TabsTrigger value="services">Hizmetler</TabsTrigger>
-            <TabsTrigger value="analytics">İstatistikler</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -514,124 +512,13 @@ export default function PartnerDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="profile" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profil Bilgileri</CardTitle>
-                <CardDescription>
-                  Şirket profilinizi güncelleyin ve yönetin
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Profile URL Display */}
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <Label className="text-sm font-medium text-gray-700">Mevcut Profil URL'niz:</Label>
-                    <div className="mt-2 flex items-center justify-between">
-                      <a 
-                        href={`/partner/${partner?.username || partner?.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-dip-blue hover:text-dip-dark-blue underline flex-1 mr-4"
-                      >
-                        {window.location.origin}/partner/{partner?.username || partner?.id}
-                      </a>
-                      <Button 
-                        onClick={() => {
-                          const url = `${window.location.origin}/partner/${partner?.username || partner?.id}`;
-                          navigator.clipboard.writeText(url).then(() => {
-                            toast({
-                              title: "Başarılı",
-                              description: "URL kopyalandı",
-                            });
-                          });
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="ml-2"
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Profili Paylaş
-                      </Button>
-                    </div>
-                  </div>
 
-                  {/* Company Info Display */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Şirket Adı</Label>
-                      <p className="mt-1 text-gray-900">{partner?.companyName}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Kullanıcı Adı</Label>
-                      <p className="mt-1 text-gray-900">@{partner?.username || partner?.id}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">İletişim Kişisi</Label>
-                      <p className="mt-1 text-gray-900">{partner?.contactPerson || "Belirtilmemiş"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Hizmet Kategorisi</Label>
-                      <p className="mt-1 text-gray-900">{partner?.serviceCategory}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Profil Görüntüleme</Label>
-                      <p className="mt-1 text-gray-900">{partner?.profileViews || 0} görüntüleme</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Takipçi Sayısı</Label>
-                      <p className="mt-1 text-gray-900">{partner?.followersCount || 0} takipçi</p>
-                    </div>
-                  </div>
-
-                  {/* Notice about editing */}
-                  <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-yellow-800">
-                          Profil Bilgilerini Düzenleme
-                        </h3>
-                        <p className="mt-1 text-sm text-yellow-700">
-                          Kullanıcı adı ve diğer profil bilgilerinizi düzenlemek için yönetici ile iletişime geçiniz. Bu bilgiler sadece yetkili personel tarafından güncellenebilir.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="services" className="space-y-6">
             <PartnerServicesTab />
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>İstatistikler</CardTitle>
-                <CardDescription>
-                  Profil performansınızı ve iş analizlerini görüntüleyin
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Detaylı İstatistikler
-                  </h3>
-                  <p className="text-gray-600">
-                    İstatistik özellikleri yakında eklenecektir.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+
         </Tabs>
       </div>
 
