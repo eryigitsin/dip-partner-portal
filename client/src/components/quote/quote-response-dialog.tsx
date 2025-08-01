@@ -74,7 +74,15 @@ export function QuoteResponseDialog({
 
   // Get partner data for services
   const { data: partner, isLoading: partnerLoading } = useQuery<Partner>({
-    queryKey: ["/api/partners", "me"],
+    queryKey: ["/api/partners", user?.id],
+    queryFn: async () => {
+      const response = await fetch("/api/partners");
+      if (!response.ok) throw new Error("Failed to fetch partners");
+      const partners = await response.json();
+      const userPartner = partners.find((p: Partner) => p.userId === user?.id);
+      if (!userPartner) throw new Error("Partner profile not found");
+      return userPartner;
+    },
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
@@ -141,7 +149,7 @@ export function QuoteResponseDialog({
     defaultValues: {
       title: generateQuoteTitle(),
       description: "",
-      items: [],
+      items: initialItems,
       subtotal: 0,
       taxRate: 20,
       taxAmount: 0,
@@ -152,14 +160,24 @@ export function QuoteResponseDialog({
       deliveryTime: "15 iş günü",
     },
   });
+  
+  // Sync items with form when they change
+  useEffect(() => {
+    form.setValue('items', items);
+  }, [items, form]);
 
   const addItem = () => {
-    setItems([...items, { description: "", quantity: 1, unitPrice: 0, total: 0 }]);
+    const newItems = [...items, { description: "", quantity: 1, unitPrice: 0, total: 0 }];
+    setItems(newItems);
+    form.setValue('items', newItems);
   };
 
   const removeItem = (index: number) => {
     if (items.length > 1) {
-      setItems(items.filter((_, i) => i !== index));
+      const newItems = items.filter((_, i) => i !== index);
+      setItems(newItems);
+      form.setValue('items', newItems);
+      calculateTotals(newItems);
     }
   };
 
@@ -174,6 +192,7 @@ export function QuoteResponseDialog({
     
     setItems(updatedItems);
     calculateTotals(updatedItems);
+    form.setValue('items', updatedItems);
   };
 
   const calculateTotals = (itemsToCalculate: QuoteItem[]) => {
@@ -188,6 +207,10 @@ export function QuoteResponseDialog({
   };
 
   const onSubmit = async (data: z.infer<typeof quoteResponseSchema>) => {
+    console.log('Form submit started', data);
+    console.log('Form errors:', form.formState.errors);
+    console.log('Items:', items);
+    
     setIsSubmitting(true);
     try {
       const quoteData = {
@@ -196,6 +219,8 @@ export function QuoteResponseDialog({
         quoteNumber,
         items: items.filter(item => item.description.trim() !== ""),
       };
+      
+      console.log('Quote data to send:', quoteData);
 
       const response = await apiRequest("POST", "/api/quote-responses", quoteData);
       
@@ -237,7 +262,13 @@ export function QuoteResponseDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            onSubmit={(e) => {
+              console.log('Form submit event triggered');
+              form.handleSubmit(onSubmit)(e);
+            }} 
+            className="space-y-6"
+          >
             {/* Quote Header */}
             <Card>
               <CardHeader>
