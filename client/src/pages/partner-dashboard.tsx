@@ -440,7 +440,6 @@ export default function PartnerDashboard() {
                   <li>• <strong>Talebi İncele:</strong> Gelen teklif taleplerinin detaylarını "Detaylar" butonuyla görüntüleyin.</li>
                   <li>• <strong>Teklif Hazırla:</strong> "Teklif Hazırla" butonuyla profesyonel PDF teklif oluşturun.</li>
                   <li>• <strong>Durum Takibi:</strong> Teklif durumları otomatik güncellenir (Bekleyen, İnceleniyor, Gönderildi).</li>
-                  <li>• <strong>İletişim:</strong> Müşteri bilgileri ile doğrudan iletişim kurabilirsiniz.</li>
                 </ul>
               </div>
             )}
