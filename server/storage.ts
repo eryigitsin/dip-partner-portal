@@ -186,6 +186,7 @@ export interface IStorage {
   // Quote Response methods
   createQuoteResponse(responseData: InsertQuoteResponse): Promise<QuoteResponse>;
   getQuoteResponseById(id: number): Promise<QuoteResponse | null>;
+  getQuoteResponseByRequestId(requestId: number): Promise<QuoteResponse | null>;
   getQuoteResponsesByRequestId(requestId: number): Promise<QuoteResponse[]>;
   updateQuoteResponse(id: number, updates: Partial<QuoteResponse>): Promise<QuoteResponse | null>;
 
@@ -699,6 +700,16 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return newResponse;
+  }
+
+  async getQuoteResponseByRequestId(requestId: number): Promise<any | null> {
+    const [response] = await db
+      .select()
+      .from(quoteResponses)
+      .where(eq(quoteResponses.quoteRequestId, requestId))
+      .orderBy(desc(quoteResponses.createdAt))
+      .limit(1);
+    return response || null;
   }
 
   async getQuoteResponsesByRequestId(requestId: number): Promise<any[]> {

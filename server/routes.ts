@@ -1513,6 +1513,41 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get quote response by quote request ID
+  app.get("/api/quote-requests/:id/response", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const quoteRequestId = parseInt(req.params.id);
+      const quoteResponse = await storage.getQuoteResponseByRequestId(quoteRequestId);
+      
+      if (!quoteResponse) {
+        return res.status(404).json({ message: "Quote response not found" });
+      }
+
+      // Check permissions
+      const user = req.user;
+      const partner = await storage.getPartnerByUserId(user!.id);
+      const quoteRequest = await storage.getQuoteRequestById(quoteRequestId);
+      
+      const canView = 
+        (user!.userType === 'partner' && partner && partner.id === quoteRequest?.partnerId) ||
+        (user!.userType === 'user' && quoteRequest?.userId === user!.id) ||
+        (user!.userType === 'master_admin' || user!.userType === 'editor_admin');
+      
+      if (!canView) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      res.json(quoteResponse);
+    } catch (error) {
+      console.error('Error fetching quote response:', error);
+      res.status(500).json({ message: "Failed to fetch quote response" });
+    }
+  });
+
   // Quote response endpoints
   app.post("/api/quote-requests/:id/respond", async (req, res) => {
     try {

@@ -248,9 +248,29 @@ export default function PartnerDashboard() {
     setIsResponseDialogOpen(true);
   };
 
-  const handleViewQuoteResponse = (quote: QuoteRequest) => {
-    // Get the quote response for this request and open PDF
-    window.open(`/api/quote-responses/${quote.id}/pdf`, '_blank');
+  const handleViewQuoteResponse = async (quote: QuoteRequest) => {
+    try {
+      // First get the quote response for this request
+      const response = await fetch(`/api/quote-requests/${quote.id}/response`);
+      if (!response.ok) {
+        toast({
+          variant: "destructive",
+          title: "Hata", 
+          description: "Teklif yanıtı bulunamadı"
+        });
+        return;
+      }
+      
+      const quoteResponse = await response.json();
+      // Open PDF with the quote response ID
+      window.open(`/api/quote-responses/${quoteResponse.id}/pdf`, '_blank');
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Teklif görüntülenirken bir hata oluştu"
+      });
+    }
   };
 
   const dismissQuotesHelp = () => {
