@@ -28,7 +28,7 @@ export class PDFGenerator {
   private setupFonts(): void {
     try {
       // DejaVu Sans Unicode destekli font kullan (Roboto yerine)
-      const fontBasePath = path.join(process.cwd(), 'fonts');
+      const fontBasePath = path.join(__dirname, '../fonts');
       
       // Öncelikle DejaVu fontlarını dene
       const dejavuRegular = path.join(fontBasePath, 'DejaVuSans.ttf');
@@ -81,6 +81,8 @@ export class PDFGenerator {
       'Ä°': 'İ',
       'Ã¶': 'ö',
       'ÅŸ': 'ş',
+      'Ä°': 'İ',
+      'Ä±': 'ı',
       'Ã‡': 'Ç',
       'Ãœ': 'Ü',
       'Ã–': 'Ö',
@@ -101,19 +103,6 @@ export class PDFGenerator {
   private addText(text: string, x: number, y: number, options?: any): void {
     const cleanText = this.sanitizeText(text);
     this.doc.text(cleanText, x, y, options);
-  }
-
-  private setFont(fontName: 'Turkish' | 'Turkish-Bold' = 'Turkish'): void {
-    try {
-      this.doc.font(fontName);
-    } catch (e) {
-      // Fallback to Helvetica if custom font fails
-      if (fontName.includes('Bold')) {
-        this.doc.font('Helvetica-Bold');
-      } else {
-        this.doc.font('Helvetica');
-      }
-    }
   }
 
   async generateQuoteRequestPDF(options: PDFGeneratorOptions, res: Response): Promise<void> {
@@ -479,6 +468,19 @@ export class PDFGenerator {
   private checkPageSpace(requiredSpace: number): void {
     if (this.doc.y + requiredSpace > this.doc.page.height - 100) {
       this.doc.addPage();
+    }
+  }
+
+  private setFont(fontName: 'Turkish' | 'Turkish-Bold' = 'Turkish'): void {
+    try {
+      this.doc.font(fontName);
+    } catch (e) {
+      // Fallback to Helvetica if custom font fails
+      if (fontName.includes('Bold')) {
+        this.doc.font('Helvetica-Bold');
+      } else {
+        this.doc.font('Helvetica');
+      }
     }
   }
 

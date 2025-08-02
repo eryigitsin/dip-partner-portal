@@ -248,6 +248,11 @@ export default function PartnerDashboard() {
     setIsResponseDialogOpen(true);
   };
 
+  const handleViewQuoteResponse = (quote: QuoteRequest) => {
+    // Get the quote response for this request and open PDF
+    window.open(`/api/quote-responses/${quote.id}/pdf`, '_blank');
+  };
+
   const dismissQuotesHelp = () => {
     setQuotesHelpDismissed(true);
     localStorage.setItem('quotesHelpDismissed', 'true');
@@ -813,11 +818,11 @@ export default function PartnerDashboard() {
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  disabled
-                                  className="text-green-600 border-green-200"
+                                  onClick={() => handleViewQuoteResponse(quote)}
+                                  className="text-green-600 border-green-200 hover:bg-green-50"
                                 >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Teklif Gönderildi
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Teklifi Gör
                                 </Button>
                               )}
                             </div>
