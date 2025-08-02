@@ -1315,26 +1315,37 @@ export class DatabaseStorage implements IStorage {
         status: quoteRequests.status,
         createdAt: quoteRequests.createdAt,
         updatedAt: quoteRequests.updatedAt,
-        // Partner information
-        partner: {
-          id: partners.id,
-          companyName: partners.companyName,
-          logo: partners.logo,
-          serviceCategory: partners.serviceCategory,
-          isActive: partners.isActive
-        }
+        // Partner information as separate fields
+        partnerCompanyName: partners.companyName,
+        partnerLogo: partners.logo,
+        partnerServiceCategory: partners.serviceCategory,
+        partnerIsActive: partners.isActive
       })
       .from(quoteRequests)
       .leftJoin(partners, eq(quoteRequests.partnerId, partners.id))
       .where(eq(quoteRequests.userId, userId))
       .orderBy(desc(quoteRequests.createdAt));
 
-    // Get responses for each request
+    // Get responses for each request and restructure the data
     const requestsWithResponses = await Promise.all(
       requests.map(async (request) => {
         const responses = await this.getQuoteResponsesByRequestId(request.id);
+        
+        // Restructure partner data
+        const partner = request.partnerCompanyName ? {
+          id: request.partnerId,
+          companyName: request.partnerCompanyName,
+          logo: request.partnerLogo,
+          serviceCategory: request.partnerServiceCategory,
+          isActive: request.partnerIsActive
+        } : null;
+
+        // Remove partner fields from main object
+        const { partnerCompanyName, partnerLogo, partnerServiceCategory, partnerIsActive, ...requestData } = request;
+
         return {
-          ...request,
+          ...requestData,
+          partner,
           responses
         };
       })

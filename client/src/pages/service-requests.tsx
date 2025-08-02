@@ -483,11 +483,8 @@ export default function ServiceRequests() {
                             {partner.shortDescription || partner.description?.substring(0, 120) + '...'}
                           </p>
                           <div className="flex gap-2">
-                            <Button size="sm" className="flex-1">
-                              Teklif Talep Et
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              Profil
+                            <Button size="sm" variant="outline" className="flex-1">
+                              Profile Git
                             </Button>
                           </div>
                         </CardContent>
