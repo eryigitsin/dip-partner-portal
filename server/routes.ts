@@ -2825,6 +2825,172 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Revision Request Management Routes
+  app.post('/api/revision-requests', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { quoteResponseId, requestedItems, message } = req.body;
+
+      if (!quoteResponseId || !requestedItems || requestedItems.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Verify the quote response exists and user has permission
+      const quoteResponse = await storage.getQuoteResponseById(quoteResponseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ error: 'Quote response not found' });
+      }
+
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest || quoteRequest.userId !== user.id) {
+        return res.status(403).json({ error: 'Unauthorized to request revision for this quote' });
+      }
+
+      // Create revision request
+      const revisionData = {
+        quoteResponseId,
+        userId: user.id,
+        requestedItems: JSON.stringify(requestedItems),
+        message: message || null,
+        status: 'pending' as const
+      };
+
+      const revisionRequest = await storage.createRevisionRequest(revisionData);
+
+      // Send email notification to partner
+      try {
+        const partner = await storage.getPartnerByUserId(quoteRequest.partnerId ? parseInt(quoteRequest.partnerId.toString()) : 0);
+        if (partner) {
+          const partnerUser = await storage.getUserById(partner.userId);
+          if (partnerUser) {
+            // TODO: Send email notification to partner about revision request
+            console.log('Revision request created - should send email to partner:', partnerUser.email);
+          }
+        }
+      } catch (emailError) {
+        console.error('Error sending revision request email:', emailError);
+        // Don't fail the request if email fails
+      }
+
+      res.json(revisionRequest);
+    } catch (error) {
+      console.error('Error creating revision request:', error);
+      res.status(500).json({ error: 'Failed to create revision request' });
+    }
+  });
+
+  app.get('/api/revision-requests/quote-response/:quoteResponseId', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const quoteResponseId = parseInt(req.params.quoteResponseId);
+      const revisionRequests = await storage.getRevisionRequestsByQuoteResponseId(quoteResponseId);
+
+      // Check permissions
+      const quoteResponse = await storage.getQuoteResponseById(quoteResponseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ error: 'Quote response not found' });
+      }
+
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest) {
+        return res.status(404).json({ error: 'Quote request not found' });
+      }
+
+      const partner = await storage.getPartnerByUserId(user.id);
+      const canView = 
+        (user.userType === 'partner' && partner && partner.id === quoteRequest.partnerId) ||
+        (user.userType === 'user' && quoteRequest.userId === user.id) ||
+        (user.userType === 'master_admin' || user.userType === 'editor_admin');
+
+      if (!canView) {
+        return res.status(403).json({ error: 'Unauthorized to view revision requests' });
+      }
+
+      res.json(revisionRequests);
+    } catch (error) {
+      console.error('Error fetching revision requests:', error);
+      res.status(500).json({ error: 'Failed to fetch revision requests' });
+    }
+  });
+
+  app.put('/api/revision-requests/:id/status', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      if (!user || (user.userType !== 'partner' && user.activeUserType !== 'partner')) {
+        return res.status(403).json({ error: 'Only partners can update revision request status' });
+      }
+
+      const revisionId = parseInt(req.params.id);
+      const { status, updatedQuoteResponse } = req.body;
+
+      if (!['accepted', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const revisionRequest = await storage.getRevisionRequestById(revisionId);
+      if (!revisionRequest) {
+        return res.status(404).json({ error: 'Revision request not found' });
+      }
+
+      const quoteResponse = await storage.getQuoteResponseById(revisionRequest.quoteResponseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ error: 'Quote response not found' });
+      }
+
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest) {
+        return res.status(404).json({ error: 'Quote request not found' });
+      }
+
+      const partner = await storage.getPartnerByUserId(user.id);
+      if (!partner || partner.id !== quoteRequest.partnerId) {
+        return res.status(403).json({ error: 'Unauthorized to update this revision request' });
+      }
+
+      // Update revision request status
+      const updatedRevision = await storage.updateRevisionRequest(revisionId, { 
+        status,
+        respondedAt: new Date()
+      });
+
+      // If accepted, update the quote response with new pricing
+      if (status === 'accepted' && updatedQuoteResponse) {
+        await storage.updateQuoteResponse(revisionRequest.quoteResponseId, updatedQuoteResponse);
+      }
+
+      // Send email notification to user
+      try {
+        const requestUser = await storage.getUserById(revisionRequest.userId);
+        if (requestUser) {
+          // TODO: Send email notification to user about revision status
+          console.log(`Revision ${status} - should send email to user:`, requestUser.email);
+        }
+      } catch (emailError) {
+        console.error('Error sending revision status email:', emailError);
+        // Don't fail the request if email fails
+      }
+
+      res.json(updatedRevision);
+    } catch (error) {
+      console.error('Error updating revision request status:', error);
+      res.status(500).json({ error: 'Failed to update revision request status' });
+    }
+  });
+
   // Auth middleware functions
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.isAuthenticated()) {

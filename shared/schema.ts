@@ -273,6 +273,19 @@ export const quoteResponses = pgTable("quote_responses", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Revision requests for quote modifications
+export const revisionRequests = pgTable("revision_requests", {
+  id: serial("id").primaryKey(),
+  quoteResponseId: integer("quote_response_id").references(() => quoteResponses.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  requestedItems: jsonb("requested_items").notNull(), // User's requested pricing for each item
+  message: text("message"), // Optional message from user
+  status: text("status").default("pending"), // pending, accepted, rejected
+  partnerResponse: text("partner_response"), // Partner's response message
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Partner followers
 export const partnerFollowers = pgTable("partner_followers", {
   id: serial("id").primaryKey(),
@@ -575,6 +588,12 @@ export const insertQuoteResponseSchema = createInsertSchema(quoteResponses).omit
   updatedAt: true,
 });
 
+export const insertRevisionRequestSchema = createInsertSchema(revisionRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
   createdAt: true,
@@ -651,6 +670,8 @@ export type CompanyBillingInfo = typeof companyBillingInfo.$inferSelect;
 export type InsertCompanyBillingInfo = z.infer<typeof insertCompanyBillingInfoSchema>;
 export type QuoteResponse = typeof quoteResponses.$inferSelect;
 export type InsertQuoteResponse = z.infer<typeof insertQuoteResponseSchema>;
+export type RevisionRequest = typeof revisionRequests.$inferSelect;
+export type InsertRevisionRequest = z.infer<typeof insertRevisionRequestSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type SmsOtpCode = typeof smsOtpCodes.$inferSelect;
 export type InsertSmsOtpCode = z.infer<typeof insertSmsOtpCodeSchema>;

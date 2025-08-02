@@ -13,6 +13,7 @@ import {
   partnerFollowers,
   messages,
   quoteResponses,
+  revisionRequests,
   smsOtpCodes,
   tempUserRegistrations,
   emailSubscribers,
@@ -36,6 +37,8 @@ import {
   type InsertQuoteRequest,
   type QuoteResponse,
   type InsertQuoteResponse,
+  type RevisionRequest,
+  type InsertRevisionRequest,
   type ServiceCategory,
   type InsertServiceCategory,
   type Service,
@@ -189,6 +192,12 @@ export interface IStorage {
   getQuoteResponseByRequestId(requestId: number): Promise<QuoteResponse | null>;
   getQuoteResponsesByRequestId(requestId: number): Promise<QuoteResponse[]>;
   updateQuoteResponse(id: number, updates: Partial<QuoteResponse>): Promise<QuoteResponse | null>;
+
+  // Revision Request methods
+  createRevisionRequest(revisionData: InsertRevisionRequest): Promise<RevisionRequest>;
+  getRevisionRequestById(id: number): Promise<RevisionRequest | null>;
+  getRevisionRequestsByQuoteResponseId(quoteResponseId: number): Promise<RevisionRequest[]>;
+  updateRevisionRequest(id: number, updates: Partial<RevisionRequest>): Promise<RevisionRequest | null>;
 
   // System configuration methods
   getSystemConfigs(): Promise<Array<{ key: string; value: any }>>;
@@ -735,6 +744,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(quoteResponses.id, id))
       .returning();
     return response || undefined;
+  }
+
+  // Revision Request methods
+  async createRevisionRequest(revisionData: InsertRevisionRequest): Promise<RevisionRequest> {
+    const [newRevision] = await db
+      .insert(revisionRequests)
+      .values(revisionData)
+      .returning();
+    return newRevision;
+  }
+
+  async getRevisionRequestById(id: number): Promise<RevisionRequest | null> {
+    const [revision] = await db
+      .select()
+      .from(revisionRequests)
+      .where(eq(revisionRequests.id, id));
+    return revision || null;
+  }
+
+  async getRevisionRequestsByQuoteResponseId(quoteResponseId: number): Promise<RevisionRequest[]> {
+    return await db
+      .select()
+      .from(revisionRequests)
+      .where(eq(revisionRequests.quoteResponseId, quoteResponseId))
+      .orderBy(desc(revisionRequests.createdAt));
+  }
+
+  async updateRevisionRequest(id: number, updates: Partial<RevisionRequest>): Promise<RevisionRequest | null> {
+    const [revision] = await db
+      .update(revisionRequests)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(revisionRequests.id, id))
+      .returning();
+    return revision || null;
   }
 
   async getServiceCategories(): Promise<ServiceCategory[]> {
