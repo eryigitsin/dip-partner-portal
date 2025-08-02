@@ -285,9 +285,9 @@ export const emailTemplates = {
           <div style="padding: 30px; background: #f8f9fa;">
             <h2 style="color: #333; margin-bottom: 20px;">Revizyon Talebi</h2>
             <p style="color: #666; line-height: 1.6;">Sayın Partner,</p>
-            <p style="color: #666; line-height: 1.6;">${user.firstName} ${user.lastName} tarafından teklifiniz için revizyon talebi gönderildi.</p>
+            <p style="color: #666; line-height: 1.6;">${user.firstName || ''} ${user.lastName || ''} tarafından teklifiniz için revizyon talebi gönderildi.</p>
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Müşteri:</strong> ${user.firstName} ${user.lastName}</p>
+              <p><strong>Müşteri:</strong> ${user.firstName || ''} ${user.lastName || ''}</p>
               <p><strong>E-posta:</strong> ${user.email}</p>
               <p><strong>Hizmet:</strong> ${quoteRequest.serviceNeeded}</p>
             </div>

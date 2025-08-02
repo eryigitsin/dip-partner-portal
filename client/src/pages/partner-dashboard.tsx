@@ -162,7 +162,7 @@ export default function PartnerDashboard() {
   });
 
   // Get revision requests for this partner
-  const { data: revisionRequests = [] } = useQuery({
+  const { data: revisionRequests = [] } = useQuery<any[]>({
     queryKey: ["/api/partner/revision-requests"],
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
@@ -1328,7 +1328,7 @@ export default function PartnerDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-600">Müşteri</label>
-                      <p className="text-sm font-medium">{selectedRevisionRequest.quoteRequest?.fullName}</p>
+                      <p className="text-sm font-medium">{selectedRevisionRequest.quoteRequest?.firstName} {selectedRevisionRequest.quoteRequest?.lastName}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600">E-posta</label>
