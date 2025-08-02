@@ -380,8 +380,8 @@ export class PDFGenerator {
       const rowData = [
         this.sanitizeText(item.description),
         item.quantity.toString(),
-        `${item.unitPrice.toFixed(2)} TL`,
-        `${item.total.toFixed(2)} TL`
+        `${(item.unitPrice / 100).toFixed(2)} TL`,
+        `${(item.totalPrice / 100).toFixed(2)} TL`
       ];
       
       rowData.forEach((data, i) => {
