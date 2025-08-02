@@ -388,10 +388,20 @@ export default function PartnerDashboard() {
   // Handle accepting/rejecting revision requests
   const revisionStatusMutation = useMutation({
     mutationFn: async ({ revisionId, status, updatedQuoteResponse }: { revisionId: number, status: string, updatedQuoteResponse?: any }) => {
-      return await apiRequest(`/api/revision-requests/${revisionId}/status`, {
+      const response = await fetch(`/api/revision-requests/${revisionId}/status`, {
         method: 'PUT',
-        body: { status, updatedQuoteResponse }
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status, updatedQuoteResponse })
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update revision request');
+      }
+
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/revision-requests"] });
