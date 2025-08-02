@@ -483,7 +483,12 @@ export default function ServiceRequests() {
                             {partner.shortDescription || partner.description?.substring(0, 120) + '...'}
                           </p>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline" className="flex-1">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={() => window.open(`https://partner.dip.tc/partner/${partner.username}`, '_blank')}
+                            >
                               Profile Git
                             </Button>
                           </div>
