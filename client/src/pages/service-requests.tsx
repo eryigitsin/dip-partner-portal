@@ -83,6 +83,7 @@ export default function ServiceRequests() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/quote-requests'] });
+      setIsQuoteDetailsDialogOpen(false);
       toast({
         title: 'Başarılı',
         description: 'Teklif reddedildi.',
@@ -363,18 +364,20 @@ export default function ServiceRequests() {
                                   </div>
                                 )}
 
-                                {response.status === 'sent' && (
-                                  <div className="flex flex-wrap gap-2 mt-4">
-                                    <Button
-                                      onClick={() => {
-                                        setSelectedQuoteResponse(response);
-                                        setIsQuoteDetailsDialogOpen(true);
-                                      }}
-                                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                      Teklifi Gör
-                                    </Button>
+                                {/* Always show action buttons for any quote response */}
+                                <div className="flex flex-wrap gap-2 mt-4">
+                                  <Button
+                                    onClick={() => {
+                                      setSelectedQuoteResponse(response);
+                                      setIsQuoteDetailsDialogOpen(true);
+                                    }}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    Teklifi Gör
+                                  </Button>
+                                  
+                                  {response.status !== 'accepted' && response.status !== 'rejected' && (
                                     <Button
                                       onClick={() => handleRevisionRequest(response)}
                                       className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600"
@@ -382,23 +385,25 @@ export default function ServiceRequests() {
                                       <Edit className="h-4 w-4" />
                                       Revizyon İste
                                     </Button>
-                                    <Button
-                                      onClick={() => handleDownloadPDF(response.id)}
-                                      variant="outline"
-                                      className="flex items-center gap-2"
-                                    >
-                                      <Download className="h-4 w-4" />
-                                      PDF İndir
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      className="flex items-center gap-2"
-                                    >
-                                      <MessageCircle className="h-4 w-4" />
-                                      Mesaj Gönder
-                                    </Button>
-                                  </div>
-                                )}
+                                  )}
+                                  
+                                  <Button
+                                    onClick={() => handleDownloadPDF(response.id)}
+                                    variant="outline"
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                    PDF İndir
+                                  </Button>
+                                  
+                                  <Button
+                                    variant="outline"
+                                    className="flex items-center gap-2"
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                    Mesaj Gönder
+                                  </Button>
+                                </div>
 
                                 {response.status === 'accepted' && (
                                   <div className="mt-4">
@@ -423,34 +428,18 @@ export default function ServiceRequests() {
                         </div>
                       )}
 
-                      {/* Actions */}
-                      <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t">
-                        {request.responses && request.responses.length > 0 && (
-                          <>
-                            <Button
-                              onClick={() => handleViewQuoteDetails(request.id)}
-                              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                            >
-                              <Eye className="h-4 w-4" />
-                              Teklifi Gör
-                            </Button>
-                            <Button
-                              onClick={() => handleRevisionRequest(request.responses[0])}
-                              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600"
-                            >
-                              <Edit className="h-4 w-4" />
-                              Revizyon İste
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          variant="outline"
-                          className="flex items-center gap-2"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          Mesaj Gönder
-                        </Button>
-                      </div>
+                      {/* General Actions - Only show message button here */}
+                      {(!request.responses || request.responses.length === 0) && (
+                        <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            className="flex items-center gap-2"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            Mesaj Gönder
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))
@@ -547,7 +536,7 @@ export default function ServiceRequests() {
               <div>
                 <Label className="text-sm font-medium text-gray-700 mb-3 block">Hizmet Kalemleri</Label>
                 <div className="space-y-3">
-                  {selectedQuoteResponse.items && selectedQuoteResponse.items.map((item: any, index: number) => (
+                  {selectedQuoteResponse.items && (typeof selectedQuoteResponse.items === 'string' ? JSON.parse(selectedQuoteResponse.items) : selectedQuoteResponse.items).map((item: any, index: number) => (
                     <div key={index} className="border rounded-lg p-4 bg-gray-50">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div className="md:col-span-2">
@@ -635,7 +624,7 @@ export default function ServiceRequests() {
                   </AlertDialogContent>
                 </AlertDialog>
                 <Button
-                  onClick={handleDownloadPDF}
+                  onClick={() => handleDownloadPDF(selectedQuoteResponse.id)}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
