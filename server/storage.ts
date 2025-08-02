@@ -1299,10 +1299,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserQuoteRequests(userId: number): Promise<any[]> {
-    return await db.select()
+    const requests = await db
+      .select({
+        id: quoteRequests.id,
+        userId: quoteRequests.userId,
+        partnerId: quoteRequests.partnerId,
+        serviceNeeded: quoteRequests.serviceNeeded,
+        budget: quoteRequests.budget,
+        timeline: quoteRequests.timeline,
+        requirements: quoteRequests.requirements,
+        fullName: quoteRequests.fullName,
+        email: quoteRequests.email,
+        phone: quoteRequests.phone,
+        company: quoteRequests.company,
+        status: quoteRequests.status,
+        createdAt: quoteRequests.createdAt,
+        updatedAt: quoteRequests.updatedAt,
+        // Partner information
+        partner: {
+          id: partners.id,
+          companyName: partners.companyName,
+          logo: partners.logo,
+          serviceCategory: partners.serviceCategory,
+          isActive: partners.isActive
+        }
+      })
       .from(quoteRequests)
+      .leftJoin(partners, eq(quoteRequests.partnerId, partners.id))
       .where(eq(quoteRequests.userId, userId))
       .orderBy(desc(quoteRequests.createdAt));
+
+    // Get responses for each request
+    const requestsWithResponses = await Promise.all(
+      requests.map(async (request) => {
+        const responses = await this.getQuoteResponsesByRequestId(request.id);
+        return {
+          ...request,
+          responses
+        };
+      })
+    );
+
+    return requestsWithResponses;
   }
 
   async getSuggestedPartners(userId: number): Promise<Partner[]> {
