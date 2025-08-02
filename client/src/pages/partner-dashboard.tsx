@@ -64,6 +64,8 @@ export default function PartnerDashboard() {
   const [performanceHelpDismissed, setPerformanceHelpDismissed] = useState(() => {
     return localStorage.getItem('performanceHelpDismissed') === 'true';
   });
+  const [selectedQuoteResponse, setSelectedQuoteResponse] = useState<any>(null);
+  const [isQuoteDetailsDialogOpen, setIsQuoteDetailsDialogOpen] = useState(false);
 
   // Helper functions for performance calculations
   const calculateProfileCompletion = (partner: Partner | undefined) => {
@@ -262,14 +264,20 @@ export default function PartnerDashboard() {
       }
       
       const quoteResponse = await response.json();
-      // Open PDF with the quote response ID
-      window.open(`/api/quote-responses/${quoteResponse.id}/pdf`, '_blank');
+      setSelectedQuoteResponse({ ...quoteResponse, quoteRequest: quote });
+      setIsQuoteDetailsDialogOpen(true);
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Hata",
         description: "Teklif görüntülenirken bir hata oluştu"
       });
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (selectedQuoteResponse) {
+      window.open(`/api/quote-responses/${selectedQuoteResponse.id}/pdf`, '_blank');
     }
   };
 
@@ -1066,6 +1074,154 @@ export default function PartnerDashboard() {
         onClose={() => setIsFeedbackModalOpen(false)}
         source="partner"
       />
+      
+      {/* Quote Details Dialog */}
+      {selectedQuoteResponse && (
+        <Dialog open={isQuoteDetailsDialogOpen} onOpenChange={setIsQuoteDetailsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span className="flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Gönderilen Teklif Detayları
+                </span>
+                <Button
+                  size="sm"
+                  onClick={handleDownloadPDF}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  PDF İndir
+                </Button>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Quote Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Teklif Bilgileri</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Teklif Numarası</label>
+                      <p className="text-sm font-medium">{selectedQuoteResponse.quoteNumber}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Başlık</label>
+                      <p className="text-sm">{selectedQuoteResponse.title}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Geçerlilik Tarihi</label>
+                      <p className="text-sm">{new Date(selectedQuoteResponse.validUntil).toLocaleDateString('tr-TR')}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Durum</label>
+                      <Badge variant={selectedQuoteResponse.status === 'accepted' ? 'default' : 'secondary'}>
+                        {selectedQuoteResponse.status === 'pending' && 'Beklemede'}
+                        {selectedQuoteResponse.status === 'accepted' && 'Kabul Edildi'}
+                        {selectedQuoteResponse.status === 'rejected' && 'Reddedildi'}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Customer Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Müşteri Bilgileri</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Müşteri Adı</label>
+                      <p className="text-sm">{selectedQuoteResponse.quoteRequest?.fullName}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">E-posta</label>
+                      <p className="text-sm">{selectedQuoteResponse.quoteRequest?.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Telefon</label>
+                      <p className="text-sm">{selectedQuoteResponse.quoteRequest?.phone}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Şirket</label>
+                      <p className="text-sm">{selectedQuoteResponse.quoteRequest?.company || 'Belirtilmemiş'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quote Items */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Teklif Kalemleri</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {selectedQuoteResponse.items?.map((item: any, index: number) => (
+                      <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium">{item.description}</p>
+                          <p className="text-sm text-gray-600">Miktar: {item.quantity} {item.unit}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">₺{(item.unitPrice / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</p>
+                          <p className="text-sm text-gray-600">Birim fiyat</p>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="font-medium">₺{(item.totalPrice / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</p>
+                          <p className="text-sm text-gray-600">Toplam</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Financial Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Mali Özet</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Ara Toplam</span>
+                      <span className="text-sm font-medium">₺{(selectedQuoteResponse.subtotal / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">KDV (%{selectedQuoteResponse.taxRate})</span>
+                      <span className="text-sm font-medium">₺{(selectedQuoteResponse.taxAmount / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="border-t pt-3">
+                      <div className="flex justify-between">
+                        <span className="text-lg font-semibold">Genel Toplam</span>
+                        <span className="text-lg font-semibold text-blue-600">₺{(selectedQuoteResponse.totalAmount / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Notes */}
+              {selectedQuoteResponse.notes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Notlar</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap">{selectedQuoteResponse.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
