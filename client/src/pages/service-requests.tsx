@@ -56,11 +56,14 @@ export default function ServiceRequests() {
   // Accept quote response mutation
   const acceptQuoteMutation = useMutation({
     mutationFn: async (responseId: number) => {
-      const res = await apiRequest('PUT', `/api/quote-responses/${responseId}/accept`);
+      const res = await apiRequest('PUT', `/api/quote-responses/${responseId}/status`, {
+        status: 'accepted'
+      });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/quote-requests'] });
+      setIsQuoteDetailsDialogOpen(false);
       toast({
         title: 'Başarılı',
         description: 'Teklif kabul edildi.',
@@ -78,7 +81,9 @@ export default function ServiceRequests() {
   // Reject quote response mutation
   const rejectQuoteMutation = useMutation({
     mutationFn: async (responseId: number) => {
-      const res = await apiRequest('PUT', `/api/quote-responses/${responseId}/reject`);
+      const res = await apiRequest('PUT', `/api/quote-responses/${responseId}/status`, {
+        status: 'rejected'
+      });
       return res.json();
     },
     onSuccess: () => {
@@ -131,7 +136,8 @@ export default function ServiceRequests() {
           Teklif Bekleniyor
         </Badge>;
       case 'responded':
-        return <Badge className="flex items-center gap-1">
+      case 'quote_sent':
+        return <Badge className="flex items-center gap-1 bg-blue-600">
           <FileText className="h-3 w-3" />
           Teklif Alındı
         </Badge>;
@@ -307,7 +313,7 @@ export default function ServiceRequests() {
                           )}
                           <div>
                             <CardTitle className="text-lg">
-                              {request.partner?.companyName}
+                              {request.partner?.companyName || 'Partner Bilgisi Yok'}
                             </CardTitle>
                             <CardDescription className="mt-1">
                               {request.serviceNeeded || 'Hizmet belirtilmemiş'}
@@ -364,46 +370,7 @@ export default function ServiceRequests() {
                                   </div>
                                 )}
 
-                                {/* Always show action buttons for any quote response */}
-                                <div className="flex flex-wrap gap-2 mt-4">
-                                  <Button
-                                    onClick={() => {
-                                      setSelectedQuoteResponse(response);
-                                      setIsQuoteDetailsDialogOpen(true);
-                                    }}
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                    Teklifi Gör
-                                  </Button>
-                                  
-                                  {response.status !== 'accepted' && response.status !== 'rejected' && (
-                                    <Button
-                                      onClick={() => handleRevisionRequest(response)}
-                                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                      Revizyon İste
-                                    </Button>
-                                  )}
-                                  
-                                  <Button
-                                    onClick={() => handleDownloadPDF(response.id)}
-                                    variant="outline"
-                                    className="flex items-center gap-2"
-                                  >
-                                    <Download className="h-4 w-4" />
-                                    PDF İndir
-                                  </Button>
-                                  
-                                  <Button
-                                    variant="outline"
-                                    className="flex items-center gap-2"
-                                  >
-                                    <MessageCircle className="h-4 w-4" />
-                                    Mesaj Gönder
-                                  </Button>
-                                </div>
+
 
                                 {response.status === 'accepted' && (
                                   <div className="mt-4">
@@ -428,9 +395,40 @@ export default function ServiceRequests() {
                         </div>
                       )}
 
-                      {/* General Actions - Only show message button here */}
-                      {(!request.responses || request.responses.length === 0) && (
-                        <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t">
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t">
+                        {request.responses && request.responses.length > 0 ? (
+                          <>
+                            <Button
+                              onClick={() => {
+                                setSelectedQuoteResponse(request.responses[0]);
+                                setIsQuoteDetailsDialogOpen(true);
+                              }}
+                              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Eye className="h-4 w-4" />
+                              Teklifi Gör
+                            </Button>
+                            
+                            {request.responses[0].status !== 'accepted' && request.responses[0].status !== 'rejected' && (
+                              <Button
+                                onClick={() => handleRevisionRequest(request.responses[0])}
+                                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600"
+                              >
+                                <Edit className="h-4 w-4" />
+                                Revizyon İste
+                              </Button>
+                            )}
+                            
+                            <Button
+                              variant="outline"
+                              className="flex items-center gap-2"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              Mesaj Gönder
+                            </Button>
+                          </>
+                        ) : (
                           <Button
                             variant="outline"
                             className="flex items-center gap-2"
@@ -438,8 +436,8 @@ export default function ServiceRequests() {
                             <MessageCircle className="h-4 w-4" />
                             Mesaj Gönder
                           </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))

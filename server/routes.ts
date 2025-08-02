@@ -64,6 +64,39 @@ const emailTemplates = {
       })
     }
   },
+  revisionRequest: {
+    toPartner: (request: any, user: any, revisionItems: any) => ({
+      subject: `Revizyon Talebi - ${request.fullName}`,
+      html: `
+        <h2>Revizyon Talebi Alındı</h2>
+        <p>Merhaba,</p>
+        <p>${request.fullName} adlı müşteri teklifiniz için revizyon talebinde bulundu.</p>
+        <p><strong>Hizmet:</strong> ${request.serviceNeeded}</p>
+        <p>Partner paneli üzerinden revizyon talebini inceleyip kabul veya ret edebilirsiniz.</p>
+        <p><a href="${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}/partner-dashboard` : '/partner-dashboard'}">Partner Paneli</a></p>
+      `
+    }),
+    accepted: (request: any, user: any) => ({
+      subject: `Revizyon Talebi Kabul Edildi - ${request.serviceNeeded}`,
+      html: `
+        <h2>Revizyon Talebiniz Kabul Edildi</h2>
+        <p>Merhaba ${request.fullName},</p>
+        <p>Revizyon talebiniz partner tarafından kabul edildi ve yeni teklif hazırlandı.</p>
+        <p><strong>Hizmet:</strong> ${request.serviceNeeded}</p>
+        <p>Güncellenmiş teklifin detaylarını görüntülemek için platform panelinizdeki "Hizmet Talepleri" bölümünü ziyaret edebilirsiniz.</p>
+      `
+    }),
+    rejected: (request: any, user: any) => ({
+      subject: `Revizyon Talebi Reddedildi - ${request.serviceNeeded}`,
+      html: `
+        <h2>Revizyon Talebiniz Hakkında</h2>
+        <p>Merhaba ${request.fullName},</p>
+        <p>Maalesef revizyon talebiniz iş ortağı tarafından reddedilmiştir.</p>
+        <p><strong>Hizmet:</strong> ${request.serviceNeeded}</p>
+        <p>Mevcut teklif geçerliliğini korumaktadır. Farklı bir revizyon talebi için tekrar deneyebilir veya mevcut teklifi kabul edebilirsiniz.</p>
+      `
+    })
+  },
   paymentComplete: (request: any, partner: any) => ({
     subject: `Ödeme Tamamlandı - ${partner.companyName}`,
     html: `
@@ -2735,6 +2768,42 @@ export function registerRoutes(app: Express): Server {
       const requestStatus = status === 'accepted' ? 'accepted' : 'rejected';
       await storage.updateQuoteRequest(quoteResponse.quoteRequestId, { status: requestStatus });
 
+      // Send email notifications
+      try {
+        const partner = await storage.getPartnerById(quoteResponse.partnerId);
+        const partnerUser = partner ? await storage.getUserById(partner.userId) : null;
+        const requestUser = await storage.getUserById(quoteRequest.userId);
+
+        if (status === 'accepted' && partnerUser && requestUser) {
+          // Send email to partner
+          const partnerEmailTemplate = emailTemplates.quoteStatus.approved.toPartner(quoteRequest, requestUser);
+          await resendService.sendEmail({
+            to: partnerUser.email,
+            subject: partnerEmailTemplate.subject,
+            html: partnerEmailTemplate.html,
+          });
+
+          // Send email to user
+          const userEmailTemplate = emailTemplates.quoteStatus.approved.toUser(quoteRequest, partner);
+          await resendService.sendEmail({
+            to: requestUser.email,
+            subject: userEmailTemplate.subject,
+            html: userEmailTemplate.html,
+          });
+        } else if (status === 'rejected' && partnerUser) {
+          // Send email to partner
+          const rejectionTemplate = emailTemplates.quoteStatus.rejected.toPartner(quoteRequest, requestUser);
+          await resendService.sendEmail({
+            to: partnerUser.email,
+            subject: rejectionTemplate.subject,
+            html: rejectionTemplate.html,
+          });
+        }
+      } catch (emailError) {
+        console.error('Email notification failed:', emailError);
+        // Don't fail the request if email fails
+      }
+
       res.json(updatedResponse);
     } catch (error) {
       console.error('Error updating quote response status:', error);
@@ -2865,12 +2934,17 @@ export function registerRoutes(app: Express): Server {
 
       // Send email notification to partner
       try {
-        const partner = await storage.getPartnerByUserId(quoteRequest.partnerId ? parseInt(quoteRequest.partnerId.toString()) : 0);
+        const partner = await storage.getPartnerById(quoteResponse.partnerId);
         if (partner) {
           const partnerUser = await storage.getUserById(partner.userId);
           if (partnerUser) {
-            // TODO: Send email notification to partner about revision request
-            console.log('Revision request created - should send email to partner:', partnerUser.email);
+            const emailTemplate = emailTemplates.revisionRequest.toPartner(quoteRequest, user, requestedItems);
+            await resendService.sendEmail({
+              to: partnerUser.email,
+              subject: emailTemplate.subject,
+              html: emailTemplate.html,
+            });
+            console.log('Revision request email sent to partner:', partnerUser.email);
           }
         }
       } catch (emailError) {
