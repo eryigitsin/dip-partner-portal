@@ -62,6 +62,8 @@ export default function PartnerDashboard() {
   });
   const [isUsernameChangeDialogOpen, setIsUsernameChangeDialogOpen] = useState(false);
   const [newUsername, setNewUsername] = useState("");
+  const [selectedRevisionRequest, setSelectedRevisionRequest] = useState<any>(null);
+  const [isRevisionDetailsDialogOpen, setIsRevisionDetailsDialogOpen] = useState(false);
   const [performanceHelpDismissed, setPerformanceHelpDismissed] = useState(() => {
     return localStorage.getItem('performanceHelpDismissed') === 'true';
   });
@@ -156,6 +158,12 @@ export default function PartnerDashboard() {
 
   const { data: quoteRequests = [] } = useQuery<QuoteRequest[]>({
     queryKey: ["/api/quote-requests"],
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
+  });
+
+  // Get revision requests for this partner
+  const { data: revisionRequests = [] } = useQuery({
+    queryKey: ["/api/partner/revision-requests"],
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
@@ -362,6 +370,47 @@ export default function PartnerDashboard() {
         return status;
     }
   };
+
+  // Helper function to check if a quote has pending revision requests
+  const getQuoteRevisionStatus = (quoteId: number) => {
+    const relevantRevisions = revisionRequests.filter((rev: any) => 
+      rev.quoteRequest.id === quoteId && rev.status === 'pending'
+    );
+    return relevantRevisions.length > 0 ? relevantRevisions[0] : null;
+  };
+
+  // Handle viewing revision request details
+  const handleViewRevisionRequest = (revisionRequest: any) => {
+    setSelectedRevisionRequest(revisionRequest);
+    setIsRevisionDetailsDialogOpen(true);
+  };
+
+  // Handle accepting/rejecting revision requests
+  const revisionStatusMutation = useMutation({
+    mutationFn: async ({ revisionId, status, updatedQuoteResponse }: { revisionId: number, status: string, updatedQuoteResponse?: any }) => {
+      return await apiRequest(`/api/revision-requests/${revisionId}/status`, {
+        method: 'PUT',
+        body: { status, updatedQuoteResponse }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/revision-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/quote-requests"] });
+      setIsRevisionDetailsDialogOpen(false);
+      setSelectedRevisionRequest(null);
+      toast({
+        title: "Başarılı",
+        description: "Revizyon talebi yanıtlandı"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: error.message || "Revizyon talebi yanıtlanırken hata oluştu"
+      });
+    }
+  });
 
   const pendingQuotes = quoteRequests.filter(q => q.status === "pending").length;
   const acceptedQuotes = quoteRequests.filter(q => q.status === "accepted").length;
@@ -813,12 +862,36 @@ export default function PartnerDashboard() {
                           </TableCell>
                           <TableCell>{quote.budget || "Belirtilmemiş"}</TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(quote.status || 'pending')}>
-                              <div className="flex items-center space-x-1">
-                                {getStatusIcon(quote.status || 'pending')}
-                                <span>{getStatusText(quote.status || 'pending')}</span>
-                              </div>
-                            </Badge>
+                            {(() => {
+                              const revisionRequest = getQuoteRevisionStatus(quote.id);
+                              if (revisionRequest && quote.status === 'quote_sent') {
+                                return (
+                                  <div className="space-y-1">
+                                    <Badge className={getStatusColor(quote.status || 'pending')}>
+                                      <div className="flex items-center space-x-1">
+                                        {getStatusIcon(quote.status || 'pending')}
+                                        <span>{getStatusText(quote.status || 'pending')}</span>
+                                      </div>
+                                    </Badge>
+                                    <Badge 
+                                      className="bg-orange-100 text-orange-800 cursor-pointer hover:bg-orange-200" 
+                                      onClick={() => handleViewRevisionRequest(revisionRequest)}
+                                    >
+                                      <AlertCircle className="h-3 w-3 mr-1" />
+                                      Revizyon Talep Edildi
+                                    </Badge>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <Badge className={getStatusColor(quote.status || 'pending')}>
+                                  <div className="flex items-center space-x-1">
+                                    {getStatusIcon(quote.status || 'pending')}
+                                    <span>{getStatusText(quote.status || 'pending')}</span>
+                                  </div>
+                                </Badge>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell>
                             {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('tr-TR') : 'Tarih belirtilmemiş'}
@@ -1219,6 +1292,137 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Revision Request Details Dialog */}
+      {selectedRevisionRequest && (
+        <Dialog open={isRevisionDetailsDialogOpen} onOpenChange={setIsRevisionDetailsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <AlertCircle className="h-5 w-5 mr-2 text-orange-600" />
+                Revizyon Talebi Detayları
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Customer and Quote Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Müşteri ve Teklif Bilgileri</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Müşteri</label>
+                      <p className="text-sm font-medium">{selectedRevisionRequest.quoteRequest?.fullName}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">E-posta</label>
+                      <p className="text-sm">{selectedRevisionRequest.quoteRequest?.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Teklif Numarası</label>
+                      <p className="text-sm">{selectedRevisionRequest.quoteResponse?.quoteNumber}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Talep Tarihi</label>
+                      <p className="text-sm">{new Date(selectedRevisionRequest.createdAt).toLocaleDateString('tr-TR')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Customer Message */}
+              {selectedRevisionRequest.message && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Müşteri Mesajı</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap">{selectedRevisionRequest.message}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Requested Changes */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Talep Edilen Değişiklikler</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {selectedRevisionRequest.requestedItems?.map((item: any, index: number) => (
+                      <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium">{item.description}</p>
+                          <p className="text-sm text-gray-600">Miktar: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-orange-600">₺{(item.requestedUnitPrice / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</p>
+                          <p className="text-sm text-gray-600">Talep edilen birim fiyat</p>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="font-medium text-orange-600">₺{(item.requestedTotalPrice / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</p>
+                          <p className="text-sm text-gray-600">Talep edilen toplam</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="destructive"
+                  onClick={() => revisionStatusMutation.mutate({ 
+                    revisionId: selectedRevisionRequest.id, 
+                    status: 'rejected' 
+                  })}
+                  disabled={revisionStatusMutation.isPending}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Reddet
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Accept revision and update quote with new pricing
+                    const updatedItems = selectedRevisionRequest.requestedItems.map((item: any) => ({
+                      ...item,
+                      unitPrice: item.requestedUnitPrice,
+                      totalPrice: item.requestedTotalPrice
+                    }));
+                    
+                    const subtotal = updatedItems.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
+                    const taxRate = selectedRevisionRequest.quoteResponse.taxRate || 2000;
+                    const taxAmount = Math.round(subtotal * taxRate / 10000);
+                    const totalAmount = subtotal + taxAmount;
+
+                    const updatedQuoteResponse = {
+                      items: updatedItems,
+                      subtotal,
+                      taxAmount,
+                      totalAmount,
+                      updatedAt: new Date()
+                    };
+
+                    revisionStatusMutation.mutate({ 
+                      revisionId: selectedRevisionRequest.id, 
+                      status: 'accepted',
+                      updatedQuoteResponse
+                    });
+                  }}
+                  disabled={revisionStatusMutation.isPending}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Kabul Et ve Fiyatları Güncelle
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

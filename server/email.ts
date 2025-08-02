@@ -271,5 +271,90 @@ export const emailTemplates = {
         </div>
       </div>
     `
-  })
+  }),
+
+  revisionRequest: {
+    toPartner: (quoteRequest: any, user: any, requestedItems: any[]) => ({
+      subject: "Revizyon Talebi Alındı",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">DİP Partner Portal</h1>
+            <p style="color: white; margin: 10px 0 0 0;">Digital Export Platform</p>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa;">
+            <h2 style="color: #333; margin-bottom: 20px;">Revizyon Talebi</h2>
+            <p style="color: #666; line-height: 1.6;">Sayın Partner,</p>
+            <p style="color: #666; line-height: 1.6;">${user.firstName} ${user.lastName} tarafından teklifiniz için revizyon talebi gönderildi.</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Müşteri:</strong> ${user.firstName} ${user.lastName}</p>
+              <p><strong>E-posta:</strong> ${user.email}</p>
+              <p><strong>Hizmet:</strong> ${quoteRequest.serviceNeeded}</p>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/partner-dashboard" 
+                 style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Revizyon Talebini Görüntüle
+              </a>
+            </div>
+          </div>
+        </div>
+      `
+    }),
+    rejected: (quoteRequest: any, partner: any) => ({
+      subject: "Revizyon Talebiniz Reddedildi",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">DİP Partner Portal</h1>
+            <p style="color: white; margin: 10px 0 0 0;">Digital Export Platform</p>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa;">
+            <h2 style="color: #333; margin-bottom: 20px;">Revizyon Talebiniz Reddedildi</h2>
+            <p style="color: #666; line-height: 1.6;">Sayın Müşterimiz,</p>
+            <p style="color: #666; line-height: 1.6;">Maalesef ${partner.companyName} iş ortağımız revizyon talebinizi kabul edemedi. Mevcut teklif geçerliliğini korumaktadır.</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Partner:</strong> ${partner.companyName}</p>
+              <p><strong>Hizmet:</strong> ${quoteRequest.serviceNeeded}</p>
+              <p><strong>Durum:</strong> Revizyon Reddedildi</p>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/service-requests" 
+                 style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Tekliflerinizi Görüntüle
+              </a>
+            </div>
+          </div>
+        </div>
+      `
+    }),
+    accepted: (quoteRequest: any, partner: any) => ({
+      subject: "Revizyon Talebiniz Kabul Edildi",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">DİP Partner Portal</h1>
+            <p style="color: white; margin: 10px 0 0 0;">Digital Export Platform</p>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa;">
+            <h2 style="color: #333; margin-bottom: 20px;">Revizyon Talebiniz Kabul Edildi</h2>
+            <p style="color: #666; line-height: 1.6;">Sayın Müşterimiz,</p>
+            <p style="color: #666; line-height: 1.6;">Harika haber! ${partner.companyName} iş ortağımız revizyon talebinizi kabul etti ve teklif güncel fiyatlarla güncellendi.</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="color: #28a745; font-weight: bold;">✓ Revizyon Kabul Edildi</p>
+              <p><strong>Partner:</strong> ${partner.companyName}</p>
+              <p><strong>Hizmet:</strong> ${quoteRequest.serviceNeeded}</p>
+              <p><strong>Durum:</strong> Teklif Güncellendi</p>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/service-requests" 
+                 style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Güncel Teklifi Görüntüle
+              </a>
+            </div>
+          </div>
+        </div>
+      `
+    })
+  }
 };

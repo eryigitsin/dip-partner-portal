@@ -2770,7 +2770,7 @@ export function registerRoutes(app: Express): Server {
 
       // Send email notifications
       try {
-        const partner = await storage.getPartnerById(quoteResponse.partnerId);
+        const partner = await storage.getPartner(quoteResponse.partnerId);
         const partnerUser = partner ? await storage.getUserById(partner.userId) : null;
         const requestUser = await storage.getUserById(quoteRequest.userId);
 
@@ -2934,7 +2934,7 @@ export function registerRoutes(app: Express): Server {
 
       // Send email notification to partner
       try {
-        const partner = await storage.getPartnerById(quoteResponse.partnerId);
+        const partner = await storage.getPartner(quoteResponse.partnerId);
         if (partner) {
           const partnerUser = await storage.getUserById(partner.userId);
           if (partnerUser) {
@@ -3037,8 +3037,7 @@ export function registerRoutes(app: Express): Server {
 
       // Update revision request status
       const updatedRevision = await storage.updateRevisionRequest(revisionId, { 
-        status,
-        respondedAt: new Date()
+        status
       });
 
       // If accepted, update the quote response with new pricing
@@ -3049,9 +3048,69 @@ export function registerRoutes(app: Express): Server {
       // Send email notification to user
       try {
         const requestUser = await storage.getUserById(revisionRequest.userId);
-        if (requestUser) {
-          // TODO: Send email notification to user about revision status
-          console.log(`Revision ${status} - should send email to user:`, requestUser.email);
+        if (requestUser && partner) {
+          if (status === 'rejected') {
+            await resendService.sendEmail({
+              to: requestUser.email,
+              subject: "Revizyon Talebiniz Reddedildi",
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">DİP Partner Portal</h1>
+                    <p style="color: white; margin: 10px 0 0 0;">Digital Export Platform</p>
+                  </div>
+                  <div style="padding: 30px; background: #f8f9fa;">
+                    <h2 style="color: #333; margin-bottom: 20px;">Revizyon Talebiniz Reddedildi</h2>
+                    <p style="color: #666; line-height: 1.6;">Sayın Müşterimiz,</p>
+                    <p style="color: #666; line-height: 1.6;">Maalesef ${partner.companyName} iş ortağımız revizyon talebinizi kabul edemedi. Mevcut teklif geçerliliğini korumaktadır.</p>
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                      <p><strong>Partner:</strong> ${partner.companyName}</p>
+                      <p><strong>Hizmet:</strong> ${quoteRequest.serviceNeeded}</p>
+                      <p><strong>Durum:</strong> Revizyon Reddedildi</p>
+                    </div>
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/service-requests" 
+                         style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Tekliflerinizi Görüntüle
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              `
+            });
+            console.log('Revision rejected email sent to user:', requestUser.email);
+          } else if (status === 'accepted') {
+            await resendService.sendEmail({
+              to: requestUser.email,
+              subject: "Revizyon Talebiniz Kabul Edildi",
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">DİP Partner Portal</h1>
+                    <p style="color: white; margin: 10px 0 0 0;">Digital Export Platform</p>
+                  </div>
+                  <div style="padding: 30px; background: #f8f9fa;">
+                    <h2 style="color: #333; margin-bottom: 20px;">Revizyon Talebiniz Kabul Edildi</h2>
+                    <p style="color: #666; line-height: 1.6;">Sayın Müşterimiz,</p>
+                    <p style="color: #666; line-height: 1.6;">Harika haber! ${partner.companyName} iş ortağımız revizyon talebinizi kabul etti ve teklif güncel fiyatlarla güncellendi.</p>
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                      <p style="color: #28a745; font-weight: bold;">✓ Revizyon Kabul Edildi</p>
+                      <p><strong>Partner:</strong> ${partner.companyName}</p>
+                      <p><strong>Hizmet:</strong> ${quoteRequest.serviceNeeded}</p>
+                      <p><strong>Durum:</strong> Teklif Güncellendi</p>
+                    </div>
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/service-requests" 
+                         style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Güncel Teklifi Görüntüle
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              `
+            });
+            console.log('Revision accepted email sent to user:', requestUser.email);
+          }
         }
       } catch (emailError) {
         console.error('Error sending revision status email:', emailError);
@@ -3062,6 +3121,49 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error updating revision request status:', error);
       res.status(500).json({ error: 'Failed to update revision request status' });
+    }
+  });
+
+  // Get revision requests for partner
+  app.get('/api/partner/revision-requests', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      if (!user || (user.userType !== 'partner' && user.activeUserType !== 'partner')) {
+        return res.status(403).json({ error: 'Only partners can access revision requests' });
+      }
+
+      const partner = await storage.getPartnerByUserId(user.id);
+      if (!partner) {
+        return res.status(404).json({ error: 'Partner not found' });
+      }
+
+      // Get all quote responses for this partner
+      const quoteRequests = await storage.getQuoteRequestsByPartnerId(partner.id);
+      const allRevisionRequests = [];
+
+      for (const quoteRequest of quoteRequests) {
+        const quoteResponse = await storage.getQuoteResponseByRequestId(quoteRequest.id);
+        if (quoteResponse) {
+          const revisionRequests = await storage.getRevisionRequestsByQuoteResponseId(quoteResponse.id);
+          for (const revisionRequest of revisionRequests) {
+            allRevisionRequests.push({
+              ...revisionRequest,
+              quoteResponse,
+              quoteRequest,
+              requestedItems: typeof revisionRequest.requestedItems === 'string' 
+                ? JSON.parse(revisionRequest.requestedItems) 
+                : revisionRequest.requestedItems
+            });
+          }
+        }
+      }
+
+      res.json(allRevisionRequests);
+    } catch (error) {
+      console.error('Error fetching partner revision requests:', error);
+      res.status(500).json({ error: 'Failed to fetch revision requests' });
     }
   });
 
