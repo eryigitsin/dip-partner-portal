@@ -74,6 +74,16 @@ export function QuoteRequestsEmbedded() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [quoteResponse, setQuoteResponse] = useState<QuoteResponse | null>(null);
 
+  // Fetch current user to check if they're master admin
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/user'],
+    queryFn: async () => {
+      const response = await fetch('/api/user');
+      if (!response.ok) throw new Error('User info could not be loaded');
+      return response.json();
+    }
+  });
+
   // Fetch all quote requests
   const { data: quoteRequests = [], isLoading } = useQuery<QuoteRequest[]>({
     queryKey: ['/api/admin/quote-requests'],
@@ -442,10 +452,12 @@ export function QuoteRequestsEmbedded() {
                                   <TableCell>{item.description}</TableCell>
                                   <TableCell className="text-right">{item.quantity}</TableCell>
                                   <TableCell className="text-right">
-                                    {item.unitPrice > 0 ? `₺${item.unitPrice.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
+                                    {(currentUser?.userType === 'master_admin' || item.unitPrice > 0) ? 
+                                      `₺${item.unitPrice.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    {item.total > 0 ? `₺${item.total.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
+                                    {(currentUser?.userType === 'master_admin' || item.total > 0) ? 
+                                      `₺${item.total.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -459,20 +471,23 @@ export function QuoteRequestsEmbedded() {
                         <div className="flex justify-between">
                           <span className="text-sm">Ara Toplam:</span>
                           <span className="text-sm font-medium">
-                            {quoteResponse.subtotal > 0 ? `₺${quoteResponse.subtotal.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
+                            {(currentUser?.userType === 'master_admin' || quoteResponse.subtotal > 0) ? 
+                              `₺${quoteResponse.subtotal.toLocaleString('tr-TR')}` : 'Özel Fiyat'}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">KDV (%{quoteResponse.taxRate}):</span>
                           <span className="text-sm font-medium">
-                            {quoteResponse.taxAmount > 0 ? `₺${quoteResponse.taxAmount.toLocaleString('tr-TR')}` : 'Dahil'}
+                            {(currentUser?.userType === 'master_admin' || quoteResponse.taxAmount > 0) ? 
+                              `₺${quoteResponse.taxAmount.toLocaleString('tr-TR')}` : 'Dahil'}
                           </span>
                         </div>
                         <Separator />
                         <div className="flex justify-between">
                           <span className="text-base font-medium">Genel Toplam:</span>
                           <span className="text-base font-bold">
-                            {quoteResponse.total > 0 ? `₺${quoteResponse.total.toLocaleString('tr-TR')}` : 'Özel Fiyat - İletişime Geçiniz'}
+                            {(currentUser?.userType === 'master_admin' || quoteResponse.total > 0) ? 
+                              `₺${quoteResponse.total.toLocaleString('tr-TR')}` : 'Özel Fiyat - İletişime Geçiniz'}
                           </span>
                         </div>
                       </div>

@@ -21,6 +21,26 @@ export class PDFGenerator {
       autoFirstPage: true,
       bufferPages: true
     });
+    
+    // Register Turkish-compatible fonts
+    try {
+      const fontPath = path.join(__dirname, '../fonts/Roboto-Regular.ttf');
+      const fontBoldPath = path.join(__dirname, '../fonts/Roboto-Bold.ttf');
+      
+      if (fs.existsSync(fontPath)) {
+        this.doc.registerFont('Turkish', fontPath);
+      }
+      if (fs.existsSync(fontBoldPath)) {
+        this.doc.registerFont('Turkish-Bold', fontBoldPath);
+      }
+      
+      // Set default font to Turkish-compatible one
+      if (fs.existsSync(fontPath)) {
+        this.doc.font('Turkish');
+      }
+    } catch (error) {
+      console.warn('Turkish fonts could not be loaded, using default font:', error);
+    }
   }
 
   async generateQuoteRequestPDF(options: PDFGeneratorOptions, res: Response): Promise<void> {
@@ -132,6 +152,10 @@ export class PDFGenerator {
     this.doc.rect(0, 0, this.doc.page.width, headerHeight)
       .fill('#2563eb');
     
+    try {
+      this.doc.font('Turkish-Bold');
+    } catch (e) {}
+    
     this.doc.fillColor('white')
       .fontSize(18)
       .text(partner?.companyName || 'Teklif', 50, 25, { 
@@ -147,6 +171,10 @@ export class PDFGenerator {
     
     this.doc.y = headerHeight + 20;
     this.doc.fillColor('black');
+    
+    try {
+      this.doc.font('Turkish');
+    } catch (e) {}
   }
 
   private addCustomerSection(quoteRequest: QuoteRequest): void {
@@ -364,10 +392,20 @@ export class PDFGenerator {
   }
 
   private addSectionTitle(title: string): void {
+    try {
+      this.doc.font('Turkish-Bold');
+    } catch (e) {
+      // Fallback to default if Turkish-Bold is not available
+    }
     this.doc.fillColor('black')
       .fontSize(12)
       .text(title, 50, this.doc.y, { align: 'left', underline: true });
     
+    try {
+      this.doc.font('Turkish');
+    } catch (e) {
+      // Fallback to default if Turkish is not available
+    }
     this.doc.y += 30;
   }
 
