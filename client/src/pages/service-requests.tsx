@@ -192,16 +192,48 @@ export default function ServiceRequests() {
   const handleRevisionRequest = (quoteResponse: any) => {
     if (quoteResponse.items) {
       try {
-        const items = JSON.parse(quoteResponse.items);
-        setRevisionItems(items.map((item: any) => ({
-          ...item,
-          requestedUnitPrice: item.unitPrice / 100, // Convert from cents for display
-          requestedTotalPrice: item.totalPrice / 100
-        })));
+        let items;
+        
+        // Handle both string and object formats
+        if (typeof quoteResponse.items === 'string') {
+          items = JSON.parse(quoteResponse.items);
+        } else if (Array.isArray(quoteResponse.items)) {
+          items = quoteResponse.items;
+        } else {
+          throw new Error('Invalid items format');
+        }
+        
+        if (Array.isArray(items) && items.length > 0) {
+          setRevisionItems(items.map((item: any) => ({
+            ...item,
+            requestedUnitPrice: (item.unitPrice || 0) / 100, // Convert from cents for display
+            requestedTotalPrice: (item.totalPrice || 0) / 100
+          })));
+        } else {
+          throw new Error('No items found in quote response');
+        }
       } catch (error) {
-        console.error('Error parsing quote items:', error);
-        setRevisionItems([]);
+        console.error('Error parsing quote items:', error, 'Quote response:', quoteResponse);
+        // Create a default item based on quote response data
+        setRevisionItems([{
+          description: quoteResponse.title || 'Hizmet açıklaması mevcut değil',
+          quantity: 1,
+          unitPrice: (quoteResponse.totalAmount || 0) / 100,
+          totalPrice: (quoteResponse.totalAmount || 0) / 100,
+          requestedUnitPrice: (quoteResponse.totalAmount || 0) / 100,
+          requestedTotalPrice: (quoteResponse.totalAmount || 0) / 100
+        }]);
       }
+    } else {
+      // If no items, create a default item from the quote total
+      setRevisionItems([{
+        description: quoteResponse.title || 'Hizmet açıklaması mevcut değil',
+        quantity: 1,
+        unitPrice: (quoteResponse.totalAmount || 0) / 100,
+        totalPrice: (quoteResponse.totalAmount || 0) / 100,
+        requestedUnitPrice: (quoteResponse.totalAmount || 0) / 100,
+        requestedTotalPrice: (quoteResponse.totalAmount || 0) / 100
+      }]);
     }
     setSelectedQuoteResponse(quoteResponse);
     setIsRevisionDialogOpen(true);
