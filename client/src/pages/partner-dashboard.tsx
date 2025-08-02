@@ -44,7 +44,8 @@ import {
   Edit,
   ExternalLink,
   Award,
-  Target
+  Target,
+  Download
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
