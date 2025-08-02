@@ -149,39 +149,53 @@ export default function ServiceRequests() {
     }
   };
 
-  // Handle viewing quote details
-  const handleViewQuoteDetails = async (quoteRequestId: number) => {
+  // Handle downloading PDF
+  const handleDownloadPDF = async (responseId: number) => {
     try {
-      const response = await fetch(`/api/quote-requests/${quoteRequestId}/response`);
-      if (!response.ok) {
-        toast({
-          variant: "destructive",
-          title: "Hata", 
-          description: "Teklif yanıtı bulunamadı"
-        });
-        return;
+      const res = await fetch(`/api/quote-responses/${responseId}/pdf`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (!res.ok) {
+        throw new Error('PDF download failed');
       }
       
-      const quoteResponse = await response.json();
-      setSelectedQuoteResponse(quoteResponse);
-      setIsQuoteDetailsDialogOpen(true);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `teklif-${responseId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
+      console.error('Error downloading PDF:', error);
       toast({
-        variant: "destructive",
-        title: "Hata",
-        description: "Teklif görüntülenirken bir hata oluştu"
+        title: 'Hata',
+        description: 'PDF indirilirken bir hata oluştu.',
+        variant: 'destructive',
       });
     }
   };
 
   // Handle opening revision dialog
   const handleRevisionRequest = (quoteResponse: any) => {
-    const items = quoteResponse.items.map((item: any) => ({
-      ...item,
-      requestedUnitPrice: item.unitPrice / 100, // Convert from cents for display
-      requestedTotalPrice: item.totalPrice / 100
-    }));
-    setRevisionItems(items);
+    if (quoteResponse.items) {
+      try {
+        const items = JSON.parse(quoteResponse.items);
+        setRevisionItems(items.map((item: any) => ({
+          ...item,
+          requestedUnitPrice: item.unitPrice / 100, // Convert from cents for display
+          requestedTotalPrice: item.totalPrice / 100
+        })));
+      } catch (error) {
+        console.error('Error parsing quote items:', error);
+        setRevisionItems([]);
+      }
+    }
     setSelectedQuoteResponse(quoteResponse);
     setIsRevisionDialogOpen(true);
   };
@@ -215,11 +229,7 @@ export default function ServiceRequests() {
     setRevisionItems(updatedItems);
   };
 
-  const handleDownloadPDF = () => {
-    if (selectedQuoteResponse) {
-      window.open(`/api/quote-responses/${selectedQuoteResponse.id}/pdf`, '_blank');
-    }
-  };
+
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('tr-TR', {
@@ -336,63 +346,52 @@ export default function ServiceRequests() {
                                   </div>
                                   <div className="text-right">
                                     <div className="text-lg font-bold text-green-600">
-                                      {response.price} {response.currency}
+                                      {formatCurrency(response.totalAmount)}
                                     </div>
-                                    {response.deliveryTime && (
+                                    {response.validUntil && (
                                       <div className="text-sm text-gray-500">
-                                        Teslimat: {response.deliveryTime}
+                                        Geçerlilik: {formatDate(response.validUntil)}
                                       </div>
                                     )}
                                   </div>
                                 </div>
 
-                                {response.terms && (
+                                {response.notes && (
                                   <div className="bg-white p-3 rounded border mb-3">
-                                    <h6 className="font-medium text-sm mb-1">Şartlar:</h6>
-                                    <p className="text-sm text-gray-600">{response.terms}</p>
+                                    <h6 className="font-medium text-sm mb-1">Notlar:</h6>
+                                    <p className="text-sm text-gray-600">{response.notes}</p>
                                   </div>
                                 )}
 
                                 {response.status === 'sent' && (
-                                  <div className="flex gap-2 mt-4">
+                                  <div className="flex flex-wrap gap-2 mt-4">
                                     <Button
-                                      onClick={() => acceptQuoteMutation.mutate(response.id)}
-                                      disabled={acceptQuoteMutation.isPending}
+                                      onClick={() => {
+                                        setSelectedQuoteResponse(response);
+                                        setIsQuoteDetailsDialogOpen(true);
+                                      }}
+                                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      Teklifi Gör
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleRevisionRequest(response)}
+                                      className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                      Revizyon İste
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleDownloadPDF(response.id)}
+                                      variant="outline"
                                       className="flex items-center gap-2"
                                     >
-                                      <CheckCircle className="h-4 w-4" />
-                                      Kabul Et
+                                      <Download className="h-4 w-4" />
+                                      PDF İndir
                                     </Button>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button 
-                                          variant="outline" 
-                                          className="flex items-center gap-2"
-                                        >
-                                          <XCircle className="h-4 w-4" />
-                                          Reddet
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Teklifi reddetmek istediğinizden emin misiniz?</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Bu işlem geri alınamaz. Partner bilgilendirilecek.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>İptal</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => rejectQuoteMutation.mutate(response.id)}
-                                            disabled={rejectQuoteMutation.isPending}
-                                          >
-                                            Evet, Reddet
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
                                     <Button
-                                      variant="secondary"
+                                      variant="outline"
                                       className="flex items-center gap-2"
                                     >
                                       <MessageCircle className="h-4 w-4" />
