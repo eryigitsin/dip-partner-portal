@@ -201,9 +201,10 @@ export function QuoteResponseDialog({
     const taxAmount = (subtotal * taxRate) / 100;
     const total = subtotal + taxAmount;
 
-    form.setValue('subtotal', subtotal);
-    form.setValue('taxAmount', taxAmount);
-    form.setValue('total', total);
+    // Convert to cents for storage (multiply by 100)
+    form.setValue('subtotal', Math.round(subtotal * 100));
+    form.setValue('taxAmount', Math.round(taxAmount * 100));
+    form.setValue('total', Math.round(total * 100));
   };
 
   const onSubmit = async (data: z.infer<typeof quoteResponseSchema>) => {
@@ -215,7 +216,12 @@ export function QuoteResponseDialog({
         ...data,
         quoteRequestId: quoteRequest.id,
         quoteNumber,
-        items: items.filter(item => item.description.trim() !== ""),
+        // Convert item prices to cents for storage
+        items: items.filter(item => item.description.trim() !== "").map(item => ({
+          ...item,
+          unitPrice: Math.round(item.unitPrice * 100), // Convert to cents
+          total: Math.round(item.total * 100) // Convert to cents
+        })),
       };
       
 
@@ -410,17 +416,17 @@ export function QuoteResponseDialog({
                   <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
                     <div className="flex justify-between">
                       <span className="font-medium">Ara Toplam:</span>
-                      <span>{form.watch('subtotal')?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'} ₺</span>
+                      <span>{((form.watch('subtotal') || 0) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">KDV ({taxRate}%):</span>
-                      <span>{form.watch('taxAmount')?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'} ₺</span>
+                      <span>{((form.watch('taxAmount') || 0) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-lg font-bold">
                       <span>Genel Toplam:</span>
                       <span className="text-dip-blue">
-                        {form.watch('total')?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '0,00'} ₺
+                        {((form.watch('total') || 0) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                       </span>
                     </div>
                   </div>
