@@ -151,6 +151,16 @@ export default function ServiceRequests() {
           <XCircle className="h-3 w-3" />
           Reddedildi
         </Badge>;
+      case 'cancelled':
+        return <Badge variant="outline" className="flex items-center gap-1 text-gray-600 border-gray-400">
+          <XCircle className="h-3 w-3" />
+          İptal Edildi
+        </Badge>;
+      case 'expired':
+        return <Badge variant="outline" className="flex items-center gap-1 text-orange-600 border-orange-400">
+          <Clock className="h-3 w-3" />
+          Süresi Doldu
+        </Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -616,45 +626,74 @@ export default function ServiceRequests() {
               )}
 
               <div className="flex flex-wrap gap-3 pt-4 border-t">
-                <Button
-                  onClick={() => acceptQuoteMutation.mutate(selectedQuoteResponse.id)}
-                  disabled={acceptQuoteMutation.isPending}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Kabul Et
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="destructive" 
-                      className="flex items-center gap-2"
+                {selectedQuoteResponse.status === 'accepted' ? (
+                  <Button
+                    disabled
+                    className="flex items-center gap-2 bg-green-600 opacity-75 cursor-not-allowed"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    ✓ Kabul Edildi
+                  </Button>
+                ) : selectedQuoteResponse.status === 'rejected' ? (
+                  <Button
+                    disabled
+                    variant="destructive"
+                    className="flex items-center gap-2 opacity-75 cursor-not-allowed"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    ✓ Reddedildi
+                  </Button>
+                ) : selectedQuoteResponse.status === 'cancelled' ? (
+                  <div className="text-gray-500 italic p-2">
+                    Bu teklif partner tarafından iptal edilmiştir.
+                  </div>
+                ) : selectedQuoteResponse.status === 'expired' ? (
+                  <div className="text-orange-600 italic p-2">
+                    Bu teklifin süresi doldu. Şartlar değişmiş olabilir. Lütfen iş ortağı ile iletişime geçin.
+                  </div>
+                ) : (
+                  <>
+                    <Button
+                      onClick={() => acceptQuoteMutation.mutate(selectedQuoteResponse.id)}
+                      disabled={acceptQuoteMutation.isPending}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
                     >
-                      <XCircle className="h-4 w-4" />
-                      Reddet
+                      <CheckCircle className="h-4 w-4" />
+                      Kabul Et
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Teklifi reddetmek istediğinizden emin misiniz?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Bu işlem geri alınamaz. Partner bilgilendirilecek.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>İptal</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          rejectQuoteMutation.mutate(selectedQuoteResponse.id);
-                          setIsQuoteDetailsDialogOpen(false);
-                        }}
-                        disabled={rejectQuoteMutation.isPending}
-                      >
-                        Evet, Reddet
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          className="flex items-center gap-2"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Reddet
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Teklifi reddetmek istediğinizden emin misiniz?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Bu işlem geri alınamaz. Partner bilgilendirilecek.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>İptal</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => {
+                              rejectQuoteMutation.mutate(selectedQuoteResponse.id);
+                              setIsQuoteDetailsDialogOpen(false);
+                            }}
+                            disabled={rejectQuoteMutation.isPending}
+                          >
+                            Evet, Reddet
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                )}
                 <Button
                   onClick={() => handleDownloadPDF(selectedQuoteResponse.id)}
                   variant="outline"

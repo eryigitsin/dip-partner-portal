@@ -1288,6 +1288,34 @@ export class DatabaseStorage implements IStorage {
     return followedPartners.map(row => row.partners);
   }
 
+  async getActiveQuoteResponses(): Promise<any[]> {
+    const responses = await db
+      .select()
+      .from(quoteResponses)
+      .where(
+        and(
+          or(
+            eq(quoteResponses.status, 'pending'),
+            eq(quoteResponses.status, 'quote_sent')
+          ),
+          isNotNull(quoteResponses.validUntil)
+        )
+      );
+    return responses;
+  }
+
+  async getQuoteExpirationWarning(quoteResponseId: number): Promise<any> {
+    // For now, we'll use a simple check. In a full implementation,
+    // you might want to create a separate table for tracking warnings
+    return null;
+  }
+
+  async recordQuoteExpirationWarning(quoteResponseId: number): Promise<void> {
+    // For now, this is a placeholder. In a full implementation,
+    // you might want to create a separate table for tracking warnings
+    console.log(`Warning recorded for quote response ${quoteResponseId}`);
+  }
+
   async updateUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
     // TODO: Implement password update with proper validation
     throw new Error('Password update not implemented yet');

@@ -13,6 +13,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { QuoteRequestDetailModal } from "@/components/quote/quote-request-detail-modal";
 import { QuoteResponseDialog } from "@/components/quote/quote-response-dialog";
+import { QuoteEditForm } from "@/components/quote/quote-edit-form";
 import { PartnerServicesTab } from "@/components/partner-services-tab";
 import { PartnerMarketsTab } from "@/components/partner-markets-tab";
 import { QuoteRequest, Partner } from "@shared/schema";
@@ -1228,19 +1229,40 @@ export default function PartnerDashboard() {
             </DialogHeader>
             
             {isEditingQuoteResponse ? (
-              <div className="space-y-6">
-                <div className="text-center text-sm text-gray-500">
-                  Düzenleme özelliği yakında gelecek. Şimdilik teklifi iptal edip yeni teklif gönderebilirsiniz.
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditingQuoteResponse(false)}
-                  >
-                    Geri
-                  </Button>
-                </div>
-              </div>
+              <QuoteEditForm 
+                quoteResponse={selectedQuoteResponse}
+                onSave={async (updatedQuoteData) => {
+                  try {
+                    const response = await fetch(`/api/quote-responses/${selectedQuoteResponse.id}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(updatedQuoteData)
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Failed to update quote');
+                    }
+
+                    const updatedQuote = await response.json();
+                    setSelectedQuoteResponse({ ...updatedQuote, quoteRequest: selectedQuoteResponse.quoteRequest });
+                    setIsEditingQuoteResponse(false);
+                    queryClient.invalidateQueries({ queryKey: ["/api/quote-requests"] });
+                    toast({
+                      title: "Başarılı",
+                      description: "Teklif başarıyla güncellendi ve müşteriye bildirim gönderildi"
+                    });
+                  } catch (error: any) {
+                    toast({
+                      variant: "destructive",
+                      title: "Hata",
+                      description: error.message || "Teklif güncellenirken hata oluştu"
+                    });
+                  }
+                }}
+                onCancel={() => setIsEditingQuoteResponse(false)}
+              />
             ) : (
             <div className="space-y-6">
               {/* Quote Information */}
@@ -1365,6 +1387,21 @@ export default function PartnerDashboard() {
                     <p className="text-sm whitespace-pre-wrap">{selectedQuoteResponse.notes}</p>
                   </CardContent>
                 </Card>
+              )}
+              
+              {/* Expiration Message for Partner */}
+              {selectedQuoteResponse.status === 'expired' && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5 mr-2" />
+                    <div className="text-orange-800">
+                      <p className="font-medium">Teklifin süresi doldu</p>
+                      <p className="text-sm mt-1">
+                        İsterseniz güncelleme yapıp geçerlilik tarihini değiştirebilir veya yeni şartlarla yeniden gönderebilirsiniz.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
               
               {/* Action Footer */}

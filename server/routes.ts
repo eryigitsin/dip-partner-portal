@@ -3124,6 +3124,91 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update quote response
+  app.put('/api/quote-responses/:id', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      if (!user || (user.userType !== 'partner' && user.activeUserType !== 'partner')) {
+        return res.status(403).json({ error: 'Only partners can update quote responses' });
+      }
+
+      const quoteResponseId = parseInt(req.params.id);
+      const updateData = req.body;
+      
+      const existingQuoteResponse = await storage.getQuoteResponseById(quoteResponseId);
+      if (!existingQuoteResponse) {
+        return res.status(404).json({ error: 'Quote response not found' });
+      }
+
+      const partner = await storage.getPartnerByUserId(user.id);
+      if (!partner || existingQuoteResponse.partnerId !== partner.id) {
+        return res.status(403).json({ error: 'Unauthorized to update this quote response' });
+      }
+
+      // Update the quote response
+      const updatedQuoteResponse = await storage.updateQuoteResponse(quoteResponseId, {
+        ...updateData,
+        status: 'pending', // Reset to pending when edited
+        updatedAt: new Date()
+      });
+
+      // Update the quote request status back to quote_sent
+      await storage.updateQuoteRequest(existingQuoteResponse.quoteRequestId, { 
+        status: 'quote_sent',
+        updatedAt: new Date()
+      });
+
+      // Send notification to customer
+      try {
+        const quoteRequest = await storage.getQuoteRequestById(existingQuoteResponse.quoteRequestId);
+        if (quoteRequest && quoteRequest.userId) {
+          const customer = await storage.getUserById(quoteRequest.userId);
+          if (customer) {
+            const emailContent = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #667eea; color: white; padding: 30px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 24px;">Teklif Güncellendi!</h1>
+                </div>
+                <div style="padding: 30px; background: #f8f9fa;">
+                  <p>Merhaba ${customer.firstName} ${customer.lastName},</p>
+                  <p><strong>${partner.companyName}</strong> firması, "${quoteRequest.serviceNeeded}" hizmet talebiniz için gönderdiği teklifi güncelledi.</p>
+                  <p><strong>Güncellenmiş Teklif Detayları:</strong></p>
+                  <ul>
+                    <li>Teklif Başlığı: ${updateData.title}</li>
+                    <li>Toplam Tutar: ${(updateData.totalAmount / 100).toFixed(2)} TL</li>
+                    <li>Geçerlilik Tarihi: ${new Date(updateData.validUntil).toLocaleDateString('tr-TR')}</li>
+                  </ul>
+                  <p>Güncellenmiş teklifi inceleyebilir, kabul edebilir veya revizyon talebinde bulunabilirsiniz.</p>
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.CLIENT_URL}/user-dashboard?tab=requests" 
+                       style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                      Güncellenmiş Teklifi İncele
+                    </a>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            await resendService.sendEmail({
+              to: customer.email,
+              subject: `Teklif Güncellendi - ${partner.companyName}`,
+              html: emailContent,
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error('Failed to send update notification email:', emailError);
+      }
+
+      res.json({ success: true, quoteResponse: updatedQuoteResponse });
+    } catch (error) {
+      console.error('Error updating quote response:', error);
+      res.status(500).json({ error: 'Failed to update quote response' });
+    }
+  });
+
   // Cancel quote response
   app.post('/api/quote-responses/:id/cancel', async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
