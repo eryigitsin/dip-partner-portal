@@ -3124,6 +3124,78 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Cancel quote response
+  app.post('/api/quote-responses/:id/cancel', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const user = req.user;
+      if (!user || (user.userType !== 'partner' && user.activeUserType !== 'partner')) {
+        return res.status(403).json({ error: 'Only partners can cancel quote responses' });
+      }
+
+      const quoteResponseId = parseInt(req.params.id);
+      const quoteResponse = await storage.getQuoteResponseById(quoteResponseId);
+      
+      if (!quoteResponse) {
+        return res.status(404).json({ error: 'Quote response not found' });
+      }
+
+      const partner = await storage.getPartnerByUserId(user.id);
+      if (!partner || quoteResponse.partnerId !== partner.id) {
+        return res.status(403).json({ error: 'Unauthorized to cancel this quote response' });
+      }
+
+      // Update quote response status to cancelled
+      await storage.updateQuoteResponse(quoteResponseId, { status: 'cancelled' });
+
+      // Update the original quote request status back to pending
+      await storage.updateQuoteRequest(quoteResponse.quoteRequestId, { status: 'pending' });
+
+      // Send notification to customer
+      try {
+        const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+        if (quoteRequest && quoteRequest.userId) {
+          const customer = await storage.getUserById(quoteRequest.userId);
+          if (customer) {
+            const emailContent = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: #f56565; color: white; padding: 30px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 24px;">Teklif İptal Edildi</h1>
+                </div>
+                <div style="padding: 30px; background: #f8f9fa;">
+                  <p>Merhaba ${customer.firstName} ${customer.lastName},</p>
+                  <p><strong>${partner.companyName}</strong> firması, "${quoteRequest.serviceNeeded}" hizmet talebiniz için gönderilen teklifi iptal etti.</p>
+                  <p>Teklif Numarası: ${quoteResponse.quoteNumber}</p>
+                  <p>Başka partnerlerden teklif almak için talebinizi açık tutabilirsiniz.</p>
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.CLIENT_URL}/user-dashboard?tab=requests" 
+                       style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                      Taleplerimi Görüntüle
+                    </a>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            await resendService.sendEmail({
+              to: customer.email,
+              subject: `Teklif İptal Edildi - ${partner.companyName}`,
+              html: emailContent,
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error('Failed to send cancellation email:', emailError);
+      }
+
+      res.json({ success: true, message: 'Quote response cancelled successfully' });
+    } catch (error) {
+      console.error('Error cancelling quote response:', error);
+      res.status(500).json({ error: 'Failed to cancel quote response' });
+    }
+  });
+
   // Get revision requests for partner
   app.get('/api/partner/revision-requests', async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

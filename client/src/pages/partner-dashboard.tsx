@@ -69,6 +69,7 @@ export default function PartnerDashboard() {
   });
   const [selectedQuoteResponse, setSelectedQuoteResponse] = useState<any>(null);
   const [isQuoteDetailsDialogOpen, setIsQuoteDetailsDialogOpen] = useState(false);
+  const [isEditingQuoteResponse, setIsEditingQuoteResponse] = useState(false);
 
   // Helper functions for performance calculations
   const calculateProfileCompletion = (partner: Partner | undefined) => {
@@ -280,6 +281,41 @@ export default function PartnerDashboard() {
         variant: "destructive",
         title: "Hata",
         description: "Teklif görüntülenirken bir hata oluştu"
+      });
+    }
+  };
+
+  const handleCancelQuoteResponse = async (quoteResponse: any) => {
+    if (!confirm("Bu teklifi iptal etmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/quote-responses/${quoteResponse.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to cancel quote');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/quote-requests"] });
+      setIsQuoteDetailsDialogOpen(false);
+      setSelectedQuoteResponse(null);
+      
+      toast({
+        title: "Başarılı",
+        description: "Teklif başarıyla iptal edildi"
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: error.message || "Teklif iptal edilirken hata oluştu"
       });
     }
   };
@@ -926,14 +962,14 @@ export default function PartnerDashboard() {
                                   Teklif Hazırla
                                 </Button>
                               )}
-                              {quote.status === "quote_sent" && (
+                              {(quote.status === "quote_sent" || quote.status === "accepted") && (
                                 <Button 
                                   size="sm" 
                                   variant="outline"
                                   onClick={() => handleViewQuoteResponse(quote)}
                                   className="text-green-600 border-green-200 hover:bg-green-50"
                                 >
-                                  <Eye className="h-4 w-4 mr-2" />
+                                  <FileText className="h-4 w-4 mr-2" />
                                   Teklifi Gör
                                 </Button>
                               )}
@@ -1169,17 +1205,43 @@ export default function PartnerDashboard() {
                   <FileText className="h-5 w-5 mr-2" />
                   Gönderilen Teklif Detayları
                 </span>
-                <Button
-                  size="sm"
-                  onClick={handleDownloadPDF}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  PDF İndir
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsEditingQuoteResponse(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Düzenle
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleDownloadPDF}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    PDF İndir
+                  </Button>
+                </div>
               </DialogTitle>
             </DialogHeader>
             
+            {isEditingQuoteResponse ? (
+              <div className="space-y-6">
+                <div className="text-center text-sm text-gray-500">
+                  Düzenleme özelliği yakında gelecek. Şimdilik teklifi iptal edip yeni teklif gönderebilirsiniz.
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditingQuoteResponse(false)}
+                  >
+                    Geri
+                  </Button>
+                </div>
+              </div>
+            ) : (
             <div className="space-y-6">
               {/* Quote Information */}
               <Card>
@@ -1302,7 +1364,27 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
               )}
+              
+              {/* Action Footer */}
+              <div className="flex justify-between items-center pt-6 border-t">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleCancelQuoteResponse(selectedQuoteResponse)}
+                  className="flex items-center gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Teklifi İptal Et
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsQuoteDetailsDialogOpen(false)}
+                >
+                  Kapat
+                </Button>
+              </div>
             </div>
+            )}
           </DialogContent>
         </Dialog>
       )}
