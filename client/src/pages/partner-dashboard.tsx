@@ -24,6 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TooltipNoDelay, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip-no-delay";
 import { FeedbackModal } from "@/components/feedback/feedback-modal";
+import { OngoingProjects } from "@/components/OngoingProjects";
 import { 
   BarChart3, 
   Users, 
@@ -49,7 +50,8 @@ import {
   ExternalLink,
   Award,
   Target,
-  Download
+  Download,
+  FolderOpen
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -599,9 +601,13 @@ export default function PartnerDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Genel Bakış</TabsTrigger>
             <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
+            <TabsTrigger value="ongoing-projects" className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              Devam Eden Projeler
+            </TabsTrigger>
             <TabsTrigger value="performance">Performans</TabsTrigger>
             <TabsTrigger value="services">Hizmetler</TabsTrigger>
             <TabsTrigger value="markets">Pazarlar</TabsTrigger>
@@ -1436,6 +1442,10 @@ export default function PartnerDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="ongoing-projects">
+            <OngoingProjects userType="partner" />
           </TabsContent>
 
           <TabsContent value="services" className="space-y-6">

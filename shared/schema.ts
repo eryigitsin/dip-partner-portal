@@ -497,6 +497,54 @@ export const partnerProfileEditRequests = pgTable("partner_profile_edit_requests
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Ongoing Projects - Projects that have started after payment confirmation
+export const ongoingProjects = pgTable("ongoing_projects", {
+  id: serial("id").primaryKey(),
+  quoteResponseId: integer("quote_response_id").references(() => quoteResponses.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  projectTitle: text("project_title").notNull(), // From quote response title
+  projectNumber: text("project_number").notNull(), // From quote response number
+  projectType: text("project_type").notNull(), // 'monthly' or 'one_time'
+  startDate: timestamp("start_date").defaultNow(),
+  endDate: timestamp("end_date"), // For one_time projects
+  status: text("status").default("active"), // active, completion_requested_by_user, completion_requested_by_partner, completed, cancelled
+  lastPaymentDate: timestamp("last_payment_date"), // For monthly projects
+  nextPaymentDue: timestamp("next_payment_due"), // For monthly projects
+  completionRequestedBy: integer("completion_requested_by").references(() => users.id), // Who requested completion
+  completionRequestedAt: timestamp("completion_requested_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Project Comments - Comments between users and partners on projects
+export const projectComments = pgTable("project_comments", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => ongoingProjects.id).notNull(),
+  authorId: integer("author_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  rating: integer("rating"), // 1-5 star rating (optional)
+  isPublic: boolean("is_public").default(false), // Whether this comment is public for other users to see
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Project Payment Records - Track monthly payments for ongoing projects
+export const projectPayments = pgTable("project_payments", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => ongoingProjects.id).notNull(),
+  paymentConfirmationId: integer("payment_confirmation_id").references(() => paymentConfirmations.id),
+  amount: integer("amount").notNull(), // Amount in cents
+  paymentMonth: text("payment_month").notNull(), // YYYY-MM format
+  status: text("status").default("due"), // due, paid, confirmed, overdue
+  dueDate: timestamp("due_date").notNull(),
+  paidAt: timestamp("paid_at"),
+  confirmedAt: timestamp("confirmed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -782,6 +830,24 @@ export const insertFeedbackSchema = createInsertSchema(feedback).omit({
   updatedAt: true,
 });
 
+export const insertOngoingProjectSchema = createInsertSchema(ongoingProjects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProjectCommentSchema = createInsertSchema(projectComments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProjectPaymentSchema = createInsertSchema(projectPayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types for services system
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -825,6 +891,18 @@ export type TempUserRegistration = typeof tempUserRegistrations.$inferSelect;
 export type InsertTempUserRegistration = z.infer<typeof insertTempUserRegistrationSchema>;
 export type PaymentConfirmation = typeof paymentConfirmations.$inferSelect;
 export type InsertPaymentConfirmation = z.infer<typeof insertPaymentConfirmationSchema>;
+
+// Ongoing Projects types
+export type OngoingProject = typeof ongoingProjects.$inferSelect;
+export type InsertOngoingProject = z.infer<typeof insertOngoingProjectSchema>;
+
+// Project Comments types  
+export type ProjectComment = typeof projectComments.$inferSelect;
+export type InsertProjectComment = z.infer<typeof insertProjectCommentSchema>;
+
+// Project Payments types
+export type ProjectPayment = typeof projectPayments.$inferSelect;
+export type InsertProjectPayment = z.infer<typeof insertProjectPaymentSchema>;
 export type ApplicationDocument = typeof applicationDocuments.$inferSelect;
 export type InsertApplicationDocument = z.infer<typeof insertApplicationDocumentSchema>;
 export type PartnerPost = typeof partnerPosts.$inferSelect;

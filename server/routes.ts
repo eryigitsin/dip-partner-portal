@@ -4971,5 +4971,327 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Ongoing Projects API Routes
+  
+  // Create a new ongoing project from a quote response
+  app.post("/api/ongoing-projects", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { quoteResponseId, projectType } = req.body;
+      
+      // Get the quote response and related data
+      const quoteResponse = await storage.getQuoteResponseById(quoteResponseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ message: "Quote response not found" });
+      }
+
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest) {
+        return res.status(404).json({ message: "Quote request not found" });
+      }
+
+      // Calculate next payment due date for monthly projects
+      let nextPaymentDue = null;
+      if (projectType === 'monthly') {
+        const now = new Date();
+        nextPaymentDue = new Date(now.getFullYear(), now.getMonth() + 1, Math.max(now.getDate() - 7, 1));
+      }
+
+      // Create the ongoing project
+      const projectData = {
+        quoteResponseId,
+        userId: quoteRequest.userId!,
+        partnerId: quoteRequest.partnerId!,
+        projectTitle: quoteRequest.serviceNeeded,
+        projectNumber: quoteResponse.quoteNumber,
+        projectType,
+        status: 'active',
+        nextPaymentDue
+      };
+
+      const newProject = await storage.createOngoingProject(projectData);
+      
+      // Update quote response status to accepted
+      await storage.updateQuoteResponse(quoteResponseId, { status: 'accepted' });
+
+      res.json(newProject);
+    } catch (error) {
+      console.error('Error creating ongoing project:', error);
+      res.status(500).json({ message: "Failed to create ongoing project" });
+    }
+  });
+
+  // Get ongoing projects for a user
+  app.get("/api/ongoing-projects/user/:userId", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const userId = parseInt(req.params.userId);
+      if (req.user.id !== userId && req.user.userType !== 'master_admin' && req.user.userType !== 'editor_admin') {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const projects = await storage.getOngoingProjectsByUser(userId);
+      res.json(projects);
+    } catch (error) {
+      console.error('Error fetching user projects:', error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  // Get ongoing projects for a partner
+  app.get("/api/ongoing-projects/partner/:partnerId", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const partnerId = parseInt(req.params.partnerId);
+      
+      // Check if user owns this partner account
+      const partner = await storage.getPartner(partnerId);
+      if (!partner || partner.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const projects = await storage.getOngoingProjectsByPartner(partnerId);
+      res.json(projects);
+    } catch (error) {
+      console.error('Error fetching partner projects:', error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  // Add a comment to a project
+  app.post("/api/projects/:projectId/comments", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const { content, rating, isPublic } = req.body;
+
+      // Verify user has access to this project
+      const project = await storage.getOngoingProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      // Check if user is either the client or the partner
+      const partner = await storage.getPartner(project.partnerId);
+      if (project.userId !== req.user.id && partner?.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const commentData = {
+        projectId,
+        authorId: req.user.id,
+        content,
+        rating: rating || null,
+        isPublic: isPublic || false
+      };
+
+      const newComment = await storage.createProjectComment(commentData);
+      res.json(newComment);
+    } catch (error) {
+      console.error('Error creating project comment:', error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Get comments for a project
+  app.get("/api/projects/:projectId/comments", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projectId = parseInt(req.params.projectId);
+
+      // Verify user has access to this project
+      const project = await storage.getOngoingProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const partner = await storage.getPartner(project.partnerId);
+      if (project.userId !== req.user.id && partner?.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const comments = await storage.getProjectComments(projectId);
+      res.json(comments);
+    } catch (error) {
+      console.error('Error fetching project comments:', error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  // Request project completion
+  app.post("/api/projects/:projectId/request-completion", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projectId = parseInt(req.params.projectId);
+
+      // Verify user has access to this project
+      const project = await storage.getOngoingProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const partner = await storage.getPartner(project.partnerId);
+      if (project.userId !== req.user.id && partner?.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const updatedProject = await storage.requestProjectCompletion(projectId, req.user.id);
+      
+      // Send email notification to the other party
+      const isPartnerRequesting = partner?.userId === req.user.id;
+      const recipientId = isPartnerRequesting ? project.userId : partner?.userId;
+      
+      if (recipientId) {
+        const recipient = await storage.getUserById(recipientId);
+        const requester = await storage.getUserById(req.user.id);
+        
+        if (recipient && requester) {
+          const emailContent = `
+            <h2>Proje Tamamlanma Talebi</h2>
+            <p>Merhaba,</p>
+            <p>${requester.firstName} ${requester.lastName} "${updatedProject.projectTitle}" projesinin tamamlanması için talepte bulundu.</p>
+            <p>Bu talebi onaylamak veya reddetmek için lütfen platformunuza giriş yapın.</p>
+          `;
+
+          await resendService.sendEmail({
+            to: recipient.email,
+            subject: `Proje Tamamlanma Talebi - ${updatedProject.projectTitle}`,
+            html: emailContent
+          });
+        }
+      }
+
+      res.json(updatedProject);
+    } catch (error) {
+      console.error('Error requesting project completion:', error);
+      res.status(500).json({ message: "Failed to request completion" });
+    }
+  });
+
+  // Approve project completion
+  app.post("/api/projects/:projectId/approve-completion", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projectId = parseInt(req.params.projectId);
+
+      // Verify user has access to this project and that completion was requested
+      const project = await storage.getOngoingProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      if (!project.completionRequestedBy) {
+        return res.status(400).json({ message: "No completion request found" });
+      }
+
+      const partner = await storage.getPartner(project.partnerId);
+      if (project.userId !== req.user.id && partner?.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // User cannot approve their own completion request
+      if (project.completionRequestedBy === req.user.id) {
+        return res.status(400).json({ message: "Cannot approve your own completion request" });
+      }
+
+      const updatedProject = await storage.approveProjectCompletion(projectId);
+      res.json(updatedProject);
+    } catch (error) {
+      console.error('Error approving project completion:', error);
+      res.status(500).json({ message: "Failed to approve completion" });
+    }
+  });
+
+  // Create payment for monthly project
+  app.post("/api/projects/:projectId/payments", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const { amount, paymentMonth } = req.body;
+
+      // Verify project exists and user has access
+      const project = await storage.getOngoingProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const partner = await storage.getPartner(project.partnerId);
+      if (project.userId !== req.user.id && partner?.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // Calculate due date (7 days before month end)
+      const now = new Date();
+      const monthDate = new Date(paymentMonth + '-01');
+      const dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, -6); // 7 days before month end
+
+      const paymentData = {
+        projectId,
+        amount,
+        paymentMonth,
+        status: 'due',
+        dueDate
+      };
+
+      const newPayment = await storage.createProjectPayment(paymentData);
+      res.json(newPayment);
+    } catch (error) {
+      console.error('Error creating project payment:', error);
+      res.status(500).json({ message: "Failed to create payment" });
+    }
+  });
+
+  // Get payments for a project
+  app.get("/api/projects/:projectId/payments", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projectId = parseInt(req.params.projectId);
+
+      // Verify project exists and user has access
+      const project = await storage.getOngoingProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const partner = await storage.getPartner(project.partnerId);
+      if (project.userId !== req.user.id && partner?.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const payments = await storage.getProjectPayments(projectId);
+      res.json(payments);
+    } catch (error) {
+      console.error('Error fetching project payments:', error);
+      res.status(500).json({ message: "Failed to fetch payments" });
+    }
+  });
+
   return httpServer;
 }

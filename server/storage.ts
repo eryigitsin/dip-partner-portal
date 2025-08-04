@@ -72,6 +72,15 @@ import {
   paymentConfirmations,
   type PaymentConfirmation,
   type InsertPaymentConfirmation,
+  ongoingProjects,
+  projectComments,
+  projectPayments,
+  type OngoingProject,
+  type InsertOngoingProject,
+  type ProjectComment,
+  type InsertProjectComment,
+  type ProjectPayment,
+  type InsertProjectPayment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
@@ -286,6 +295,24 @@ export interface IStorage {
   // Quote expiration methods
   getActiveQuoteResponses(): Promise<any[]>;
   recordQuoteExpirationWarning(quoteId: number): Promise<void>;
+
+  // Ongoing Projects methods
+  createOngoingProject(project: InsertOngoingProject): Promise<OngoingProject>;
+  getOngoingProjectsByUser(userId: number): Promise<OngoingProject[]>;
+  getOngoingProjectsByPartner(partnerId: number): Promise<OngoingProject[]>;
+  getOngoingProjectById(id: number): Promise<OngoingProject | undefined>;
+  updateOngoingProject(id: number, updates: Partial<InsertOngoingProject>): Promise<OngoingProject>;
+  requestProjectCompletion(projectId: number, requestedBy: number): Promise<OngoingProject>;
+  approveProjectCompletion(projectId: number): Promise<OngoingProject>;
+
+  // Project Comments methods
+  createProjectComment(comment: InsertProjectComment): Promise<ProjectComment>;
+  getProjectComments(projectId: number): Promise<ProjectComment[]>;
+
+  // Project Payments methods
+  createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment>;
+  getProjectPayments(projectId: number): Promise<ProjectPayment[]>;
+  updateProjectPayment(id: number, updates: Partial<InsertProjectPayment>): Promise<ProjectPayment>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2117,6 +2144,117 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedAccount || undefined;
+  }
+
+  // Ongoing Projects methods
+  async createOngoingProject(project: InsertOngoingProject): Promise<OngoingProject> {
+    const [newProject] = await db
+      .insert(ongoingProjects)
+      .values(project)
+      .returning();
+    return newProject;
+  }
+
+  async getOngoingProjectsByUser(userId: number): Promise<OngoingProject[]> {
+    return await db
+      .select()
+      .from(ongoingProjects)
+      .where(eq(ongoingProjects.userId, userId))
+      .orderBy(desc(ongoingProjects.createdAt));
+  }
+
+  async getOngoingProjectsByPartner(partnerId: number): Promise<OngoingProject[]> {
+    return await db
+      .select()
+      .from(ongoingProjects)
+      .where(eq(ongoingProjects.partnerId, partnerId))
+      .orderBy(desc(ongoingProjects.createdAt));
+  }
+
+  async getOngoingProjectById(id: number): Promise<OngoingProject | undefined> {
+    const [project] = await db
+      .select()
+      .from(ongoingProjects)
+      .where(eq(ongoingProjects.id, id));
+    return project || undefined;
+  }
+
+  async updateOngoingProject(id: number, updates: Partial<InsertOngoingProject>): Promise<OngoingProject> {
+    const [updatedProject] = await db
+      .update(ongoingProjects)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(ongoingProjects.id, id))
+      .returning();
+    return updatedProject;
+  }
+
+  async requestProjectCompletion(projectId: number, requestedBy: number): Promise<OngoingProject> {
+    const [updatedProject] = await db
+      .update(ongoingProjects)
+      .set({ 
+        completionRequestedBy: requestedBy,
+        completionRequestedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(ongoingProjects.id, projectId))
+      .returning();
+    return updatedProject;
+  }
+
+  async approveProjectCompletion(projectId: number): Promise<OngoingProject> {
+    const [updatedProject] = await db
+      .update(ongoingProjects)
+      .set({ 
+        status: 'completed',
+        completedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(ongoingProjects.id, projectId))
+      .returning();
+    return updatedProject;
+  }
+
+  // Project Comments methods
+  async createProjectComment(comment: InsertProjectComment): Promise<ProjectComment> {
+    const [newComment] = await db
+      .insert(projectComments)
+      .values(comment)
+      .returning();
+    return newComment;
+  }
+
+  async getProjectComments(projectId: number): Promise<ProjectComment[]> {
+    return await db
+      .select()
+      .from(projectComments)
+      .where(eq(projectComments.projectId, projectId))
+      .orderBy(desc(projectComments.createdAt));
+  }
+
+  // Project Payments methods
+  async createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment> {
+    const [newPayment] = await db
+      .insert(projectPayments)
+      .values(payment)
+      .returning();
+    return newPayment;
+  }
+
+  async getProjectPayments(projectId: number): Promise<ProjectPayment[]> {
+    return await db
+      .select()
+      .from(projectPayments)
+      .where(eq(projectPayments.projectId, projectId))
+      .orderBy(desc(projectPayments.createdAt));
+  }
+
+  async updateProjectPayment(id: number, updates: Partial<InsertProjectPayment>): Promise<ProjectPayment> {
+    const [updatedPayment] = await db
+      .update(projectPayments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(projectPayments.id, id))
+      .returning();
+    return updatedPayment;
   }
 
 }
