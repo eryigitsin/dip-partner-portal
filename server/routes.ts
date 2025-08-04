@@ -4291,7 +4291,7 @@ export function registerRoutes(app: Express): Server {
             <div style="background-color: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 15px; margin: 20px 0;">
               <h3 style="margin-top: 0; color: #065f46;">Tutar Bilgisi</h3>
               <p style="margin-bottom: 0; font-size: 18px; font-weight: bold;">
-                Toplam Tutar: ₺${quoteResponse.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                Toplam Tutar: ₺${(quoteResponse.totalAmount / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
               </p>
             </div>
 
