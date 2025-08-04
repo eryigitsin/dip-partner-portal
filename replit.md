@@ -68,6 +68,10 @@ Preferred communication style: Simple, everyday language.
 - **Footer Legal Links**: Added Terms of Service and Privacy Policy links to footer section with proper external linking
 
 ### August 4, 2025
+- **Complete Payment Dialog System**: Implemented comprehensive payment dialog with three tabs (Kredi/Banka Kartı, Havale/EFT, Diğer Yöntemler) accessible from multiple "Ödeme Yap" buttons throughout the interface
+- **Payment Instructions Integration**: Added full payment instructions functionality allowing partners to send bank details to users with professional email notifications including bank account information, payment amounts, and custom instructions
+- **Consistent Payment Flow**: Unified payment button behavior so both the blue summary box "Ödeme Yap" button and the "Teklifi Gör" dialog "Ödeme Yap" button open the same payment modal for consistent user experience
+- **Backend Payment API**: Implemented `/api/partner/send-payment-instructions` endpoint with proper error handling, user validation, and integration with ResendService for email notifications
 - **Recipient Accounts Cache Fix**: Fixed critical issue where new recipient accounts weren't displaying after successful creation due to incorrect React Query cache invalidation
 - **API URL Structure Correction**: Corrected the recipient accounts API query URL structure from `/api/partner/recipient-accounts/{partnerId}` to `/api/partner/recipient-accounts` to match server endpoint expectations
 - **Query Key Optimization**: Updated all recipient accounts mutations to use consistent query keys for proper cache invalidation without partnerId parameter

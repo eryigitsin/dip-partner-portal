@@ -4232,6 +4232,10 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Get user email to send notification
+      if (!quoteRequest.userId) {
+        return res.status(400).json({ message: "Quote request has no associated user" });
+      }
+      
       const user = await storage.getUser(quoteRequest.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -4304,7 +4308,12 @@ export function registerRoutes(app: Express): Server {
       };
 
       // Send email notification
-      await resendService.sendTransactionalEmail(emailData);
+      const emailResult = await resendService.sendEmail(emailData);
+
+      if (!emailResult.success) {
+        console.error('Failed to send payment instructions email:', emailResult.error);
+        return res.status(500).json({ message: "Failed to send email notification" });
+      }
 
       res.json({ 
         success: true, 
