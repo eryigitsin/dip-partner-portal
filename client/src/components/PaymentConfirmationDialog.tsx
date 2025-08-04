@@ -69,12 +69,19 @@ export function PaymentConfirmationDialog({
   });
 
   const resetForm = () => {
-    setSelectedQuoteId(quoteResponse?.id || "");
+    setSelectedQuoteId(quoteResponse?.id.toString() || "");
     setPaymentMethod("");
-    setAmount("");
+    setAmount(quoteResponse ? (quoteResponse.totalAmount / 100).toString() : "");
     setNote("");
     setReceiptFile(null);
   };
+
+  // Reset form when dialog opens with new quote data
+  useEffect(() => {
+    if (open && quoteResponse) {
+      resetForm();
+    }
+  }, [open, quoteResponse]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,11 +95,11 @@ export function PaymentConfirmationDialog({
       return;
     }
 
-    // Make receipt upload mandatory for transfer payments
-    if (paymentMethod === 'transfer' && !receiptFile) {
+    // Make receipt upload mandatory for all payments
+    if (!receiptFile) {
       toast({
         title: "Dekont Gerekli",
-        description: "Havale/EFT ödemeleri için dekont yüklenmesi zorunludur.",
+        description: "Ödeme bildirimleri için dekont yüklenmesi zorunludur.",
         variant: "destructive",
       });
       return;
@@ -213,8 +220,7 @@ export function PaymentConfirmationDialog({
           {/* Receipt Upload */}
           <div className="space-y-2">
             <Label htmlFor="receipt">
-              Dekont/Fiş Yükle {paymentMethod === 'transfer' && <span className="text-red-500">*</span>}
-              {paymentMethod !== 'transfer' && <span className="text-gray-500">(Opsiyonel)</span>}
+              Dekont/Fiş Yükle <span className="text-red-500">*</span>
             </Label>
             {!receiptFile ? (
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">

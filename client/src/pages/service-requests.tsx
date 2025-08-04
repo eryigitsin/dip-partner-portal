@@ -968,7 +968,7 @@ export default function ServiceRequests() {
               <TabsContent value="card" className="space-y-4">
                 <div className="p-6 border rounded-lg bg-gray-50">
                   <p className="text-center text-gray-600 mb-4">
-                    Bu ödeme yöntemi yakında aktifleştirilecektir. Kredi kartı ile ödeme yaptıysanız lütfen aşağıdaki butonla partnere bilgi verin.
+                    Kredi kartı ile platformumuz dışından ödeme yaptıysanız lütfen aşağıdaki butonla partnere ve bize bilgi verin ve iş ortağımızla çalışmanızla ilgili süreci güncelleyin. Bu sayede çalışmanızın gidişatı konusunda size yardımcı olabiliriz.
                   </p>
                   <div className="flex justify-center">
                     <Button 
@@ -977,7 +977,7 @@ export default function ServiceRequests() {
                       data-testid="button-payment-confirmation-card"
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
-                      Kredi Kartı ile Ödeme Aldınız
+                      Ödememi Yaptım
                     </Button>
                   </div>
                 </div>
