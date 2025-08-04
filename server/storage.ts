@@ -1399,120 +1399,74 @@ export class DatabaseStorage implements IStorage {
       return billingInfo || null;
     }
     
-    // If not a partner, try to find direct user billing info (future functionality)
-    try {
-      const [billingInfo] = await db
-        .select()
-        .from(companyBillingInfo)
-        .where(eq(companyBillingInfo.userId, userId));
-      
-      return billingInfo || null;
-    } catch (error) {
-      console.log('Direct user billing not available yet');
-      return null;
+    // For regular users, find by user info since we don't have user_id column yet
+    const user = await this.getUserById(userId);
+    if (user?.email) {
+      const allRecords = await db.select().from(companyBillingInfo);
+      const userRecord = allRecords.find(record => 
+        record.email === user.email && record.partnerId === null
+      );
+      return userRecord || null;
     }
+    
+    return null;
   }
 
   async updateUserBillingInfo(userId: number, data: any): Promise<any> {
-    const partner = await this.getPartnerByUserId(userId);
-    const existingInfo = await this.getUserBillingInfo(userId);
+    // Since this user is not a partner, we need to add user_id column to database
+    // For now, create/use a temporary entry with partnerId null and use ID as reference
+    
+    // Try to find existing billing info by checking all records for matching data
+    const existingRecords = await db.select().from(companyBillingInfo);
+    const existingInfo = existingRecords.find(record => 
+      record.email === data.email || record.phone === data.phone
+    );
     
     if (existingInfo) {
-      // Update existing billing info
-      if (partner) {
-        // Update via partnerId (current database structure)
-        const [updated] = await db
-          .update(companyBillingInfo)
-          .set({
-            companyTitle: data.companyTitle,
-            companyName: data.companyName,
-            website: data.website,
-            linkedinProfile: data.linkedinProfile,
-            taxNumber: data.taxNumber,
-            taxOffice: data.taxOffice,
-            address: data.address,
-            city: data.city,
-            country: data.country || 'Turkey',
-            postalCode: data.postalCode,
-            phone: data.phone,
-            email: data.email,
-            updatedAt: new Date(),
-          })
-          .where(eq(companyBillingInfo.partnerId, partner.id))
-          .returning();
-        
-        return updated;
-      } else {
-        // Try updating via userId (future functionality)
-        const [updated] = await db
-          .update(companyBillingInfo)
-          .set({
-            companyTitle: data.companyTitle,
-            companyName: data.companyName,
-            website: data.website,
-            linkedinProfile: data.linkedinProfile,
-            taxNumber: data.taxNumber,
-            taxOffice: data.taxOffice,
-            address: data.address,
-            city: data.city,
-            country: data.country || 'Turkey',
-            postalCode: data.postalCode,
-            phone: data.phone,
-            email: data.email,
-            updatedAt: new Date(),
-          })
-          .where(eq(companyBillingInfo.userId, userId))
-          .returning();
-        
-        return updated;
-      }
+      // Update existing record
+      const [updated] = await db
+        .update(companyBillingInfo)
+        .set({
+          companyTitle: data.companyTitle,
+          companyName: data.companyName,
+          website: data.website,
+          linkedinProfile: data.linkedinProfile,
+          taxNumber: data.taxNumber,
+          taxOffice: data.taxOffice,
+          address: data.address,
+          city: data.city,
+          country: data.country || 'Turkey',
+          postalCode: data.postalCode,
+          phone: data.phone,
+          email: data.email,
+          updatedAt: new Date(),
+        })
+        .where(eq(companyBillingInfo.id, existingInfo.id))
+        .returning();
+      
+      return updated;
     } else {
-      // Create new billing info
-      if (partner) {
-        // Create via partnerId (current database structure)
-        const [created] = await db
-          .insert(companyBillingInfo)
-          .values({
-            partnerId: partner.id,
-            companyTitle: data.companyTitle,
-            companyName: data.companyName,
-            website: data.website,
-            linkedinProfile: data.linkedinProfile,
-            taxNumber: data.taxNumber,
-            taxOffice: data.taxOffice,
-            address: data.address,
-            city: data.city,
-            country: data.country || 'Turkey',
-            postalCode: data.postalCode,
-            phone: data.phone,
-            email: data.email,
-          })
-          .returning();
-        
-        return created;
-      } else {
-        // Create via userId (future functionality)
-        const [created] = await db
-          .insert(companyBillingInfo)
-          .values({
-            userId,
-            companyTitle: data.companyTitle,
-            companyName: data.companyName,
-            website: data.website,
-            linkedinProfile: data.linkedinProfile,
-            taxNumber: data.taxNumber,
-            taxOffice: data.taxOffice,
-            address: data.address,
-            city: data.city,
-            country: data.country || 'Turkey',
-            postalCode: data.postalCode,
-            phone: data.phone,
-            email: data.email,
-          })
-          .returning();
-        
-        return created;
-      }
+      // Create new record with partnerId as null for regular users
+      const [created] = await db
+        .insert(companyBillingInfo)
+        .values({
+          partnerId: null, // No partner relationship
+          companyTitle: data.companyTitle,
+          companyName: data.companyName,
+          website: data.website,
+          linkedinProfile: data.linkedinProfile,
+          taxNumber: data.taxNumber,
+          taxOffice: data.taxOffice,
+          address: data.address,
+          city: data.city,
+          country: data.country || 'Turkey',
+          postalCode: data.postalCode,
+          phone: data.phone,
+          email: data.email,
+        })
+        .returning();
+      
+      return created;
     }
   }
 
