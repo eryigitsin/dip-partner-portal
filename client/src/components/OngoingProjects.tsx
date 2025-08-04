@@ -106,10 +106,14 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
     mutationFn: async (projectId: number) => {
       return await apiRequest('POST', `/api/projects/${projectId}/request-completion`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const project = projects.find((p: OngoingProject) => p.id === variables);
+      const isMonthly = project?.projectType === 'monthly';
       toast({
-        title: "Tamamlanma talebi gönderildi",
-        description: "Proje tamamlanma talebiniz karşı tarafa iletildi."
+        title: isMonthly ? "Sonlandırma talebi gönderildi" : "Tamamlanma talebi gönderildi",
+        description: isMonthly 
+          ? "Proje sonlandırma talebiniz karşı tarafa iletildi." 
+          : "Proje tamamlanma talebiniz karşı tarafa iletildi."
       });
       queryClient.invalidateQueries({
         queryKey: ['/api/user/ongoing-projects']
@@ -132,10 +136,14 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
     mutationFn: async (projectId: number) => {
       return await apiRequest('POST', `/api/projects/${projectId}/approve-completion`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const project = projects.find((p: OngoingProject) => p.id === variables);
+      const isMonthly = project?.projectType === 'monthly';
       toast({
-        title: "Proje tamamlandı",
-        description: "Proje başarıyla tamamlandı olarak işaretlendi."
+        title: isMonthly ? "Proje sonlandırıldı" : "Proje tamamlandı",
+        description: isMonthly 
+          ? "Proje başarıyla sonlandırıldı." 
+          : "Proje başarıyla tamamlandı olarak işaretlendi."
       });
       queryClient.invalidateQueries({
         queryKey: ['/api/user/ongoing-projects']
@@ -281,7 +289,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
                 <div className="flex items-center gap-2 text-sm text-amber-600">
                   <AlertCircle className="h-4 w-4" />
                   <span>
-                    Tamamlanma Talebi: {format(new Date(project.completionRequestedAt), 'dd MMM yyyy', { locale: tr })}
+                    {project.projectType === 'monthly' ? 'Sonlandırma Talebi' : 'Tamamlanma Talebi'}: {format(new Date(project.completionRequestedAt), 'dd MMM yyyy', { locale: tr })}
                   </span>
                 </div>
               )}
@@ -290,7 +298,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
                 <div className="flex items-center gap-2 text-sm text-green-600">
                   <CheckCircle className="h-4 w-4" />
                   <span>
-                    Tamamlandı: {format(new Date(project.completedAt), 'dd MMM yyyy', { locale: tr })}
+                    {project.projectType === 'monthly' ? 'Sonlandırıldı' : 'Tamamlandı'}: {format(new Date(project.completedAt), 'dd MMM yyyy', { locale: tr })}
                   </span>
                 </div>
               )}
@@ -399,7 +407,12 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
                   data-testid={`button-request-completion-${project.id}`}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  {requestCompletionMutation.isPending ? 'Gönderiliyor...' : 'Tamamlanma Talebi'}
+                  {requestCompletionMutation.isPending 
+                    ? 'Gönderiliyor...' 
+                    : project.projectType === 'monthly' 
+                      ? 'Projeyi Sonlandırma Talebi Gönder' 
+                      : 'Tamamlanma Talebi'
+                  }
                 </Button>
               )}
               
@@ -414,7 +427,12 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
                   data-testid={`button-approve-completion-${project.id}`}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  {approveCompletionMutation.isPending ? 'Onaylanıyor...' : 'Tamamlanmayı Onayla'}
+                  {approveCompletionMutation.isPending 
+                    ? 'Onaylanıyor...' 
+                    : project.projectType === 'monthly' 
+                      ? 'Sonlandırmayı Onayla' 
+                      : 'Tamamlanmayı Onayla'
+                  }
                 </Button>
               )}
             </div>
