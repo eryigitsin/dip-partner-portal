@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { Header } from "@/components/layout/header";
@@ -72,6 +74,17 @@ export default function PartnerDashboard() {
   const [selectedQuoteResponse, setSelectedQuoteResponse] = useState<any>(null);
   const [isQuoteDetailsDialogOpen, setIsQuoteDetailsDialogOpen] = useState(false);
   const [isEditingQuoteResponse, setIsEditingQuoteResponse] = useState(false);
+  const [isPaymentInstructionsDialogOpen, setIsPaymentInstructionsDialogOpen] = useState(false);
+  const [selectedRecipientAccount, setSelectedRecipientAccount] = useState<any>(null);
+  const [paymentInstructions, setPaymentInstructions] = useState('');
+  const [manualAccountData, setManualAccountData] = useState({
+    bankName: '',
+    accountHolderName: '',
+    accountNumber: '',
+    iban: '',
+    swiftCode: ''
+  });
+  const [isNewAccountDialogOpen, setIsNewAccountDialogOpen] = useState(false);
 
   // Helper functions for performance calculations
   const calculateProfileCompletion = (partner: Partner | undefined) => {
@@ -170,6 +183,12 @@ export default function PartnerDashboard() {
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
+  // Get recipient accounts for payment instructions
+  const { data: recipientAccounts = [] } = useQuery<any[]>({
+    queryKey: ["/api/partner/recipient-accounts"],
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
+  });
+
   // Username change mutation
   const changeUsernameMutation = useMutation({
     mutationFn: async (newUsername: string) => {
@@ -217,6 +236,61 @@ export default function PartnerDashboard() {
       return;
     }
     changeUsernameMutation.mutate(newUsername.trim());
+  };
+
+  // Payment instructions mutation
+  const sendPaymentInstructionsMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('POST', '/api/partner/send-payment-instructions', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Başarılı",
+        description: "Ödeme bilgileri kullanıcıya gönderildi."
+      });
+      setIsPaymentInstructionsDialogOpen(false);
+      setSelectedRecipientAccount(null);
+      setManualAccountData({
+        bankName: '',
+        accountHolderName: '',
+        accountNumber: '',
+        iban: '',
+        swiftCode: ''
+      });
+      setPaymentInstructions('');
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: error.message || "Ödeme bilgileri gönderilemedi"
+      });
+    }
+  });
+
+  const handleSendPaymentInstructions = () => {
+    if (!selectedQuoteResponse) return;
+
+    const accountData = selectedRecipientAccount || manualAccountData;
+    
+    if (!accountData.bankName || !accountData.accountHolderName || !accountData.iban) {
+      toast({
+        variant: "destructive",
+        title: "Hata",
+        description: "Banka, Alıcı Adı ve IBAN bilgileri zorunludur"
+      });
+      return;
+    }
+
+    const data = {
+      quoteResponseId: selectedQuoteResponse.id,
+      accountData,
+      instructions: paymentInstructions,
+      saveAccount: !selectedRecipientAccount // Save as new account if manually entered
+    };
+
+    sendPaymentInstructionsMutation.mutate(data);
   };
 
   const copyProfileUrl = () => {
@@ -1420,15 +1494,25 @@ export default function PartnerDashboard() {
               
               {/* Action Footer */}
               <div className="flex justify-between items-center pt-6 border-t">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleCancelQuoteResponse(selectedQuoteResponse)}
-                  className="flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Teklifi İptal Et
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleCancelQuoteResponse(selectedQuoteResponse)}
+                    className="flex items-center gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Teklifi İptal Et
+                  </Button>
+                  <Button
+                    onClick={() => setIsPaymentInstructionsDialogOpen(true)}
+                    size="sm"
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Send className="h-4 w-4" />
+                    Ödeme Bilgisi Gönder
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => setIsQuoteDetailsDialogOpen(false)}
@@ -1571,6 +1655,146 @@ export default function PartnerDashboard() {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Payment Instructions Dialog */}
+      <Dialog open={isPaymentInstructionsDialogOpen} onOpenChange={setIsPaymentInstructionsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Ödeme Bilgisi Gönder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Account Selection */}
+            <div className="space-y-3">
+              <Label>Alıcı Hesabı Seçin</Label>
+              <div className="flex gap-2">
+                <Select 
+                  value={selectedRecipientAccount?.id?.toString() || ""} 
+                  onValueChange={(value) => {
+                    const account = recipientAccounts.find(acc => acc.id.toString() === value);
+                    setSelectedRecipientAccount(account);
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Kayıtlı hesaplarınızdan seçin..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recipientAccounts.map((account: any) => (
+                      <SelectItem key={account.id} value={account.id.toString()}>
+                        {account.accountName} - {account.bankName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsNewAccountDialogOpen(true)}
+                >
+                  Yeni Alıcı Hesabı Ekle
+                </Button>
+              </div>
+            </div>
+
+            {/* Account Details Form */}
+            <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Banka *</Label>
+                  <Input 
+                    value={selectedRecipientAccount?.bankName || manualAccountData.bankName} 
+                    onChange={(e) => !selectedRecipientAccount && setManualAccountData(prev => ({ ...prev, bankName: e.target.value }))}
+                    placeholder="Banka adı"
+                    readOnly={!!selectedRecipientAccount}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Alıcı Adı *</Label>
+                  <Input 
+                    value={selectedRecipientAccount?.accountHolderName || manualAccountData.accountHolderName} 
+                    onChange={(e) => !selectedRecipientAccount && setManualAccountData(prev => ({ ...prev, accountHolderName: e.target.value }))}
+                    placeholder="Hesap sahibinin adı"
+                    readOnly={!!selectedRecipientAccount}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Hesap No</Label>
+                  <Input 
+                    value={selectedRecipientAccount?.accountNumber || manualAccountData.accountNumber} 
+                    onChange={(e) => !selectedRecipientAccount && setManualAccountData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                    placeholder="Hesap numarası"
+                    readOnly={!!selectedRecipientAccount}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">IBAN *</Label>
+                  <Input 
+                    value={selectedRecipientAccount?.iban || manualAccountData.iban} 
+                    onChange={(e) => !selectedRecipientAccount && setManualAccountData(prev => ({ ...prev, iban: e.target.value }))}
+                    placeholder="TR123456789012345678901234"
+                    readOnly={!!selectedRecipientAccount}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-sm font-medium">SWIFT Kodu</Label>
+                  <Input 
+                    value={selectedRecipientAccount?.swiftCode || manualAccountData.swiftCode} 
+                    onChange={(e) => !selectedRecipientAccount && setManualAccountData(prev => ({ ...prev, swiftCode: e.target.value }))}
+                    placeholder="SWIFT kodu (opsiyonel)"
+                    readOnly={!!selectedRecipientAccount}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Instructions */}
+            <div>
+              <Label className="text-sm font-medium">Ödeme Yönergeleri</Label>
+              <Textarea
+                value={paymentInstructions}
+                onChange={(e) => setPaymentInstructions(e.target.value)}
+                placeholder="Buraya kullanıcı için ödeme yönergeleri yazın."
+                rows={4}
+                className="mt-1"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsPaymentInstructionsDialogOpen(false)}
+              >
+                İptal
+              </Button>
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={!selectedRecipientAccount && (!manualAccountData.bankName || !manualAccountData.accountHolderName || !manualAccountData.iban)}
+                onClick={() => handleSendPaymentInstructions()}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Ödeme Bilgisi Gönder
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Account Dialog - Reusing RecipientAccountsSection component */}
+      {isNewAccountDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <RecipientAccountsSection partnerId={partner?.id} />
+            <div className="flex justify-end mt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsNewAccountDialogOpen(false)}
+              >
+                Kapat
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -4179,5 +4179,144 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Payment Instructions endpoint
+  app.post("/api/partner/send-payment-instructions", async (req, res) => {
+    if (!req.isAuthenticated() || !['partner', 'master_admin', 'editor_admin'].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Partner or admin access required" });
+    }
+
+    try {
+      const { quoteResponseId, accountData, instructions, saveAccount } = req.body;
+      
+      // Get partner info
+      let partnerId: number;
+      if (req.user!.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(req.user!.id);
+        if (!partner) {
+          return res.status(404).json({ message: "Partner record not found" });
+        }
+        partnerId = partner.id;
+      } else {
+        return res.status(403).json({ message: "Only partners can send payment instructions" });
+      }
+
+      // Get quote response to find the user
+      const quoteResponse = await storage.getQuoteResponseById(quoteResponseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ message: "Quote response not found" });
+      }
+
+      // Get quote request to find the user
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest) {
+        return res.status(404).json({ message: "Quote request not found" });
+      }
+
+      // Save account data if requested and not using existing account
+      if (saveAccount && accountData) {
+        try {
+          const accountValidated = insertRecipientAccountSchema.parse({
+            partnerId,
+            accountName: `${accountData.bankName} - ${accountData.accountHolderName}`,
+            bankName: accountData.bankName,
+            accountHolderName: accountData.accountHolderName,
+            accountNumber: accountData.accountNumber || '',
+            iban: accountData.iban,
+            swiftCode: accountData.swiftCode || '',
+            isDefault: false
+          });
+          await storage.createRecipientAccount(accountValidated);
+        } catch (accountError) {
+          console.warn('Failed to save account, continuing with payment instructions:', accountError);
+        }
+      }
+
+      // Get user email to send notification
+      const user = await storage.getUser(quoteRequest.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create payment instructions email
+      const emailData = {
+        to: user.email,
+        subject: `Ödeme Bilgileri - ${quoteRequest.serviceNeeded}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #1e40af;">Ödeme Bilgileri</h2>
+            <p>Merhaba ${user.firstName},</p>
+            <p>Talep ettiğiniz hizmet için ödeme bilgileri aşağıda yer almaktadır:</p>
+            
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #374151;">Banka Bilgileri</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 8px 0; font-weight: bold; width: 30%;">Banka:</td>
+                  <td style="padding: 8px 0;">${accountData.bankName}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 8px 0; font-weight: bold;">Alıcı Adı:</td>
+                  <td style="padding: 8px 0;">${accountData.accountHolderName}</td>
+                </tr>
+                ${accountData.accountNumber ? `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 8px 0; font-weight: bold;">Hesap No:</td>
+                  <td style="padding: 8px 0;">${accountData.accountNumber}</td>
+                </tr>
+                ` : ''}
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 8px 0; font-weight: bold;">IBAN:</td>
+                  <td style="padding: 8px 0; font-family: monospace; background-color: #fff; padding: 4px 8px; border-radius: 4px;">${accountData.iban}</td>
+                </tr>
+                ${accountData.swiftCode ? `
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold;">SWIFT Kodu:</td>
+                  <td style="padding: 8px 0;">${accountData.swiftCode}</td>
+                </tr>
+                ` : ''}
+              </table>
+            </div>
+
+            ${instructions ? `
+            <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #92400e;">Ödeme Yönergeleri</h3>
+              <p style="margin-bottom: 0; white-space: pre-line;">${instructions}</p>
+            </div>
+            ` : ''}
+
+            <div style="background-color: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #065f46;">Tutar Bilgisi</h3>
+              <p style="margin-bottom: 0; font-size: 18px; font-weight: bold;">
+                Toplam Tutar: ₺${quoteResponse.totalAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+
+            <p style="color: #6b7280; font-size: 14px;">
+              Ödeme tamamlandığında lütfen dekont/makbuzu partner ile paylaşınız.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            <p style="color: #9ca3af; font-size: 12px;">
+              Bu e-posta dip | iş ortakları platformu üzerinden gönderilmiştir.
+            </p>
+          </div>
+        `
+      };
+
+      // Send email notification
+      await resendService.sendTransactionalEmail(emailData);
+
+      res.json({ 
+        success: true, 
+        message: "Payment instructions sent successfully",
+        sentTo: user.email 
+      });
+
+    } catch (error) {
+      console.error('Error sending payment instructions:', error);
+      res.status(500).json({ message: "Failed to send payment instructions" });
+    }
+  });
+
   return httpServer;
 }

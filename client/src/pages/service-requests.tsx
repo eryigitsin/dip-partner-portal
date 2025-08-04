@@ -104,6 +104,8 @@ export default function ServiceRequests() {
   const [isRevisionDialogOpen, setIsRevisionDialogOpen] = useState(false);
   const [revisionItems, setRevisionItems] = useState<any[]>([]);
   const [revisionMessage, setRevisionMessage] = useState('');
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [activePaymentTab, setActivePaymentTab] = useState('card');
 
   // Fetch user's quote requests
   const { data: quoteRequests, isLoading: requestsLoading } = useQuery<(QuoteRequest & { partner: Partner; responses: QuoteResponse[] })[]>({
@@ -736,13 +738,22 @@ export default function ServiceRequests() {
 
               <div className="flex flex-wrap gap-3 pt-4 border-t">
                 {selectedQuoteResponse.status === 'accepted' ? (
-                  <Button
-                    disabled
-                    className="flex items-center gap-2 bg-green-600 opacity-75 cursor-not-allowed"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Kabul Edildi
-                  </Button>
+                  <>
+                    <Button
+                      disabled
+                      className="flex items-center gap-2 bg-green-600 opacity-75 cursor-not-allowed"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Kabul Edildi
+                    </Button>
+                    <Button
+                      onClick={() => setIsPaymentDialogOpen(true)}
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Ödeme Yap
+                    </Button>
+                  </>
                 ) : selectedQuoteResponse.status === 'rejected' ? (
                   <Button
                     disabled
@@ -889,6 +900,57 @@ export default function ServiceRequests() {
                 onClick={() => setIsRevisionDialogOpen(false)}
               >
                 İptal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Dialog */}
+      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Ödeme Yap</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <Tabs value={activePaymentTab} onValueChange={setActivePaymentTab}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="card">Kredi / Banka Kartı</TabsTrigger>
+                <TabsTrigger value="transfer">Havale / EFT</TabsTrigger>
+                <TabsTrigger value="other">Diğer Yöntemler</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="card" className="space-y-4">
+                <div className="p-6 border rounded-lg bg-gray-50">
+                  <p className="text-center text-gray-600">
+                    Bu ödeme yöntemi yakında aktifleştirilecektir. Havale / EFT şeklinde ödeme yapabilirsiniz.
+                  </p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="transfer" className="space-y-4">
+                <div className="p-6 border rounded-lg bg-blue-50">
+                  <p className="text-center text-blue-800 mb-4">
+                    Partner ödeme bilgilerini sizinle paylaştığında buradan görebileceksiniz.
+                  </p>
+                  <p className="text-center text-sm text-blue-600">
+                    Partner ile iletişime geçerek ödeme bilgilerini talep edebilirsiniz.
+                  </p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="other" className="space-y-4">
+                <div className="p-6 border rounded-lg bg-gray-50">
+                  <p className="text-center text-gray-600">
+                    Bu ödeme yöntemi yakında aktifleştirilecektir. Havale / EFT şeklinde ödeme yapabilirsiniz.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+            
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>
+                Kapat
               </Button>
             </div>
           </div>
