@@ -88,6 +88,16 @@ export function PaymentConfirmationDialog({
       return;
     }
 
+    // Make receipt upload mandatory for transfer payments
+    if (paymentMethod === 'transfer' && !receiptFile) {
+      toast({
+        title: "Dekont Gerekli",
+        description: "Havale/EFT ödemeleri için dekont yüklenmesi zorunludur.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append('quoteResponseId', selectedQuoteId);
     formData.append('paymentMethod', paymentMethod);
@@ -132,7 +142,7 @@ export function PaymentConfirmationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md" data-testid="payment-confirmation-dialog">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" data-testid="payment-confirmation-dialog">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -202,27 +212,33 @@ export function PaymentConfirmationDialog({
 
           {/* Receipt Upload */}
           <div className="space-y-2">
-            <Label htmlFor="receipt">Dekont/Fiş Yükle (Opsiyonel)</Label>
+            <Label htmlFor="receipt">
+              Dekont/Fiş Yükle {paymentMethod === 'transfer' && <span className="text-red-500">*</span>}
+              {paymentMethod !== 'transfer' && <span className="text-gray-500">(Opsiyonel)</span>}
+            </Label>
             {!receiptFile ? (
-              <div className="relative">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                 <Input
                   id="receipt"
                   type="file"
                   accept="image/*,.pdf"
                   onChange={handleFileChange}
-                  className="cursor-pointer"
+                  className="hidden"
                   data-testid="input-receipt"
                 />
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Upload className="h-4 w-4" />
-                    JPG, PNG veya PDF dosyası seçin
-                  </div>
-                </div>
+                <label htmlFor="receipt" className="cursor-pointer block">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600 mb-1">Dosya Seç</p>
+                  <p className="text-xs text-gray-500">JPG, PNG veya PDF dosyası seçin</p>
+                  <p className="text-xs text-gray-400 mt-1">Maksimum dosya boyutu: 5MB</p>
+                </label>
               </div>
             ) : (
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                <span className="text-sm text-gray-700 truncate">{receiptFile.name}</span>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Upload className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <span className="text-sm text-gray-700 truncate">{receiptFile.name}</span>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -234,7 +250,6 @@ export function PaymentConfirmationDialog({
                 </Button>
               </div>
             )}
-            <p className="text-xs text-gray-500">Maksimum dosya boyutu: 5MB</p>
           </div>
 
           {/* Note */}

@@ -953,7 +953,7 @@ export default function ServiceRequests() {
 
       {/* Payment Dialog */}
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Ödeme Yap</DialogTitle>
           </DialogHeader>
@@ -968,7 +968,7 @@ export default function ServiceRequests() {
               <TabsContent value="card" className="space-y-4">
                 <div className="p-6 border rounded-lg bg-gray-50">
                   <p className="text-center text-gray-600 mb-4">
-                    Bu ödeme yöntemi yakında aktifleştirilecektir. Havale / EFT şeklinde ödeme yapabilirsiniz.
+                    Bu ödeme yöntemi yakında aktifleştirilecektir. Kredi kartı ile ödeme yaptıysanız lütfen aşağıdaki butonla partnere bilgi verin.
                   </p>
                   <div className="flex justify-center">
                     <Button 
@@ -977,7 +977,7 @@ export default function ServiceRequests() {
                       data-testid="button-payment-confirmation-card"
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
-                      Ödememi Yaptım
+                      Kredi Kartı ile Ödeme Aldınız
                     </Button>
                   </div>
                 </div>
@@ -1077,18 +1077,8 @@ export default function ServiceRequests() {
               <TabsContent value="other" className="space-y-4">
                 <div className="p-6 border rounded-lg bg-gray-50">
                   <p className="text-center text-gray-600 mb-4">
-                    Bu ödeme yöntemi yakında aktifleştirilecektir. Havale / EFT şeklinde ödeme yapabilirsiniz.
+                    Nakit, çek gibi diğer ödeme yöntemleri için partnerle doğrudan iletişime geçiniz.
                   </p>
-                  <div className="flex justify-center">
-                    <Button 
-                      onClick={() => openPaymentConfirmation('other', selectedQuoteResponse)}
-                      className="bg-purple-600 hover:bg-purple-700"
-                      data-testid="button-payment-confirmation-other"
-                    >
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Ödememi Yaptım
-                    </Button>
-                  </div>
                 </div>
               </TabsContent>
             </Tabs>
