@@ -4466,7 +4466,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Partner user not found" });
       }
 
-      // Send email notification to partner
+      // Send email notification to partner with attachment
       const paymentMethodTexts = {
         card: 'Kredi/Banka Kartı',
         transfer: 'Havale/EFT',
@@ -4508,6 +4508,7 @@ export function registerRoutes(app: Express): Server {
               </table>
             </div>
 
+            ${receiptPath ? '<p style="color: #666; line-height: 1.6;"><strong>📎 Dekont ektedir.</strong></p>' : ''}
             <p style="color: #666; line-height: 1.6;">Partner panelinizden ödemeyi onaylayabilir veya reddedebilirsiniz.</p>
             
             <div style="text-align: center; margin: 30px 0;">
@@ -4525,15 +4526,57 @@ export function registerRoutes(app: Express): Server {
         </div>
       `;
 
-      // Send email to partner
-      const emailResult = await resendService.sendEmail({
-        to: partnerUser.email,
-        subject: `Ödeme Bildirimi - ${user.firstName} ${user.lastName}`,
-        html: emailContent,
-      });
+      // Send email to partner with attachment
+      let emailSuccess = false;
+      
+      if (receiptPath && receiptFile) {
+        try {
+          // Import SendGrid service
+          const { sendEmailWithAttachment } = await import('./sendgrid');
+          
+          // Get file from Supabase and convert to base64
+          const { data: fileData } = await supabaseStorage.supabase.storage
+            .from('partner-documents')
+            .download(receiptPath);
+          
+          if (fileData) {
+            const buffer = Buffer.from(await fileData.arrayBuffer());
+            const base64Content = buffer.toString('base64');
+            
+            emailSuccess = await sendEmailWithAttachment({
+              to: partnerUser.email,
+              subject: `Ödeme Bildirimi - ${user.firstName} ${user.lastName}`,
+              html: emailContent,
+              attachments: [{
+                content: base64Content,
+                filename: receiptFile.originalname,
+                type: receiptFile.mimetype,
+                disposition: 'attachment'
+              }]
+            });
+          }
+        } catch (error) {
+          console.error('Error attaching receipt to email:', error);
+          // Fallback to regular email without attachment
+          const emailResult = await resendService.sendEmail({
+            to: partnerUser.email,
+            subject: `Ödeme Bildirimi - ${user.firstName} ${user.lastName}`,
+            html: emailContent,
+          });
+          emailSuccess = emailResult.success;
+        }
+      } else {
+        // Send regular email without attachment
+        const emailResult = await resendService.sendEmail({
+          to: partnerUser.email,
+          subject: `Ödeme Bildirimi - ${user.firstName} ${user.lastName}`,
+          html: emailContent,
+        });
+        emailSuccess = emailResult.success;
+      }
 
-      if (!emailResult.success) {
-        console.error('Failed to send payment confirmation email:', emailResult.error);
+      if (!emailSuccess) {
+        console.error('Failed to send payment confirmation email');
         // Don't fail the request if email fails
       }
 
@@ -4593,6 +4636,66 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error fetching partner payment confirmations:', error);
       res.status(500).json({ message: "Failed to fetch payment confirmations" });
+    }
+  });
+
+  // Download payment receipt endpoint
+  app.get('/api/payment-confirmations/:id/receipt', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const user = req.user!;
+      const paymentConfirmationId = parseInt(req.params.id);
+      
+      const paymentConfirmation = await storage.getPaymentConfirmationById(paymentConfirmationId);
+      if (!paymentConfirmation) {
+        return res.status(404).json({ message: "Payment confirmation not found" });
+      }
+
+      // Check if user has access (must be the partner)
+      if (user.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(user.id);
+        if (!partner || partner.id !== paymentConfirmation.partnerId) {
+          return res.status(403).json({ message: "Unauthorized to access this receipt" });
+        }
+      } else {
+        return res.status(403).json({ message: "Partner access required" });
+      }
+
+      if (!paymentConfirmation.receiptFileUrl) {
+        return res.status(404).json({ message: "No receipt available" });
+      }
+
+      try {
+        // Download file from Supabase storage
+        const { data: fileData } = await supabaseStorage.supabase.storage
+          .from('partner-documents')
+          .download(paymentConfirmation.receiptFileUrl);
+
+        if (!fileData) {
+          return res.status(404).json({ message: "Receipt file not found" });
+        }
+
+        // Set appropriate headers for file download
+        const buffer = Buffer.from(await fileData.arrayBuffer());
+        const filename = paymentConfirmation.receiptFileName || 'dekont.pdf';
+        
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Length', buffer.length);
+        
+        res.send(buffer);
+
+      } catch (error) {
+        console.error('Error downloading receipt:', error);
+        res.status(500).json({ message: "Failed to download receipt" });
+      }
+
+    } catch (error) {
+      console.error('Error accessing payment confirmation receipt:', error);
+      res.status(500).json({ message: "Failed to access receipt" });
     }
   });
 
