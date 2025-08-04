@@ -14,6 +14,9 @@ import fs from "fs";
 import express from "express";
 import { supabaseStorage } from "./supabase-storage";
 import { supabaseAdmin } from "./supabase";
+import { db } from "./db";
+import { quoteResponses } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 // Email templates and functionality
 const emailTemplates = {
@@ -4532,9 +4535,7 @@ export function registerRoutes(app: Express): Server {
       if (receiptPath && receiptFile) {
         try {
           // Get file from Supabase and convert to base64 for Resend attachment
-          const { data: fileData } = await supabaseStorage.supabase.storage
-            .from('partner-documents')
-            .download(receiptPath);
+          const fileData = await supabaseStorage.downloadFile('partner-documents', receiptPath);
           
           if (fileData) {
             const buffer = Buffer.from(await fileData.arrayBuffer());
@@ -4569,6 +4570,7 @@ export function registerRoutes(app: Express): Server {
           subject: `Ödeme Bildirimi - ${user.firstName} ${user.lastName}`,
           html: emailContent,
         });
+        emailSuccess = emailResult.success;
         emailSuccess = emailResult.success;
       }
 
@@ -4607,14 +4609,14 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Get all quote responses for this partner
-      const quoteResponses = await db
+      const partnerQuoteResponses = await db
         .select()
         .from(quoteResponses)
         .where(eq(quoteResponses.partnerId, partner.id));
 
       // Get payment confirmations for all these quote responses
       const paymentConfirmations = [];
-      for (const quoteResponse of quoteResponses) {
+      for (const quoteResponse of partnerQuoteResponses) {
         const confirmations = await storage.getPaymentConfirmationsByQuoteResponseId(quoteResponse.id);
         for (const confirmation of confirmations) {
           const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
@@ -4667,9 +4669,7 @@ export function registerRoutes(app: Express): Server {
 
       try {
         // Download file from Supabase storage
-        const { data: fileData } = await supabaseStorage.supabase.storage
-          .from('partner-documents')
-          .download(paymentConfirmation.receiptFileUrl);
+        const fileData = await supabaseStorage.downloadFile('partner-documents', paymentConfirmation.receiptFileUrl);
 
         if (!fileData) {
           return res.status(404).json({ message: "Receipt file not found" });
@@ -4804,11 +4804,11 @@ export function registerRoutes(app: Express): Server {
             </div>
           `;
 
-          await resendService.sendEmail(
-            customer.email,
-            `Ödeme Durumu Güncellendi - ${quoteResponse.quoteNumber}`,
-            emailContent
-          );
+          await resendService.sendEmail({
+            to: customer.email,
+            subject: `Ödeme Durumu Güncellendi - ${quoteResponse.quoteNumber}`,
+            html: emailContent
+          });
         }
       }
 

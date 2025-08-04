@@ -164,6 +164,26 @@ export class SupabaseStorageService {
     return this.uploadFile(file, 'USER_AVATARS', `user-${userId}`);
   }
 
+  // Download file from storage
+  async downloadFile(bucket: keyof typeof this.buckets, filePath: string): Promise<Blob | null> {
+    try {
+      const bucketId = this.buckets[bucket];
+      const { data, error } = await supabase.storage
+        .from(bucketId)
+        .download(filePath);
+
+      if (error) {
+        console.error('Download error:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Download error:', error);
+      return null;
+    }
+  }
+
   // Utility function to extract file path from Supabase URL
   getFilePathFromUrl(url: string, bucket: keyof typeof this.buckets): string | null {
     try {
