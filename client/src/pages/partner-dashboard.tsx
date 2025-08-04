@@ -1680,7 +1680,7 @@ export default function PartnerDashboard() {
                 <SelectContent>
                   {recipientAccounts.map((account: any) => (
                     <SelectItem key={account.id} value={account.id.toString()}>
-                      {account.bankName}
+                      {account.accountName}
                     </SelectItem>
                   ))}
                 </SelectContent>
