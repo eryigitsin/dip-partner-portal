@@ -1556,6 +1556,10 @@ export default function PartnerDashboard() {
                     variant="outline"
                     onClick={() => setIsEditingQuoteResponse(true)}
                     className="flex items-center gap-2"
+                    disabled={(() => {
+                      const paymentConfirmation = getPaymentConfirmationForQuote(selectedQuoteResponse?.id);
+                      return paymentConfirmation?.status === 'confirmed' || selectedQuoteResponse?.hasOngoingProject;
+                    })()}
                   >
                     <Edit className="h-4 w-4" />
                     Düzenle
@@ -1756,6 +1760,10 @@ export default function PartnerDashboard() {
                     size="sm"
                     onClick={() => handleCancelQuoteResponse(selectedQuoteResponse)}
                     className="flex items-center gap-2"
+                    disabled={(() => {
+                      const paymentConfirmation = getPaymentConfirmationForQuote(selectedQuoteResponse?.id);
+                      return paymentConfirmation?.status === 'confirmed' || selectedQuoteResponse?.hasOngoingProject;
+                    })()}
                   >
                     <X className="h-4 w-4" />
                     Teklifi İptal Et

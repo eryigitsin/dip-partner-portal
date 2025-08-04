@@ -10,7 +10,8 @@ import {
   CheckCircle, 
   CreditCard, 
   AlertCircle,
-  Clock
+  Clock,
+  X
 } from "lucide-react";
 import { format, isAfter, isBefore, addDays } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -166,6 +167,66 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
     }
   });
 
+  // Reject completion mutation
+  const rejectCompletionMutation = useMutation({
+    mutationFn: async (projectId: number) => {
+      return await apiRequest('POST', `/api/projects/${projectId}/reject-completion`);
+    },
+    onSuccess: (data, variables) => {
+      const project = Array.isArray(projects) ? projects.find((p: OngoingProject) => p.id === variables) : undefined;
+      const isMonthly = project?.projectType === 'monthly';
+      toast({
+        title: isMonthly ? "Sonlandırma talebi reddedildi" : "Tamamlanma talebi reddedildi",
+        description: isMonthly 
+          ? "Proje sonlandırma talebi reddedildi." 
+          : "Proje tamamlanma talebi reddedildi."
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/user/ongoing-projects']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/partner/ongoing-projects']
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Hata",
+        description: "Tamamlanma talebi reddedilirken bir hata oluştu.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Cancel completion request mutation
+  const cancelCompletionRequestMutation = useMutation({
+    mutationFn: async (projectId: number) => {
+      return await apiRequest('POST', `/api/projects/${projectId}/cancel-completion-request`);
+    },
+    onSuccess: (data, variables) => {
+      const project = Array.isArray(projects) ? projects.find((p: OngoingProject) => p.id === variables) : undefined;
+      const isMonthly = project?.projectType === 'monthly';
+      toast({
+        title: isMonthly ? "Sonlandırma talebi iptal edildi" : "Tamamlanma talebi iptal edildi",
+        description: isMonthly 
+          ? "Proje sonlandırma talebi iptal edildi." 
+          : "Proje tamamlanma talebi iptal edildi."
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/user/ongoing-projects']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/partner/ongoing-projects']
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Hata",
+        description: "Tamamlanma talebi iptal edilirken bir hata oluştu.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleAddComment = () => {
     if (!selectedProject || !commentContent.trim()) return;
     
@@ -182,6 +243,14 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
 
   const handleApproveCompletion = (project: OngoingProject) => {
     approveCompletionMutation.mutate(project.id);
+  };
+
+  const handleRejectCompletion = (project: OngoingProject) => {
+    rejectCompletionMutation.mutate(project.id);
+  };
+
+  const handleCancelCompletionRequest = (project: OngoingProject) => {
+    cancelCompletionRequestMutation.mutate(project.id);
   };
 
   const getProjectStatusBadge = (project: OngoingProject) => {
@@ -462,19 +531,56 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
               {project.status === 'completion-requested' && 
                project.completionRequestedBy && 
                project.completionRequestedBy !== (userType === 'user' ? userId : partnerId) && (
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => handleApproveCompletion(project)}
+                    disabled={approveCompletionMutation.isPending}
+                    data-testid={`button-approve-completion-${project.id}`}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {approveCompletionMutation.isPending 
+                      ? 'Onaylanıyor...' 
+                      : project.projectType === 'monthly' 
+                        ? 'Sonlandırmayı Onayla' 
+                        : 'Tamamlanmayı Onayla'
+                    }
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={() => handleRejectCompletion(project)}
+                    disabled={rejectCompletionMutation.isPending}
+                    data-testid={`button-reject-completion-${project.id}`}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    {rejectCompletionMutation.isPending 
+                      ? 'Reddediliyor...' 
+                      : project.projectType === 'monthly' 
+                        ? 'Sonlandırmayı Reddet' 
+                        : 'Tamamlanmayı Reddet'
+                    }
+                  </Button>
+                </div>
+              )}
+              
+              {project.status === 'completion-requested' && 
+               project.completionRequestedBy && 
+               project.completionRequestedBy === (userType === 'user' ? userId : partnerId) && (
                 <Button 
                   size="sm" 
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={() => handleApproveCompletion(project)}
-                  disabled={approveCompletionMutation.isPending}
-                  data-testid={`button-approve-completion-${project.id}`}
+                  variant="outline"
+                  onClick={() => handleCancelCompletionRequest(project)}
+                  disabled={cancelCompletionRequestMutation.isPending}
+                  data-testid={`button-cancel-completion-request-${project.id}`}
                 >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  {approveCompletionMutation.isPending 
-                    ? 'Onaylanıyor...' 
+                  <X className="h-4 w-4 mr-2" />
+                  {cancelCompletionRequestMutation.isPending 
+                    ? 'İptal ediliyor...' 
                     : project.projectType === 'monthly' 
-                      ? 'Sonlandırmayı Onayla' 
-                      : 'Tamamlanmayı Onayla'
+                      ? 'Sonlandırma Talebini İptal Et' 
+                      : 'Tamamlanma Talebini İptal Et'
                   }
                 </Button>
               )}

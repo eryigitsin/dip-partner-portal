@@ -5398,6 +5398,125 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Reject project completion
+  app.post("/api/projects/:projectId/reject-completion", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projectId = parseInt(req.params.projectId);
+
+      // Verify user has access to this project and that completion was requested
+      const project = await storage.getOngoingProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      if (!project.completionRequestedBy) {
+        return res.status(400).json({ message: "No completion request found" });
+      }
+
+      const partner = await storage.getPartner(project.partnerId);
+      if (project.userId !== req.user.id && partner?.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // User cannot reject their own completion request
+      if (project.completionRequestedBy === req.user.id) {
+        return res.status(400).json({ message: "Cannot reject your own completion request" });
+      }
+
+      const updatedProject = await storage.rejectProjectCompletion(projectId);
+      
+      // Send email notification to the requester
+      const requester = await storage.getUserById(project.completionRequestedBy);
+      const rejector = await storage.getUserById(req.user.id);
+      
+      if (requester && rejector) {
+        const emailContent = `
+          <h2>Proje Tamamlanma Talebi Reddedildi</h2>
+          <p>Merhaba,</p>
+          <p>${rejector.firstName} ${rejector.lastName} "${updatedProject.projectTitle}" projesinin tamamlanma talebinizi reddetti.</p>
+          <p>Proje kaldığı yerden devam edecektir.</p>
+        `;
+
+        await resendService.sendEmail({
+          to: requester.email,
+          subject: `Proje Tamamlanma Talebi Reddedildi - ${updatedProject.projectTitle}`,
+          html: emailContent
+        });
+      }
+
+      res.json(updatedProject);
+    } catch (error) {
+      console.error('Error rejecting project completion:', error);
+      res.status(500).json({ message: "Failed to reject completion" });
+    }
+  });
+
+  // Cancel project completion request
+  app.post("/api/projects/:projectId/cancel-completion-request", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projectId = parseInt(req.params.projectId);
+
+      // Verify user has access to this project and that they made the completion request
+      const project = await storage.getOngoingProjectById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      if (!project.completionRequestedBy) {
+        return res.status(400).json({ message: "No completion request found" });
+      }
+
+      const partner = await storage.getPartner(project.partnerId);
+      if (project.userId !== req.user.id && partner?.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // User can only cancel their own completion request
+      if (project.completionRequestedBy !== req.user.id) {
+        return res.status(400).json({ message: "Can only cancel your own completion request" });
+      }
+
+      const updatedProject = await storage.cancelProjectCompletionRequest(projectId);
+      
+      // Send email notification to the other party
+      const isPartnerRequesting = partner?.userId === req.user.id;
+      const recipientId = isPartnerRequesting ? project.userId : partner?.userId;
+      
+      if (recipientId) {
+        const recipient = await storage.getUserById(recipientId);
+        const canceler = await storage.getUserById(req.user.id);
+        
+        if (recipient && canceler) {
+          const emailContent = `
+            <h2>Proje Tamamlanma Talebi İptal Edildi</h2>
+            <p>Merhaba,</p>
+            <p>${canceler.firstName} ${canceler.lastName} "${updatedProject.projectTitle}" projesinin tamamlanma talebini iptal etti.</p>
+            <p>Proje kaldığı yerden devam edecektir.</p>
+          `;
+
+          await resendService.sendEmail({
+            to: recipient.email,
+            subject: `Proje Tamamlanma Talebi İptal Edildi - ${updatedProject.projectTitle}`,
+            html: emailContent
+          });
+        }
+      }
+
+      res.json(updatedProject);
+    } catch (error) {
+      console.error('Error canceling project completion request:', error);
+      res.status(500).json({ message: "Failed to cancel completion request" });
+    }
+  });
+
   // Create payment for monthly project
   app.post("/api/projects/:projectId/payments", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {

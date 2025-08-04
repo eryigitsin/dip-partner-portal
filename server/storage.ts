@@ -2186,6 +2186,7 @@ export class DatabaseStorage implements IStorage {
         completionRequestedBy: ongoingProjects.completionRequestedBy,
         completionRequestedAt: ongoingProjects.completionRequestedAt,
         completedAt: ongoingProjects.completedAt,
+        lastPaymentDate: ongoingProjects.lastPaymentDate,
         createdAt: ongoingProjects.createdAt,
         updatedAt: ongoingProjects.updatedAt,
         // Include quote response details
@@ -2225,6 +2226,7 @@ export class DatabaseStorage implements IStorage {
         completionRequestedBy: ongoingProjects.completionRequestedBy,
         completionRequestedAt: ongoingProjects.completionRequestedAt,
         completedAt: ongoingProjects.completedAt,
+        lastPaymentDate: ongoingProjects.lastPaymentDate,
         createdAt: ongoingProjects.createdAt,
         updatedAt: ongoingProjects.updatedAt,
         // Include quote response details
@@ -2291,6 +2293,34 @@ export class DatabaseStorage implements IStorage {
       .set({ 
         status: 'completed',
         completedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(ongoingProjects.id, projectId))
+      .returning();
+    return updatedProject;
+  }
+
+  async rejectProjectCompletion(projectId: number): Promise<OngoingProject> {
+    const [updatedProject] = await db
+      .update(ongoingProjects)
+      .set({ 
+        status: 'active',
+        completionRequestedBy: null,
+        completionRequestedAt: null,
+        updatedAt: new Date()
+      })
+      .where(eq(ongoingProjects.id, projectId))
+      .returning();
+    return updatedProject;
+  }
+
+  async cancelProjectCompletionRequest(projectId: number): Promise<OngoingProject> {
+    const [updatedProject] = await db
+      .update(ongoingProjects)
+      .set({ 
+        status: 'active',
+        completionRequestedBy: null,
+        completionRequestedAt: null,
         updatedAt: new Date()
       })
       .where(eq(ongoingProjects.id, projectId))
