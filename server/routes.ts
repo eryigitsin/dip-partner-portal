@@ -2941,7 +2941,9 @@ export function registerRoutes(app: Express): Server {
       const partner = await storage.getPartnerByUserId(user.id);
       const canView = 
         (user.userType === 'partner' && partner && partner.id === quoteResponse.partnerId) ||
+        (user.activeUserType === 'partner' && partner && partner.id === quoteResponse.partnerId) ||
         (user.userType === 'user' && quoteRequest.userId === user.id) ||
+        (user.activeUserType === 'user' && quoteRequest.userId === user.id) ||
         (user.userType === 'master_admin' || user.userType === 'editor_admin');
 
       if (!canView) {
