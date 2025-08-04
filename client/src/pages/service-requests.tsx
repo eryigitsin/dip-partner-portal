@@ -494,7 +494,13 @@ export default function ServiceRequests() {
 
                                 {response.status === 'accepted' && (
                                   <div className="mt-4">
-                                    <Button className="flex items-center gap-2">
+                                    <Button 
+                                      onClick={() => {
+                                        setSelectedQuoteResponse(response);
+                                        setIsPaymentDialogOpen(true);
+                                      }}
+                                      className="flex items-center gap-2"
+                                    >
                                       <CreditCard className="h-4 w-4" />
                                       Ödeme Yap
                                     </Button>
