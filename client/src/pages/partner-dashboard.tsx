@@ -1179,7 +1179,7 @@ export default function PartnerDashboard() {
                                 <Button
                                   size="sm"
                                   variant="default"
-                                  className="bg-green-600 hover:bg-green-700"
+                                  className="bg-green-600 hover:bg-green-700 w-20"
                                   onClick={() => {
                                     setSelectedPaymentConfirmation(confirmation);
                                     setIsPaymentConfirmationDialogOpen(true);
@@ -1191,6 +1191,7 @@ export default function PartnerDashboard() {
                                 <Button
                                   size="sm"
                                   variant="destructive"
+                                  className="w-20"
                                   onClick={() => {
                                     if (window.confirm('Bu ödeme bildirimini reddetmek istediğinizden emin misiniz?')) {
                                       paymentConfirmationMutation.mutate({
@@ -1208,6 +1209,7 @@ export default function PartnerDashboard() {
                                   <Button
                                     size="sm"
                                     variant="outline"
+                                    className="w-32"
                                     onClick={() => {
                                       // Use backend API to download receipt properly
                                       window.open(`/api/payment-confirmations/${confirmation.id}/receipt`, '_blank');
@@ -1220,10 +1222,11 @@ export default function PartnerDashboard() {
                                 )}
                               </div>
                             ) : (
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 flex-wrap">
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  className="w-20"
                                   onClick={() => {
                                     setSelectedPaymentConfirmation(confirmation);
                                     setIsPaymentConfirmationDialogOpen(true);
@@ -1237,6 +1240,7 @@ export default function PartnerDashboard() {
                                   <Button
                                     size="sm"
                                     variant="outline"
+                                    className="w-32"
                                     onClick={() => {
                                       // Use backend API to download receipt properly
                                       window.open(`/api/payment-confirmations/${confirmation.id}/receipt`, '_blank');
