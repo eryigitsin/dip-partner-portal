@@ -4385,5 +4385,335 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Upload middleware for payment receipts
+  const uploadReceipts = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image and PDF files are allowed!'));
+      }
+    }
+  });
+
+  // Payment confirmation endpoint
+  app.post('/api/payment-confirmations', uploadReceipts.single('receipt'), async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const user = req.user!;
+      const { quoteResponseId, paymentMethod, amount, note } = req.body;
+      const receiptFile = req.file;
+
+      if (!quoteResponseId || !paymentMethod || !amount) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Verify quote response exists and user has access
+      const quoteResponse = await storage.getQuoteResponseById(parseInt(quoteResponseId));
+      if (!quoteResponse) {
+        return res.status(404).json({ message: "Quote response not found" });
+      }
+
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest || quoteRequest.userId !== user.id) {
+        return res.status(403).json({ message: "Unauthorized to confirm payment for this quote" });
+      }
+
+      // Handle file upload if present
+      let receiptPath = null;
+      if (receiptFile) {
+        try {
+          const uploadResult = await supabaseStorage.uploadFile(receiptFile, 'PARTNER_DOCUMENTS');
+          if (uploadResult.success) {
+            receiptPath = uploadResult.path;
+          }
+        } catch (uploadError) {
+          console.error('Receipt upload error:', uploadError);
+          // Continue without receipt if upload fails
+        }
+      }
+
+      // Get partner info for the confirmation record
+      const partner = await storage.getPartner(quoteResponse.partnerId);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      // Create payment confirmation record
+      const paymentConfirmation = {
+        quoteResponseId: parseInt(quoteResponseId),
+        userId: user.id,
+        partnerId: partner.id,
+        paymentMethod,
+        amount: parseInt(amount), // Amount is already in cents from frontend
+        receiptFileUrl: receiptPath,
+        receiptFileName: receiptFile?.originalname || null,
+        status: 'pending'
+      };
+
+      await storage.createPaymentConfirmation(paymentConfirmation);
+
+      const partnerUser = await storage.getUser(partner.userId);
+      if (!partnerUser) {
+        return res.status(404).json({ message: "Partner user not found" });
+      }
+
+      // Send email notification to partner
+      const paymentMethodTexts = {
+        card: 'Kredi/Banka Kartı',
+        transfer: 'Havale/EFT',
+        other: 'Diğer Yöntemler'
+      };
+
+      const emailContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0;">DİP Partner Portal</h1>
+            <p style="color: white; margin: 10px 0 0 0;">Digital Export Platform</p>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa;">
+            <h2 style="color: #333; margin-bottom: 20px;">Ödeme Bildirimi Alındı</h2>
+            <p style="color: #666; line-height: 1.6;">Merhaba ${partner.companyName},</p>
+            <p style="color: #666; line-height: 1.6;">Müşteriniz ${user.firstName} ${user.lastName} aşağıdaki teklif için ödeme yaptığını bildirdi:</p>
+            
+            <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #1976d2;">Ödeme Detayları</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold;">Teklif:</td>
+                  <td style="padding: 8px 0;">${quoteResponse.title || 'Teklif'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold;">Ödeme Yöntemi:</td>
+                  <td style="padding: 8px 0;">${paymentMethodTexts[paymentMethod as keyof typeof paymentMethodTexts] || paymentMethod}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold;">Bildirilen Tutar:</td>
+                  <td style="padding: 8px 0; font-size: 18px; font-weight: bold; color: #1976d2;">₺${(parseInt(amount) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</td>
+                </tr>
+                ${note ? `
+                <tr>
+                  <td style="padding: 8px 0; font-weight: bold;">Not:</td>
+                  <td style="padding: 8px 0;">${note}</td>
+                </tr>
+                ` : ''}
+              </table>
+            </div>
+
+            <p style="color: #666; line-height: 1.6;">Partner panelinizden ödemeyi onaylayabilir veya reddedebilirsiniz.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/partner-dashboard" 
+                 style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                Partner Paneli
+              </a>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            <p style="color: #9ca3af; font-size: 12px;">
+              Bu e-posta dip | iş ortakları platformu üzerinden gönderilmiştir.
+            </p>
+          </div>
+        </div>
+      `;
+
+      // Send email to partner
+      const emailResult = await resendService.sendEmail({
+        to: partnerUser.email,
+        subject: `Ödeme Bildirimi - ${user.firstName} ${user.lastName}`,
+        html: emailContent,
+      });
+
+      if (!emailResult.success) {
+        console.error('Failed to send payment confirmation email:', emailResult.error);
+        // Don't fail the request if email fails
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Payment confirmation sent successfully",
+        paymentConfirmationId: paymentConfirmation.quoteResponseId 
+      });
+
+    } catch (error) {
+      console.error('Error creating payment confirmation:', error);
+      res.status(500).json({ message: "Failed to create payment confirmation" });
+    }
+  });
+
+  // Get payment confirmations for a partner
+  app.get('/api/partner/payment-confirmations', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const user = req.user!;
+      if (user.userType !== 'partner') {
+        return res.status(403).json({ message: "Partner access required" });
+      }
+
+      const partner = await storage.getPartnerByUserId(user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      // Get all quote responses for this partner
+      const quoteResponses = await db
+        .select()
+        .from(quoteResponses)
+        .where(eq(quoteResponses.partnerId, partner.id));
+
+      // Get payment confirmations for all these quote responses
+      const paymentConfirmations = [];
+      for (const quoteResponse of quoteResponses) {
+        const confirmations = await storage.getPaymentConfirmationsByQuoteResponseId(quoteResponse.id);
+        for (const confirmation of confirmations) {
+          const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+          const customer = quoteRequest ? await storage.getUser(quoteRequest.userId!) : null;
+          
+          paymentConfirmations.push({
+            ...confirmation,
+            quoteResponse,
+            quoteRequest,
+            customer
+          });
+        }
+      }
+
+      res.json(paymentConfirmations);
+    } catch (error) {
+      console.error('Error fetching partner payment confirmations:', error);
+      res.status(500).json({ message: "Failed to fetch payment confirmations" });
+    }
+  });
+
+  // Update payment confirmation status (approve/reject)
+  app.patch('/api/payment-confirmations/:id/status', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const user = req.user!;
+      const confirmationId = parseInt(req.params.id);
+      const { status, note } = req.body;
+
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Status must be 'approved' or 'rejected'" });
+      }
+
+      // Get payment confirmation
+      const paymentConfirmation = await storage.getPaymentConfirmationById(confirmationId);
+      if (!paymentConfirmation) {
+        return res.status(404).json({ message: "Payment confirmation not found" });
+      }
+
+      // Get quote response to verify partner ownership
+      const quoteResponse = await storage.getQuoteResponseById(paymentConfirmation.quoteResponseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ message: "Quote response not found" });
+      }
+
+      // Verify user is the partner for this quote
+      if (user.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(user.id);
+        if (!partner || partner.id !== quoteResponse.partnerId) {
+          return res.status(403).json({ message: "Unauthorized to update this payment confirmation" });
+        }
+      } else if (user.userType !== 'master_admin' && user.userType !== 'editor_admin') {
+        return res.status(403).json({ message: "Partner or admin access required" });
+      }
+
+      // Update payment confirmation status
+      await storage.updatePaymentConfirmation(confirmationId, {
+        status,
+        partnerNotes: note || null
+      });
+
+      // If approved, update quote request status to completed
+      if (status === 'approved') {
+        await storage.updateQuoteRequest(quoteResponse.quoteRequestId, {
+          status: 'completed'
+        });
+      }
+
+      // Send email notification to customer
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (quoteRequest && quoteRequest.userId) {
+        const customer = await storage.getUser(quoteRequest.userId);
+        const partner = await storage.getPartner(quoteResponse.partnerId);
+        
+        if (customer && partner) {
+          const statusText = status === 'approved' ? 'onaylandı' : 'reddedildi';
+          const statusColor = status === 'approved' ? '#10b981' : '#ef4444';
+          
+          const emailContent = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0;">DİP Partner Portal</h1>
+                <p style="color: white; margin: 10px 0 0 0;">Digital Export Platform</p>
+              </div>
+              <div style="padding: 30px; background: #f8f9fa;">
+                <h2 style="color: #333; margin-bottom: 20px;">Ödeme ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}</h2>
+                <p style="color: #666; line-height: 1.6;">Merhaba ${customer.firstName} ${customer.lastName},</p>
+                <p style="color: #666; line-height: 1.6;">${partner.companyName} iş ortağımız ödeme bildiriminizi ${statusText}.</p>
+                
+                <div style="background: #f3f4f6; border-left: 4px solid ${statusColor}; padding: 20px; margin: 20px 0;">
+                  <h3 style="margin-top: 0; color: ${statusColor};">Ödeme Durumu</h3>
+                  <p style="margin: 10px 0;"><strong>Teklif:</strong> ${quoteResponse.title || 'Teklif'}</p>
+                  <p style="margin: 10px 0;"><strong>Tutar:</strong> ₺${(paymentConfirmation.amount / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</p>
+                  <p style="margin: 10px 0;"><strong>Durum:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText.toUpperCase()}</span></p>
+                  ${note ? `<p style="margin: 10px 0;"><strong>Partner Notu:</strong> ${note}</p>` : ''}
+                </div>
+
+                ${status === 'approved' ? `
+                <p style="color: #666; line-height: 1.6;">Ödemeniz onaylandı ve hizmet talebiniz tamamlandı olarak işaretlendi. Hizmet sürecinin devamı için partnerin sizinle iletişime geçmesini bekleyebilirsiniz.</p>
+                ` : `
+                <p style="color: #666; line-height: 1.6;">Ödeme bildiriminiz reddedildi. Sorularınız için lütfen partner ile doğrudan iletişime geçin.</p>
+                `}
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/user-panel?tab=service-requests" 
+                     style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                    Hizmet Taleplerim
+                  </a>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+                <p style="color: #9ca3af; font-size: 12px;">
+                  Bu e-posta dip | iş ortakları platformu üzerinden gönderilmiştir.
+                </p>
+              </div>
+            </div>
+          `;
+
+          await resendService.sendEmail({
+            to: customer.email,
+            subject: `Ödeme ${statusText.charAt(0).toUpperCase() + statusText.slice(1)} - ${partner.companyName}`,
+            html: emailContent,
+          });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Payment confirmation ${status} successfully` 
+      });
+
+    } catch (error) {
+      console.error('Error updating payment confirmation status:', error);
+      res.status(500).json({ message: "Failed to update payment confirmation status" });
+    }
+  });
+
   return httpServer;
 }

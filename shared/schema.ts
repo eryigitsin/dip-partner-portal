@@ -454,6 +454,22 @@ export const feedback = pgTable("feedback", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Payment confirmations from users to partners
+export const paymentConfirmations = pgTable("payment_confirmations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  quoteResponseId: integer("quote_response_id").references(() => quoteResponses.id),
+  paymentMethod: text("payment_method").notNull(), // credit_card, bank_transfer, other
+  amount: integer("amount").notNull(), // Amount in cents
+  receiptFileUrl: text("receipt_file_url"), // For bank transfers
+  receiptFileName: text("receipt_file_name"), // Original filename
+  status: text("status").default("pending"), // pending, confirmed, rejected
+  partnerNotes: text("partner_notes"), // Partner's notes when confirming/rejecting
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Application documents for file uploads
 export const applicationDocuments = pgTable("application_documents", {
   id: serial("id").primaryKey(),
@@ -611,6 +627,21 @@ export const recipientAccountsRelations = relations(recipientAccounts, ({ one })
   }),
 }));
 
+export const paymentConfirmationsRelations = relations(paymentConfirmations, ({ one }) => ({
+  user: one(users, {
+    fields: [paymentConfirmations.userId],
+    references: [users.id],
+  }),
+  partner: one(partners, {
+    fields: [paymentConfirmations.partnerId],
+    references: [partners.id],
+  }),
+  quoteResponse: one(quoteResponses, {
+    fields: [paymentConfirmations.quoteResponseId],
+    references: [quoteResponses.id],
+  }),
+}));
+
 // Insert schemas for services system
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPartnerOfferedServiceSchema = createInsertSchema(partnerOfferedServices).omit({ id: true, createdAt: true, updatedAt: true });
@@ -705,6 +736,12 @@ export const insertApplicationDocumentSchema = createInsertSchema(applicationDoc
   uploadedAt: true,
 });
 
+export const insertPaymentConfirmationSchema = createInsertSchema(paymentConfirmations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertPartnerPostSchema = createInsertSchema(partnerPosts).omit({
   id: true,
   createdAt: true,
@@ -786,6 +823,8 @@ export type SmsOtpCode = typeof smsOtpCodes.$inferSelect;
 export type InsertSmsOtpCode = z.infer<typeof insertSmsOtpCodeSchema>;
 export type TempUserRegistration = typeof tempUserRegistrations.$inferSelect;
 export type InsertTempUserRegistration = z.infer<typeof insertTempUserRegistrationSchema>;
+export type PaymentConfirmation = typeof paymentConfirmations.$inferSelect;
+export type InsertPaymentConfirmation = z.infer<typeof insertPaymentConfirmationSchema>;
 export type ApplicationDocument = typeof applicationDocuments.$inferSelect;
 export type InsertApplicationDocument = z.infer<typeof insertApplicationDocumentSchema>;
 export type PartnerPost = typeof partnerPosts.$inferSelect;

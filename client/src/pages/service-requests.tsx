@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   FileText, 
   Clock, 
@@ -26,12 +27,15 @@ import {
   Edit,
   Download,
   UserCheck,
-  HandHeart
+  HandHeart,
+  Upload,
+  Send
 } from 'lucide-react';
 import { QuoteRequest, QuoteResponse, Partner } from '@shared/schema';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { PaymentConfirmationDialog } from '@/components/PaymentConfirmationDialog';
 
 // Utility function to clean HTML tags from text
 const cleanHTMLTags = (text: string): string => {
@@ -107,6 +111,8 @@ export default function ServiceRequests() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [activePaymentTab, setActivePaymentTab] = useState('card');
   const [paymentInstructions, setPaymentInstructions] = useState<any>(null);
+  const [isPaymentConfirmationDialogOpen, setIsPaymentConfirmationDialogOpen] = useState(false);
+  const [selectedQuoteForPayment, setSelectedQuoteForPayment] = useState<any>(null);
 
   // Fetch user's quote requests
   const { data: quoteRequests, isLoading: requestsLoading } = useQuery<(QuoteRequest & { partner: Partner; responses: QuoteResponse[] })[]>({
@@ -206,6 +212,12 @@ export default function ServiceRequests() {
       });
     },
   });
+
+  // Helper function to open payment confirmation dialog
+  const openPaymentConfirmation = (paymentMethod: 'card' | 'transfer' | 'other', quoteResponse: any) => {
+    setSelectedQuoteForPayment(quoteResponse);
+    setIsPaymentConfirmationDialogOpen(true);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -955,9 +967,19 @@ export default function ServiceRequests() {
               
               <TabsContent value="card" className="space-y-4">
                 <div className="p-6 border rounded-lg bg-gray-50">
-                  <p className="text-center text-gray-600">
+                  <p className="text-center text-gray-600 mb-4">
                     Bu ödeme yöntemi yakında aktifleştirilecektir. Havale / EFT şeklinde ödeme yapabilirsiniz.
                   </p>
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => openPaymentConfirmation('card', selectedQuoteResponse)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      data-testid="button-payment-confirmation-card"
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Ödememi Yaptım
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
               
@@ -1017,7 +1039,7 @@ export default function ServiceRequests() {
                       </div>
 
                       {/* Sent Date */}
-                      <p className="text-xs text-gray-500 text-center">
+                      <p className="text-xs text-gray-500 text-center mb-4">
                         Ödeme bilgileri: {new Date(paymentInstructions.paymentInstructions.sentAt).toLocaleDateString('tr-TR', {
                           year: 'numeric',
                           month: 'long',
@@ -1026,6 +1048,18 @@ export default function ServiceRequests() {
                           minute: '2-digit'
                         })} tarihinde gönderildi
                       </p>
+
+                      {/* Payment Confirmation Button */}
+                      <div className="flex justify-center">
+                        <Button 
+                          onClick={() => openPaymentConfirmation('transfer', selectedQuoteResponse)}
+                          className="bg-green-600 hover:bg-green-700"
+                          data-testid="button-payment-confirmation-transfer"
+                        >
+                          <Building className="h-4 w-4 mr-2" />
+                          Ödememi Yaptım
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -1042,9 +1076,19 @@ export default function ServiceRequests() {
               
               <TabsContent value="other" className="space-y-4">
                 <div className="p-6 border rounded-lg bg-gray-50">
-                  <p className="text-center text-gray-600">
+                  <p className="text-center text-gray-600 mb-4">
                     Bu ödeme yöntemi yakında aktifleştirilecektir. Havale / EFT şeklinde ödeme yapabilirsiniz.
                   </p>
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => openPaymentConfirmation('other', selectedQuoteResponse)}
+                      className="bg-purple-600 hover:bg-purple-700"
+                      data-testid="button-payment-confirmation-other"
+                    >
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Ödememi Yaptım
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
@@ -1057,6 +1101,13 @@ export default function ServiceRequests() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Confirmation Dialog */}
+      <PaymentConfirmationDialog
+        open={isPaymentConfirmationDialogOpen}
+        onClose={() => setIsPaymentConfirmationDialogOpen(false)}
+        quoteResponse={selectedQuoteForPayment}
+      />
 
       <Footer />
     </div>

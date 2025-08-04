@@ -69,6 +69,9 @@ import {
   type InsertMessage,
   type RecipientAccount,
   type InsertRecipientAccount,
+  paymentConfirmations,
+  type PaymentConfirmation,
+  type InsertPaymentConfirmation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
@@ -204,6 +207,12 @@ export interface IStorage {
   getRevisionRequestById(id: number): Promise<RevisionRequest | null>;
   getRevisionRequestsByQuoteResponseId(quoteResponseId: number): Promise<RevisionRequest[]>;
   updateRevisionRequest(id: number, updates: Partial<RevisionRequest>): Promise<RevisionRequest | null>;
+
+  // Payment confirmation methods
+  createPaymentConfirmation(confirmationData: InsertPaymentConfirmation): Promise<PaymentConfirmation>;
+  getPaymentConfirmationsByQuoteResponseId(quoteResponseId: number): Promise<PaymentConfirmation[]>;
+  getPaymentConfirmationById(id: number): Promise<PaymentConfirmation | undefined>;
+  updatePaymentConfirmation(id: number, updates: Partial<PaymentConfirmation>): Promise<PaymentConfirmation | undefined>;
 
   // System configuration methods
   getSystemConfigs(): Promise<Array<{ key: string; value: any }>>;
@@ -807,6 +816,44 @@ export class DatabaseStorage implements IStorage {
       .where(eq(revisionRequests.id, id))
       .returning();
     return revision || null;
+  }
+
+  // Payment confirmation methods
+  async createPaymentConfirmation(confirmationData: InsertPaymentConfirmation): Promise<PaymentConfirmation> {
+    const [newConfirmation] = await db
+      .insert(paymentConfirmations)
+      .values({
+        ...confirmationData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return newConfirmation;
+  }
+
+  async getPaymentConfirmationsByQuoteResponseId(quoteResponseId: number): Promise<PaymentConfirmation[]> {
+    return await db
+      .select()
+      .from(paymentConfirmations)
+      .where(eq(paymentConfirmations.quoteResponseId, quoteResponseId))
+      .orderBy(desc(paymentConfirmations.createdAt));
+  }
+
+  async getPaymentConfirmationById(id: number): Promise<PaymentConfirmation | undefined> {
+    const [confirmation] = await db
+      .select()
+      .from(paymentConfirmations)
+      .where(eq(paymentConfirmations.id, id));
+    return confirmation || undefined;
+  }
+
+  async updatePaymentConfirmation(id: number, updates: Partial<PaymentConfirmation>): Promise<PaymentConfirmation | undefined> {
+    const [confirmation] = await db
+      .update(paymentConfirmations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(paymentConfirmations.id, id))
+      .returning();
+    return confirmation || undefined;
   }
 
   async getServiceCategories(): Promise<ServiceCategory[]> {

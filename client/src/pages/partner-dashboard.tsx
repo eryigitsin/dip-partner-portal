@@ -73,6 +73,8 @@ export default function PartnerDashboard() {
   });
   const [selectedQuoteResponse, setSelectedQuoteResponse] = useState<any>(null);
   const [isQuoteDetailsDialogOpen, setIsQuoteDetailsDialogOpen] = useState(false);
+  const [selectedPaymentConfirmation, setSelectedPaymentConfirmation] = useState<any>(null);
+  const [isPaymentConfirmationDialogOpen, setIsPaymentConfirmationDialogOpen] = useState(false);
   const [isEditingQuoteResponse, setIsEditingQuoteResponse] = useState(false);
   const [isPaymentInstructionsDialogOpen, setIsPaymentInstructionsDialogOpen] = useState(false);
   const [selectedRecipientAccount, setSelectedRecipientAccount] = useState<any>(null);
@@ -186,6 +188,12 @@ export default function PartnerDashboard() {
   // Get recipient accounts for payment instructions
   const { data: recipientAccounts = [] } = useQuery<any[]>({
     queryKey: ["/api/partner/recipient-accounts"],
+    enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
+  });
+
+  // Fetch payment confirmations for partner
+  const { data: paymentConfirmations = [] } = useQuery<any[]>({
+    queryKey: ["/api/partner/payment-confirmations"],
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
@@ -324,6 +332,29 @@ export default function PartnerDashboard() {
       return response.json();
     },
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")) && !!partner,
+  });
+
+  // Payment confirmation approval/rejection mutation
+  const paymentConfirmationMutation = useMutation({
+    mutationFn: async ({ confirmationId, status, note }: { confirmationId: number; status: 'confirmed' | 'rejected'; note?: string }) => {
+      return await apiRequest('PATCH', `/api/payment-confirmations/${confirmationId}`, { status, note });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/payment-confirmations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/quote-requests'] });
+      setIsPaymentConfirmationDialogOpen(false);
+      toast({
+        title: 'Başarılı',
+        description: 'Ödeme durumu güncellendi.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Hata',
+        description: error.message || 'Ödeme durumu güncellenirken bir hata oluştu.',
+        variant: 'destructive',
+      });
+    },
   });
 
   const handleViewQuoteDetails = (request: QuoteRequest) => {
@@ -1058,6 +1089,137 @@ export default function PartnerDashboard() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Payment Confirmations Section */}
+            {paymentConfirmations.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                    Ödeme Onayları
+                  </CardTitle>
+                  <CardDescription>
+                    Müşterilerden gelen ödeme bildirimlerini onaylayın veya reddedin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Müşteri</TableHead>
+                        <TableHead>Tutar</TableHead>
+                        <TableHead>Ödeme Yöntemi</TableHead>
+                        <TableHead>Tarih</TableHead>
+                        <TableHead>Durum</TableHead>
+                        <TableHead>İşlemler</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paymentConfirmations.map((confirmation) => (
+                        <TableRow key={confirmation.id}>
+                          <TableCell>
+                            <div className="font-medium">{confirmation.user?.fullName || 'İsimsiz'}</div>
+                            <div className="text-sm text-gray-500">{confirmation.user?.email}</div>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            ₺{(confirmation.amount / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {confirmation.paymentMethod === 'card' && 'Kredi/Banka Kartı'}
+                              {confirmation.paymentMethod === 'transfer' && 'Havale/EFT'}
+                              {confirmation.paymentMethod === 'other' && 'Diğer Yöntemler'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500">
+                            {new Date(confirmation.createdAt).toLocaleDateString('tr-TR', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                confirmation.status === 'confirmed' ? 'default' : 
+                                confirmation.status === 'rejected' ? 'destructive' : 
+                                'secondary'
+                              }
+                            >
+                              {confirmation.status === 'pending' && 'Bekleyen'}
+                              {confirmation.status === 'confirmed' && 'Onaylandı'}
+                              {confirmation.status === 'rejected' && 'Reddedildi'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {confirmation.status === 'pending' ? (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="bg-green-600 hover:bg-green-700"
+                                  onClick={() => {
+                                    setSelectedPaymentConfirmation(confirmation);
+                                    setIsPaymentConfirmationDialogOpen(true);
+                                  }}
+                                  data-testid={`button-confirm-payment-${confirmation.id}`}
+                                >
+                                  Onayla
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    if (window.confirm('Bu ödeme bildirimini reddetmek istediğinizden emin misiniz?')) {
+                                      paymentConfirmationMutation.mutate({
+                                        confirmationId: confirmation.id,
+                                        status: 'rejected',
+                                        note: 'Partner tarafından reddedildi'
+                                      });
+                                    }
+                                  }}
+                                  data-testid={`button-reject-payment-${confirmation.id}`}
+                                >
+                                  Reddet
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedPaymentConfirmation(confirmation);
+                                    setIsPaymentConfirmationDialogOpen(true);
+                                  }}
+                                  data-testid={`button-view-payment-${confirmation.id}`}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Detay
+                                </Button>
+                                {confirmation.receiptFileUrl && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.open(confirmation.receiptFileUrl, '_blank')}
+                                    data-testid={`button-view-receipt-${confirmation.id}`}
+                                  >
+                                    <Download className="h-4 w-4 mr-1" />
+                                    Dekont
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Recipient Account Information Section */}
             <Card>
@@ -1801,6 +1963,154 @@ export default function PartnerDashboard() {
             </div>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Confirmation Detail Dialog */}
+      {selectedPaymentConfirmation && (
+        <Dialog open={isPaymentConfirmationDialogOpen} onOpenChange={setIsPaymentConfirmationDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+                Ödeme Onayı Detayları
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Payment Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Müşteri</Label>
+                  <p className="mt-1 font-medium">{selectedPaymentConfirmation.user?.fullName || 'İsimsiz'}</p>
+                  <p className="text-sm text-gray-500">{selectedPaymentConfirmation.user?.email}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Tutar</Label>
+                  <p className="mt-1 text-xl font-bold text-green-600">
+                    ₺{(selectedPaymentConfirmation.amount / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Ödeme Yöntemi</Label>
+                  <p className="mt-1">
+                    {selectedPaymentConfirmation.paymentMethod === 'card' && 'Kredi/Banka Kartı'}
+                    {selectedPaymentConfirmation.paymentMethod === 'transfer' && 'Havale/EFT'}
+                    {selectedPaymentConfirmation.paymentMethod === 'other' && 'Diğer Yöntemler'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Tarih</Label>
+                  <p className="mt-1">
+                    {new Date(selectedPaymentConfirmation.createdAt).toLocaleDateString('tr-TR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Receipt */}
+              {selectedPaymentConfirmation.receiptFileUrl && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Dekont/Makbuz</Label>
+                  <div className="mt-2 p-4 border rounded-lg bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">
+                        {selectedPaymentConfirmation.receiptFileName || 'Dekont dosyası'}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(selectedPaymentConfirmation.receiptFileUrl, '_blank')}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        İndir
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Customer Note */}
+              {selectedPaymentConfirmation.note && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Müşteri Notu</Label>
+                  <div className="mt-2 p-3 border rounded-lg bg-blue-50">
+                    <p className="text-sm text-blue-800">{selectedPaymentConfirmation.note}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Partner Notes */}
+              {selectedPaymentConfirmation.partnerNotes && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">İş Ortağı Notları</Label>
+                  <div className="mt-2 p-3 border rounded-lg bg-gray-50">
+                    <p className="text-sm text-gray-700">{selectedPaymentConfirmation.partnerNotes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Status */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Durum</Label>
+                <div className="mt-2">
+                  <Badge 
+                    variant={
+                      selectedPaymentConfirmation.status === 'confirmed' ? 'default' : 
+                      selectedPaymentConfirmation.status === 'rejected' ? 'destructive' : 
+                      'secondary'
+                    }
+                    className="text-sm"
+                  >
+                    {selectedPaymentConfirmation.status === 'pending' && 'Bekleyen'}
+                    {selectedPaymentConfirmation.status === 'confirmed' && 'Onaylandı'}
+                    {selectedPaymentConfirmation.status === 'rejected' && 'Reddedildi'}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Action Buttons for Pending Confirmations */}
+              {selectedPaymentConfirmation.status === 'pending' && (
+                <div className="flex justify-end space-x-3 pt-4 border-t">
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      if (window.confirm('Bu ödeme bildirimini reddetmek istediğinizden emin misiniz?')) {
+                        paymentConfirmationMutation.mutate({
+                          confirmationId: selectedPaymentConfirmation.id,
+                          status: 'rejected',
+                          note: 'Partner tarafından reddedildi'
+                        });
+                      }
+                    }}
+                    disabled={paymentConfirmationMutation.isPending}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reddet
+                  </Button>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      paymentConfirmationMutation.mutate({
+                        confirmationId: selectedPaymentConfirmation.id,
+                        status: 'confirmed',
+                        note: 'Partner tarafından onaylandı'
+                      });
+                    }}
+                    disabled={paymentConfirmationMutation.isPending}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Ödemeyi Onayla
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
