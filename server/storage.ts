@@ -71,7 +71,7 @@ import {
   type InsertRecipientAccount,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, ilike, and, or, count, sql } from "drizzle-orm";
+import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -1317,32 +1317,10 @@ export class DatabaseStorage implements IStorage {
     return followedPartners.map(row => row.partners);
   }
 
-  async getActiveQuoteResponses(): Promise<any[]> {
-    const responses = await db
-      .select()
-      .from(quoteResponses)
-      .where(
-        and(
-          or(
-            eq(quoteResponses.status, 'pending'),
-            eq(quoteResponses.status, 'quote_sent')
-          ),
-          isNotNull(quoteResponses.validUntil)
-        )
-      );
-    return responses;
-  }
-
   async getQuoteExpirationWarning(quoteResponseId: number): Promise<any> {
     // For now, we'll use a simple check. In a full implementation,
     // you might want to create a separate table for tracking warnings
     return null;
-  }
-
-  async recordQuoteExpirationWarning(quoteResponseId: number): Promise<void> {
-    // For now, this is a placeholder. In a full implementation,
-    // you might want to create a separate table for tracking warnings
-    console.log(`Warning recorded for quote response ${quoteResponseId}`);
   }
 
   async updateUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
@@ -2004,14 +1982,14 @@ export class DatabaseStorage implements IStorage {
     return requests;
   }
 
-  // Quote expiration methods (already implemented but missing isNotNull)
+  // Quote expiration methods
   async getActiveQuoteResponses(): Promise<any[]> {
     const quotes = await db
       .select()
       .from(quoteResponses)
       .where(and(
         eq(quoteResponses.status, 'pending'),
-        sql`${quoteResponses.validUntil} IS NOT NULL`
+        isNotNull(quoteResponses.validUntil)
       ));
     
     return quotes;
@@ -2073,7 +2051,7 @@ export class DatabaseStorage implements IStorage {
       .delete(recipientAccounts)
       .where(eq(recipientAccounts.id, id));
     
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async toggleDefaultRecipientAccount(accountId: number, isDefault: boolean, partnerId: number): Promise<RecipientAccount | undefined> {
