@@ -78,7 +78,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
   // Add comment mutation
   const addCommentMutation = useMutation({
     mutationFn: async ({ projectId, content, rating }: { projectId: number; content: string; rating?: number }) => {
-      return await apiRequest(`/api/projects/${projectId}/comments`, 'POST', { content, rating, isPublic: false });
+      return await apiRequest('POST', `/api/projects/${projectId}/comments`, { content, rating, isPublic: false });
     },
     onSuccess: () => {
       toast({
@@ -104,7 +104,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
   // Request completion mutation
   const requestCompletionMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      return await apiRequest(`/api/projects/${projectId}/request-completion`, 'POST');
+      return await apiRequest('POST', `/api/projects/${projectId}/request-completion`);
     },
     onSuccess: () => {
       toast({
@@ -130,7 +130,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
   // Approve completion mutation
   const approveCompletionMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      return await apiRequest(`/api/projects/${projectId}/approve-completion`, 'POST');
+      return await apiRequest('POST', `/api/projects/${projectId}/approve-completion`);
     },
     onSuccess: () => {
       toast({
@@ -219,7 +219,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
     );
   }
 
-  if (projects.length === 0) {
+  if (!Array.isArray(projects) || projects.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
@@ -240,7 +240,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
 
   return (
     <div className="space-y-4">
-      {projects.map((project: OngoingProject) => (
+      {Array.isArray(projects) && projects.map((project: OngoingProject) => (
         <Card key={project.id} className="hover:shadow-md transition-shadow">
           <CardHeader>
             <div className="flex items-start justify-between">
