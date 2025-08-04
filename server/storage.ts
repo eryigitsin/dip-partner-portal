@@ -302,6 +302,7 @@ export interface IStorage {
   getOngoingProjectsByUser(userId: number): Promise<OngoingProject[]>;
   getOngoingProjectsByPartner(partnerId: number): Promise<OngoingProject[]>;
   getOngoingProjectById(id: number): Promise<OngoingProject | undefined>;
+  getOngoingProjectByQuoteResponse(quoteResponseId: number): Promise<OngoingProject | undefined>;
   updateOngoingProject(id: number, updates: Partial<InsertOngoingProject>): Promise<OngoingProject>;
   requestProjectCompletion(projectId: number, requestedBy: number): Promise<OngoingProject>;
   approveProjectCompletion(projectId: number): Promise<OngoingProject>;
@@ -2189,6 +2190,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(ongoingProjects)
       .where(eq(ongoingProjects.id, id));
+    return project || undefined;
+  }
+
+  async getOngoingProjectByQuoteResponse(quoteResponseId: number): Promise<OngoingProject | undefined> {
+    const [project] = await db
+      .select()
+      .from(ongoingProjects)
+      .where(eq(ongoingProjects.quoteResponseId, quoteResponseId));
     return project || undefined;
   }
 

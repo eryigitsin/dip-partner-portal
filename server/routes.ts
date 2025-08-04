@@ -4827,17 +4827,21 @@ export function registerRoutes(app: Express): Server {
             new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : // 30 days from now
             undefined;
 
-          await storage.createOngoingProject({
-            quoteResponseId: quoteResponse.id,
-            userId: quoteRequest.userId,
-            partnerId: quoteResponse.partnerId,
-            projectTitle: quoteResponse.title,
-            projectNumber: quoteResponse.quoteNumber,
-            projectType,
-            status: 'active',
-            lastPaymentDate: new Date(),
-            nextPaymentDue
-          });
+          // Check if ongoing project already exists for this quote response
+          const existingProject = await storage.getOngoingProjectByQuoteResponse(quoteResponse.id);
+          if (!existingProject) {
+            await storage.createOngoingProject({
+              quoteResponseId: quoteResponse.id,
+              userId: quoteRequest.userId,
+              partnerId: quoteResponse.partnerId,
+              projectTitle: quoteResponse.title,
+              projectNumber: quoteResponse.quoteNumber,
+              projectType,
+              status: 'active',
+              lastPaymentDate: new Date(),
+              nextPaymentDue
+            });
+          }
         }
       }
 
@@ -4961,11 +4965,47 @@ export function registerRoutes(app: Express): Server {
         partnerNotes: note || null
       });
 
-      // If approved, update quote request status to completed
+      // If approved, update quote request status to completed and create ongoing project
       if (status === 'approved') {
         await storage.updateQuoteRequest(quoteResponse.quoteRequestId, {
           status: 'completed'
         });
+
+        // Create ongoing project from the approved payment
+        const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+        if (quoteRequest && quoteResponse.items) {
+          // Parse quote items to determine project type
+          const items = typeof quoteResponse.items === 'string' 
+            ? JSON.parse(quoteResponse.items) 
+            : quoteResponse.items;
+          
+          // Check if it's a monthly project (any item has recurring payment)
+          const isMonthlyProject = items.some((item: any) => 
+            item.isRecurring === true || item.recurring === true || 
+            item.paymentType === 'monthly' || item.billing === 'monthly'
+          );
+
+          const projectType = isMonthlyProject ? 'monthly' : 'one_time';
+          const nextPaymentDue = isMonthlyProject ? 
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : // 30 days from now
+            undefined;
+
+          // Check if ongoing project already exists for this quote response
+          const existingProject = await storage.getOngoingProjectByQuoteResponse(quoteResponse.id);
+          if (!existingProject) {
+            await storage.createOngoingProject({
+              quoteResponseId: quoteResponse.id,
+              userId: quoteRequest.userId,
+              partnerId: quoteResponse.partnerId,
+              projectTitle: quoteResponse.title,
+              projectNumber: quoteResponse.quoteNumber,
+              projectType,
+              status: 'active',
+              lastPaymentDate: new Date(),
+              nextPaymentDue
+            });
+          }
+        }
       }
 
       // Send email notification to customer
