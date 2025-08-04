@@ -1208,11 +1208,14 @@ export default function PartnerDashboard() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => window.open(confirmation.receiptFileUrl, '_blank')}
-                                    data-testid={`button-view-receipt-${confirmation.id}`}
+                                    onClick={() => {
+                                      // Use backend API to download receipt properly
+                                      window.open(`/api/payment-confirmations/${confirmation.id}/receipt`, '_blank');
+                                    }}
+                                    data-testid={`button-download-receipt-${confirmation.id}`}
                                   >
                                     <Download className="h-4 w-4 mr-1" />
-                                    Dekont
+                                    Dekontu İndir
                                   </Button>
                                 )}
                               </div>

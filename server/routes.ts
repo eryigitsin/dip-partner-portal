@@ -4535,7 +4535,7 @@ export function registerRoutes(app: Express): Server {
       if (receiptPath && receiptFile) {
         try {
           // Get file from Supabase and convert to base64 for Resend attachment
-          const fileData = await supabaseStorage.downloadFile('partner-documents', receiptPath);
+          const fileData = await supabaseStorage.downloadFile('PARTNER_DOCUMENTS', receiptPath);
           
           if (fileData) {
             const buffer = Buffer.from(await fileData.arrayBuffer());
@@ -4622,11 +4622,21 @@ export function registerRoutes(app: Express): Server {
           const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
           const customer = quoteRequest ? await storage.getUser(quoteRequest.userId!) : null;
           
+          // Create user object with proper structure expected by frontend
+          const userInfo = customer ? {
+            id: customer.id,
+            email: customer.email,
+            fullName: `${customer.firstName} ${customer.lastName}`.trim(),
+            firstName: customer.firstName,
+            lastName: customer.lastName
+          } : null;
+          
           paymentConfirmations.push({
             ...confirmation,
             quoteResponse,
             quoteRequest,
-            customer
+            customer,
+            user: userInfo // Add user field for frontend compatibility
           });
         }
       }
@@ -4669,7 +4679,7 @@ export function registerRoutes(app: Express): Server {
 
       try {
         // Download file from Supabase storage
-        const fileData = await supabaseStorage.downloadFile('partner-documents', paymentConfirmation.receiptFileUrl);
+        const fileData = await supabaseStorage.downloadFile('PARTNER_DOCUMENTS', paymentConfirmation.receiptFileUrl);
 
         if (!fileData) {
           return res.status(404).json({ message: "Receipt file not found" });
@@ -4719,6 +4729,9 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Get quote response to verify partner ownership
+      if (!paymentConfirmation.quoteResponseId) {
+        return res.status(400).json({ message: "Invalid payment confirmation data" });
+      }
       const quoteResponse = await storage.getQuoteResponseById(paymentConfirmation.quoteResponseId);
       if (!quoteResponse) {
         return res.status(404).json({ message: "Quote response not found" });
@@ -4843,6 +4856,9 @@ export function registerRoutes(app: Express): Server {
       }
 
       // Get quote response to verify partner ownership
+      if (!paymentConfirmation.quoteResponseId) {
+        return res.status(400).json({ message: "Invalid payment confirmation data" });
+      }
       const quoteResponse = await storage.getQuoteResponseById(paymentConfirmation.quoteResponseId);
       if (!quoteResponse) {
         return res.status(404).json({ message: "Quote response not found" });
