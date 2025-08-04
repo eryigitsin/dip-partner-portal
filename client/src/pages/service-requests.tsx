@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   FileText, 
   Clock, 
-  CheckCircle, 
+  CheckCircle,
   XCircle, 
   MessageCircle, 
   CreditCard,
@@ -506,7 +506,7 @@ export default function ServiceRequests() {
 
 
                                 {response.status === 'accepted' && (
-                                  <div className="mt-4">
+                                  <div className="mt-4 flex gap-2">
                                     <Button 
                                       onClick={async () => {
                                         setSelectedQuoteResponse(response);
@@ -528,6 +528,15 @@ export default function ServiceRequests() {
                                     >
                                       <CreditCard className="h-4 w-4" />
                                       Ödeme Yap
+                                    </Button>
+                                    <Button 
+                                      onClick={() => openPaymentConfirmation('transfer', response)}
+                                      variant="outline"
+                                      className="flex items-center gap-2 border-green-600 text-green-600 hover:bg-green-50"
+                                      data-testid="button-payment-confirmation-summary"
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                      Ödememi Yaptım
                                     </Button>
                                   </div>
                                 )}
