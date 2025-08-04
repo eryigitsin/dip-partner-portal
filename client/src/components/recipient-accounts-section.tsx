@@ -15,6 +15,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertRecipientAccountSchema, type RecipientAccount, type InsertRecipientAccount } from "@shared/schema";
 import { Plus, Edit, Trash2, Building2, CreditCard, Check, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RecipientAccountsSectionProps {
   partnerId: number | undefined;
@@ -394,8 +395,6 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
                 <TableRow>
                   <TableHead>Hesap Adı</TableHead>
                   <TableHead>Banka</TableHead>
-                  <TableHead>Alıcı Adı</TableHead>
-                  <TableHead>IBAN</TableHead>
                   <TableHead>Durum</TableHead>
                   <TableHead>İşlemler</TableHead>
                 </TableRow>
@@ -414,52 +413,71 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
                       </div>
                     </TableCell>
                     <TableCell>{account.bankName}</TableCell>
-                    <TableCell>{account.accountHolderName}</TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {account.iban}
-                    </TableCell>
                     <TableCell>
                       <Badge variant={account.isActive ? "default" : "secondary"}>
                         {account.isActive ? "Aktif" : "Pasif"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(account)}
-                          data-testid={`button-edit-account-${account.id}`}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleDefaultMutation.mutate({ 
-                            accountId: account.id, 
-                            isDefault: !account.isDefault 
-                          })}
-                          disabled={toggleDefaultMutation.isPending}
-                          data-testid={`button-toggle-default-${account.id}`}
-                        >
-                          {account.isDefault ? (
-                            <X className="w-4 h-4 text-red-500" />
-                          ) : (
-                            <Check className="w-4 h-4 text-green-500" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(account.id)}
-                          disabled={deleteAccountMutation.isPending}
-                          className="text-red-500 hover:text-red-700"
-                          data-testid={`button-delete-account-${account.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex items-center space-x-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(account)}
+                                data-testid={`button-edit-account-${account.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Düzenle</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleDefaultMutation.mutate({ 
+                                  accountId: account.id, 
+                                  isDefault: !account.isDefault 
+                                })}
+                                disabled={toggleDefaultMutation.isPending}
+                                data-testid={`button-toggle-default-${account.id}`}
+                              >
+                                {account.isDefault ? (
+                                  <X className="w-4 h-4 text-red-500" />
+                                ) : (
+                                  <Check className="w-4 h-4 text-green-500" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{account.isDefault ? "Varsayılan Değil" : "Varsayılan Yap"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(account.id)}
+                                disabled={deleteAccountMutation.isPending}
+                                className="text-red-500 hover:text-red-700"
+                                data-testid={`button-delete-account-${account.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Sil</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))}
