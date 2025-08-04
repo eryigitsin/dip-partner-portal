@@ -269,6 +269,7 @@ export const quoteResponses = pgTable("quote_responses", {
   notes: text("notes"),
   validUntil: timestamp("valid_until"), // Quote expiration date
   status: text("status").default("sent"), // sent, accepted, rejected, expired
+  paymentInstructions: jsonb("payment_instructions"), // Bank account details and instructions
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

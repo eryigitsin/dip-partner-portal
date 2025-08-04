@@ -106,6 +106,7 @@ export default function ServiceRequests() {
   const [revisionMessage, setRevisionMessage] = useState('');
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [activePaymentTab, setActivePaymentTab] = useState('card');
+  const [paymentInstructions, setPaymentInstructions] = useState<any>(null);
 
   // Fetch user's quote requests
   const { data: quoteRequests, isLoading: requestsLoading } = useQuery<(QuoteRequest & { partner: Partner; responses: QuoteResponse[] })[]>({
@@ -495,8 +496,20 @@ export default function ServiceRequests() {
                                 {response.status === 'accepted' && (
                                   <div className="mt-4">
                                     <Button 
-                                      onClick={() => {
+                                      onClick={async () => {
                                         setSelectedQuoteResponse(response);
+                                        // Fetch payment instructions when opening payment dialog
+                                        try {
+                                          const res = await apiRequest('GET', `/api/quote-responses/${response.id}/payment-instructions`);
+                                          const data = await res.json();
+                                          setPaymentInstructions(data);
+                                          if (data.hasPaymentInstructions) {
+                                            setActivePaymentTab('transfer'); // Switch to transfer tab if payment instructions exist
+                                          }
+                                        } catch (error) {
+                                          console.error('Failed to fetch payment instructions:', error);
+                                          setPaymentInstructions(null);
+                                        }
                                         setIsPaymentDialogOpen(true);
                                       }}
                                       className="flex items-center gap-2"
@@ -753,7 +766,21 @@ export default function ServiceRequests() {
                       Kabul Edildi
                     </Button>
                     <Button
-                      onClick={() => setIsPaymentDialogOpen(true)}
+                      onClick={async () => {
+                        // Fetch payment instructions when opening payment dialog
+                        try {
+                          const response = await apiRequest('GET', `/api/quote-responses/${selectedQuoteResponse.id}/payment-instructions`);
+                          const data = await response.json();
+                          setPaymentInstructions(data);
+                          if (data.hasPaymentInstructions) {
+                            setActivePaymentTab('transfer'); // Switch to transfer tab if payment instructions exist
+                          }
+                        } catch (error) {
+                          console.error('Failed to fetch payment instructions:', error);
+                          setPaymentInstructions(null);
+                        }
+                        setIsPaymentDialogOpen(true);
+                      }}
                       className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
                     >
                       <CreditCard className="h-4 w-4" />
@@ -935,14 +962,82 @@ export default function ServiceRequests() {
               </TabsContent>
               
               <TabsContent value="transfer" className="space-y-4">
-                <div className="p-6 border rounded-lg bg-blue-50">
-                  <p className="text-center text-blue-800 mb-4">
-                    Partner ödeme bilgilerini sizinle paylaştığında buradan görebileceksiniz.
-                  </p>
-                  <p className="text-center text-sm text-blue-600">
-                    Partner ile iletişime geçerek ödeme bilgilerini talep edebilirsiniz.
-                  </p>
-                </div>
+                {paymentInstructions?.hasPaymentInstructions ? (
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg bg-green-50 border-green-200">
+                      <h3 className="text-lg font-semibold text-green-800 mb-3">Ödeme Bilgileri</h3>
+                      
+                      {/* Bank Account Details */}
+                      <div className="bg-white p-4 rounded-lg border border-green-200 mb-4">
+                        <h4 className="font-medium text-gray-900 mb-3">Banka Bilgileri</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <label className="font-medium text-gray-700">Banka:</label>
+                            <p className="text-gray-900">{paymentInstructions.paymentInstructions.accountData.bankName}</p>
+                          </div>
+                          <div>
+                            <label className="font-medium text-gray-700">Alıcı Adı:</label>
+                            <p className="text-gray-900">{paymentInstructions.paymentInstructions.accountData.accountHolderName}</p>
+                          </div>
+                          {paymentInstructions.paymentInstructions.accountData.accountNumber && (
+                            <div>
+                              <label className="font-medium text-gray-700">Hesap No:</label>
+                              <p className="text-gray-900 font-mono">{paymentInstructions.paymentInstructions.accountData.accountNumber}</p>
+                            </div>
+                          )}
+                          <div>
+                            <label className="font-medium text-gray-700">IBAN:</label>
+                            <p className="text-gray-900 font-mono bg-gray-50 p-2 rounded border">{paymentInstructions.paymentInstructions.accountData.iban}</p>
+                          </div>
+                          {paymentInstructions.paymentInstructions.accountData.swiftCode && (
+                            <div>
+                              <label className="font-medium text-gray-700">SWIFT Kodu:</label>
+                              <p className="text-gray-900 font-mono">{paymentInstructions.paymentInstructions.accountData.swiftCode}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Payment Instructions */}
+                      {paymentInstructions.paymentInstructions.instructions && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                          <h4 className="font-medium text-yellow-800 mb-2">Ödeme Yönergeleri</h4>
+                          <p className="text-yellow-700 whitespace-pre-line text-sm">
+                            {paymentInstructions.paymentInstructions.instructions}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Amount Info */}
+                      <div className="bg-gray-50 border rounded-lg p-4 mb-4">
+                        <h4 className="font-medium text-gray-800 mb-2">Tutar Bilgisi</h4>
+                        <p className="text-xl font-bold text-green-600">
+                          Toplam Tutar: {formatCurrency(selectedQuoteResponse.totalAmount)}
+                        </p>
+                      </div>
+
+                      {/* Sent Date */}
+                      <p className="text-xs text-gray-500 text-center">
+                        Ödeme bilgileri: {new Date(paymentInstructions.paymentInstructions.sentAt).toLocaleDateString('tr-TR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })} tarihinde gönderildi
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 border rounded-lg bg-blue-50">
+                    <p className="text-center text-blue-800 mb-4">
+                      Partner henüz ödeme bilgilerini paylaşmadı.
+                    </p>
+                    <p className="text-center text-sm text-blue-600">
+                      Partner ile iletişime geçerek ödeme bilgilerini talep edebilirsiniz.
+                    </p>
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="other" className="space-y-4">

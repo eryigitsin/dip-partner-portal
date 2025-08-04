@@ -4313,6 +4313,17 @@ export function registerRoutes(app: Express): Server {
         `
       };
 
+      // Save payment instructions to quote response
+      const paymentInstructionsData = {
+        accountData,
+        instructions,
+        sentAt: new Date().toISOString()
+      };
+
+      await storage.updateQuoteResponse(quoteResponseId, {
+        paymentInstructions: paymentInstructionsData
+      });
+
       // Send email notification
       const emailResult = await resendService.sendEmail(emailData);
 
@@ -4330,6 +4341,44 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error sending payment instructions:', error);
       res.status(500).json({ message: "Failed to send payment instructions" });
+    }
+  });
+
+  // Get payment instructions for quote response
+  app.get("/api/quote-responses/:id/payment-instructions", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const quoteResponseId = parseInt(req.params.id);
+      
+      // Get quote response
+      const quoteResponse = await storage.getQuoteResponseById(quoteResponseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ message: "Quote response not found" });
+      }
+
+      // Get quote request to verify user has access
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest) {
+        return res.status(404).json({ message: "Quote request not found" });
+      }
+
+      // Check if user has access to this quote
+      if (req.user!.userType === 'user' && quoteRequest.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Return payment instructions if available
+      res.json({
+        hasPaymentInstructions: !!quoteResponse.paymentInstructions,
+        paymentInstructions: quoteResponse.paymentInstructions || null
+      });
+
+    } catch (error) {
+      console.error('Error fetching payment instructions:', error);
+      res.status(500).json({ message: "Failed to fetch payment instructions" });
     }
   });
 
