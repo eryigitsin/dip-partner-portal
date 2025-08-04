@@ -52,13 +52,11 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
 
   // Create/Update account mutation
   const createAccountMutation = useMutation({
-    mutationFn: (data: InsertRecipientAccount) => {
+    mutationFn: async (data: InsertRecipientAccount) => {
       const method = editingAccount ? 'PUT' : 'POST';
       const url = `/api/partner/recipient-accounts${editingAccount ? `/${editingAccount.id}` : ''}`;
-      return apiRequest(url, {
-        method,
-        body: data,
-      });
+      const response = await apiRequest(method, url, data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
@@ -81,8 +79,10 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
 
   // Delete account mutation
   const deleteAccountMutation = useMutation({
-    mutationFn: (accountId: number) => 
-      apiRequest(`/api/partner/recipient-accounts/${accountId}`, { method: 'DELETE' }),
+    mutationFn: async (accountId: number) => {
+      const response = await apiRequest('DELETE', `/api/partner/recipient-accounts/${accountId}`);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
       toast({
@@ -101,11 +101,10 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
 
   // Toggle default account mutation
   const toggleDefaultMutation = useMutation({
-    mutationFn: ({ accountId, isDefault }: { accountId: number; isDefault: boolean }) => 
-      apiRequest(`/api/partner/recipient-accounts/${accountId}/toggle-default`, {
-        method: 'PATCH',
-        body: { isDefault },
-      }),
+    mutationFn: async ({ accountId, isDefault }: { accountId: number; isDefault: boolean }) => {
+      const response = await apiRequest('PATCH', `/api/partner/recipient-accounts/${accountId}/toggle-default`, { isDefault });
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
       toast({
