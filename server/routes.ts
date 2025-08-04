@@ -4244,7 +4244,7 @@ export function registerRoutes(app: Express): Server {
       // Create payment instructions email
       const emailData = {
         to: user.email,
-        subject: `Ödeme Bilgileri - ${quoteRequest.serviceNeeded}`,
+        subject: `Ödeme Bilgileri - ${quoteRequest.serviceNeeded.replace(/\r?\n/g, ' ').trim()}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #1e40af;">Ödeme Bilgileri</h2>
