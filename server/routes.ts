@@ -3925,5 +3925,70 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // User-Partner Interaction endpoints
+  app.get("/api/user/partner-interactions", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userId = req.user!.id;
+      const interactions = await storage.getUserPartnerInteractions(userId);
+      res.json(interactions);
+    } catch (error) {
+      console.error('Error fetching user partner interactions:', error);
+      res.status(500).json({ message: "Failed to fetch interactions" });
+    }
+  });
+
+  app.post("/api/user/dismiss-info-card", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userId = req.user!.id;
+      const { cardType, referenceId } = req.body;
+      
+      await storage.dismissInfoCard(userId, cardType, referenceId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error dismissing info card:', error);
+      res.status(500).json({ message: "Failed to dismiss info card" });
+    }
+  });
+
+  app.get("/api/user/quote-history", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userId = req.user!.id;
+      const history = await storage.getUserQuoteHistory(userId);
+      res.json(history);
+    } catch (error) {
+      console.error('Error fetching quote history:', error);
+      res.status(500).json({ message: "Failed to fetch quote history" });
+    }
+  });
+
+  app.post("/api/user/record-profile-visit", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const userId = req.user!.id;
+      const { partnerId } = req.body;
+      
+      await storage.recordPartnerProfileVisit(userId, partnerId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error recording profile visit:', error);
+      res.status(500).json({ message: "Failed to record profile visit" });
+    }
+  });
+
   return httpServer;
 }

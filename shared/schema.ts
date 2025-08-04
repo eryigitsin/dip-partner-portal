@@ -381,6 +381,38 @@ export const tempUserRegistrations = pgTable("temp_user_registrations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Partner profile visits for tracking user interactions
+export const partnerProfileVisits = pgTable("partner_profile_visits", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  visitedAt: timestamp("visited_at").defaultNow(),
+});
+
+// User partner interactions for smart badges
+export const userPartnerInteractions = pgTable("user_partner_interactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  hasVisitedProfile: boolean("has_visited_profile").default(false),
+  isFollowing: boolean("is_following").default(false),
+  hasMessaged: boolean("has_messaged").default(false),
+  hasWorkedTogether: boolean("has_worked_together").default(false),
+  hasPaidForService: boolean("has_paid_for_service").default(false),
+  lastInteractionAt: timestamp("last_interaction_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Dismissed info cards for user preferences
+export const dismissedInfoCards = pgTable("dismissed_info_cards", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  cardType: text("card_type").notNull(), // 'previous_quote_request'
+  referenceId: integer("reference_id").notNull(), // partner ID or quote request ID
+  dismissedAt: timestamp("dismissed_at").defaultNow(),
+});
+
 // System configuration table
 export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
@@ -526,6 +558,35 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
+export const partnerProfileVisitsRelations = relations(partnerProfileVisits, ({ one }) => ({
+  user: one(users, {
+    fields: [partnerProfileVisits.userId],
+    references: [users.id],
+  }),
+  partner: one(partners, {
+    fields: [partnerProfileVisits.partnerId],
+    references: [partners.id],
+  }),
+}));
+
+export const userPartnerInteractionsRelations = relations(userPartnerInteractions, ({ one }) => ({
+  user: one(users, {
+    fields: [userPartnerInteractions.userId],
+    references: [users.id],
+  }),
+  partner: one(partners, {
+    fields: [userPartnerInteractions.partnerId],
+    references: [partners.id],
+  }),
+}));
+
+export const dismissedInfoCardsRelations = relations(dismissedInfoCards, ({ one }) => ({
+  user: one(users, {
+    fields: [dismissedInfoCards.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas for services system
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPartnerOfferedServiceSchema = createInsertSchema(partnerOfferedServices).omit({ id: true, createdAt: true, updatedAt: true });
@@ -632,6 +693,22 @@ export const insertUserEmailPreferencesSchema = createInsertSchema(userEmailPref
   updatedAt: true,
 });
 
+export const insertPartnerProfileVisitSchema = createInsertSchema(partnerProfileVisits).omit({
+  id: true,
+  visitedAt: true,
+});
+
+export const insertUserPartnerInteractionSchema = createInsertSchema(userPartnerInteractions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDismissedInfoCardSchema = createInsertSchema(dismissedInfoCards).omit({
+  id: true,
+  dismissedAt: true,
+});
+
 export const insertFeedbackSchema = createInsertSchema(feedback).omit({
   id: true,
   createdAt: true,
@@ -704,3 +781,9 @@ export type InsertMarketingContact = z.infer<typeof insertMarketingContactSchema
 export type MarketingContact = typeof marketingContacts.$inferSelect;
 export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type PartnerProfileVisit = typeof partnerProfileVisits.$inferSelect;
+export type InsertPartnerProfileVisit = z.infer<typeof insertPartnerProfileVisitSchema>;
+export type UserPartnerInteraction = typeof userPartnerInteractions.$inferSelect;
+export type InsertUserPartnerInteraction = z.infer<typeof insertUserPartnerInteractionSchema>;
+export type DismissedInfoCard = typeof dismissedInfoCards.$inferSelect;
+export type InsertDismissedInfoCard = z.infer<typeof insertDismissedInfoCardSchema>;

@@ -23,6 +23,9 @@ import {
   feedback,
   markets,
   partnerSelectedMarkets,
+  partnerProfileVisits,
+  userPartnerInteractions,
+  dismissedInfoCards,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -248,6 +251,22 @@ export interface IStorage {
   getConversationMessages(conversationId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   markMessagesAsRead(conversationId: string, userId: number): Promise<void>;
+
+  // User-Partner Interaction methods
+  getUserPartnerInteractions(userId: number): Promise<any[]>;
+  updateUserPartnerInteraction(userId: number, partnerId: number, updates: any): Promise<void>;
+  recordPartnerProfileVisit(userId: number, partnerId: number): Promise<void>;
+  
+  // Info card dismissal methods
+  dismissInfoCard(userId: number, cardType: string, referenceId: number): Promise<void>;
+  getDismissedInfoCards(userId: number): Promise<any[]>;
+  
+  // Quote history methods
+  getUserQuoteHistory(userId: number): Promise<any[]>;
+
+  // Quote expiration methods
+  getActiveQuoteResponses(): Promise<any[]>;
+  recordQuoteExpirationWarning(quoteId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1895,6 +1914,102 @@ export class DatabaseStorage implements IStorage {
         eq(messages.receiverId, userId),
         eq(messages.isRead, false)
       ));
+  }
+
+  // User-Partner Interaction methods
+  async getUserPartnerInteractions(userId: number): Promise<any[]> {
+    const interactions = await db
+      .select()
+      .from(userPartnerInteractions)
+      .where(eq(userPartnerInteractions.userId, userId));
+    
+    return interactions;
+  }
+
+  async updateUserPartnerInteraction(userId: number, partnerId: number, updates: any): Promise<void> {
+    const existing = await db
+      .select()
+      .from(userPartnerInteractions)
+      .where(and(
+        eq(userPartnerInteractions.userId, userId),
+        eq(userPartnerInteractions.partnerId, partnerId)
+      ));
+
+    if (existing.length > 0) {
+      await db
+        .update(userPartnerInteractions)
+        .set({ ...updates, lastInteractionAt: new Date(), updatedAt: new Date() })
+        .where(and(
+          eq(userPartnerInteractions.userId, userId),
+          eq(userPartnerInteractions.partnerId, partnerId)
+        ));
+    } else {
+      await db
+        .insert(userPartnerInteractions)
+        .values({
+          userId,
+          partnerId,
+          ...updates,
+          lastInteractionAt: new Date(),
+        });
+    }
+  }
+
+  async recordPartnerProfileVisit(userId: number, partnerId: number): Promise<void> {
+    // Record the visit
+    await db
+      .insert(partnerProfileVisits)
+      .values({ userId, partnerId });
+
+    // Update interaction record
+    await this.updateUserPartnerInteraction(userId, partnerId, { 
+      hasVisitedProfile: true 
+    });
+  }
+
+  // Info card dismissal methods
+  async dismissInfoCard(userId: number, cardType: string, referenceId: number): Promise<void> {
+    await db
+      .insert(dismissedInfoCards)
+      .values({ userId, cardType, referenceId });
+  }
+
+  async getDismissedInfoCards(userId: number): Promise<any[]> {
+    const cards = await db
+      .select()
+      .from(dismissedInfoCards)
+      .where(eq(dismissedInfoCards.userId, userId));
+    
+    return cards;
+  }
+
+  // Quote history methods
+  async getUserQuoteHistory(userId: number): Promise<any[]> {
+    const requests = await db
+      .select()
+      .from(quoteRequests)
+      .where(eq(quoteRequests.userId, userId))
+      .orderBy(desc(quoteRequests.createdAt));
+    
+    return requests;
+  }
+
+  // Quote expiration methods (already implemented but missing isNotNull)
+  async getActiveQuoteResponses(): Promise<any[]> {
+    const quotes = await db
+      .select()
+      .from(quoteResponses)
+      .where(and(
+        eq(quoteResponses.status, 'pending'),
+        sql`${quoteResponses.validUntil} IS NOT NULL`
+      ));
+    
+    return quotes;
+  }
+
+  async recordQuoteExpirationWarning(quoteId: number): Promise<void> {
+    // For now, we'll just log this - in the future we could have a separate warnings table
+    console.log(`Quote expiration warning recorded for quote ${quoteId}`);
   }
 
 }

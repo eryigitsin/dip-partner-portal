@@ -24,12 +24,48 @@ import {
   Heart,
   Eye,
   Edit,
-  Download
+  Download,
+  UserCheck,
+  HandHeart,
+  X
 } from 'lucide-react';
 import { QuoteRequest, QuoteResponse, Partner } from '@shared/schema';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+
+// Utility function to clean HTML tags from text
+const cleanHTMLTags = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/&nbsp;/g, ' ') // Replace HTML entities
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .trim();
+};
+
+// Function to get smart badge based on user-partner interaction
+const getSmartBadge = (partner: any, userInteractions: any) => {
+  const interaction = userInteractions?.find((i: any) => i.partnerId === partner.id);
+  
+  if (interaction?.hasPaidForService || interaction?.hasWorkedTogether) {
+    return { text: 'Çalıştın', variant: 'default', icon: HandHeart };
+  }
+  if (interaction?.hasMessaged) {
+    return { text: 'İletişime Geçtin', variant: 'secondary', icon: MessageCircle };
+  }
+  if (interaction?.isFollowing) {
+    return { text: 'Takip Ediyorsun', variant: 'outline', icon: UserCheck };
+  }
+  if (interaction?.hasVisitedProfile) {
+    return { text: 'İnceledin', variant: 'outline', icon: Eye };
+  }
+  
+  return { text: 'Aktif', variant: partner.isActive ? 'default' : 'secondary', icon: null };
+};
 
 export default function ServiceRequests() {
   const { user } = useAuth();
@@ -37,6 +73,7 @@ export default function ServiceRequests() {
   const [activeTab, setActiveTab] = useState('requests');
   const [selectedQuoteResponse, setSelectedQuoteResponse] = useState<any>(null);
   const [isQuoteDetailsDialogOpen, setIsQuoteDetailsDialogOpen] = useState(false);
+  const [dismissedCards, setDismissedCards] = useState<Set<string>>(new Set());
   const [isRevisionDialogOpen, setIsRevisionDialogOpen] = useState(false);
   const [revisionItems, setRevisionItems] = useState<any[]>([]);
   const [revisionMessage, setRevisionMessage] = useState('');
@@ -51,6 +88,36 @@ export default function ServiceRequests() {
   const { data: suggestedPartners, isLoading: suggestedLoading } = useQuery<Partner[]>({
     queryKey: ['/api/user/suggested-partners'],
     enabled: !!user,
+  });
+
+  // Fetch user-partner interactions for smart badges
+  const { data: userInteractions } = useQuery({
+    queryKey: ['/api/user/partner-interactions'],
+    enabled: !!user && activeTab === 'suggested',
+  });
+
+  // Fetch user's previous quote requests to show info cards
+  const { data: userQuoteHistory } = useQuery({
+    queryKey: ['/api/user/quote-history'],
+    enabled: !!user && activeTab === 'suggested',
+  });
+
+  // Dismiss info card mutation
+  const dismissCardMutation = useMutation({
+    mutationFn: async ({ cardType, referenceId }: { cardType: string; referenceId: number }) => {
+      const res = await apiRequest('POST', '/api/user/dismiss-info-card', {
+        cardType,
+        referenceId,
+      });
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      setDismissedCards(prev => new Set([...prev, `${variables.cardType}-${variables.referenceId}`]));
+      toast({
+        title: 'Bilgi',
+        description: 'Kart gizlendi.',
+      });
+    },
   });
 
   // Accept quote response mutation
@@ -507,36 +574,95 @@ export default function ServiceRequests() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {suggestedPartners.map((partner) => (
-                      <Card key={partner.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-lg">{partner.companyName}</CardTitle>
-                              <CardDescription>{partner.serviceCategory}</CardDescription>
+                    {suggestedPartners.map((partner) => {
+                      const smartBadge = getSmartBadge(partner, userInteractions);
+                      const BadgeIcon = smartBadge.icon;
+                      const hasRequestedQuote = userQuoteHistory?.some((req: any) => req.partnerId === partner.id && !req.hasWorkedTogether);
+                      const cardDismissKey = `previous_quote_request-${partner.id}`;
+                      const isCardDismissed = dismissedCards.has(cardDismissKey);
+                      
+                      return (
+                        <div key={partner.id} className="space-y-3">
+                          {/* Dismissible Info Card for Previous Quote Requests */}
+                          {hasRequestedQuote && !isCardDismissed && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 relative">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute top-1 right-1 h-6 w-6 p-0"
+                                onClick={() => dismissCardMutation.mutate({ cardType: 'previous_quote_request', referenceId: partner.id })}
+                                data-testid={`dismiss-info-card-${partner.id}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                              <div className="flex items-center gap-2 text-blue-700 text-sm">
+                                <MessageCircle className="h-4 w-4" />
+                                <span className="font-medium">Daha önce teklif talep ettin</span>
+                              </div>
+                              <p className="text-blue-600 text-xs mt-1">Bu partnerden daha önce teklif almıştın.</p>
                             </div>
-                            <Badge variant={partner.isActive ? 'default' : 'secondary'}>
-                              {partner.isActive ? 'Aktif' : 'Pasif'}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-gray-600 mb-4">
-                            {partner.shortDescription || partner.description?.substring(0, 120) + '...'}
-                          </p>
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="flex-1"
-                              onClick={() => window.open(`https://partner.dip.tc/partner/${partner.username}`, '_blank')}
-                            >
-                              Profile Git
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          )}
+                          
+                          {/* Partner Card */}
+                          <Card className="hover:shadow-md transition-shadow">
+                            <CardHeader>
+                              <div className="flex items-start gap-3">
+                                {/* Partner Logo */}
+                                <div className="flex-shrink-0">
+                                  {partner.logo ? (
+                                    <img
+                                      src={partner.logo}
+                                      alt={`${partner.companyName} logo`}
+                                      className="w-12 h-12 object-contain rounded-lg border border-gray-200"
+                                      data-testid={`partner-logo-${partner.id}`}
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
+                                      <Building className="h-6 w-6 text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <CardTitle className="text-lg truncate">{partner.companyName}</CardTitle>
+                                  <CardDescription className="truncate">{partner.serviceCategory}</CardDescription>
+                                </div>
+                                
+                                {/* Smart Badge */}
+                                <Badge 
+                                  variant={smartBadge.variant as any} 
+                                  className="flex-shrink-0"
+                                  data-testid={`smart-badge-${partner.id}`}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    {BadgeIcon && <BadgeIcon className="h-3 w-3" />}
+                                    {smartBadge.text}
+                                  </div>
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-sm text-gray-600 mb-4 line-clamp-3" data-testid={`partner-description-${partner.id}`}>
+                                {cleanHTMLTags(partner.shortDescription || partner.description || '')?.substring(0, 120) + 
+                                 (cleanHTMLTags(partner.shortDescription || partner.description || '')?.length > 120 ? '...' : '')}
+                              </p>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="flex-1"
+                                  onClick={() => window.open(`https://partner.dip.tc/partner/${partner.username}`, '_blank')}
+                                  data-testid={`view-profile-${partner.id}`}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Profili Görüntüle
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
