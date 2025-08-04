@@ -1,5 +1,5 @@
-import { storage } from './storage.js';
-import { resend } from './email.js';
+import { storage } from './storage';
+import { resend } from './email';
 
 export class QuoteExpirationJob {
   private intervalId: NodeJS.Timeout | null = null;
