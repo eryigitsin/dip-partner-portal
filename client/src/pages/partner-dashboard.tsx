@@ -716,7 +716,7 @@ export default function PartnerDashboard() {
                       </p>
                     ) : (
                       <p className="text-xs text-green-600 mt-1">
-                        Kullanıcı adınızı henüz değiştirebilirsiniz
+                        Kullanıcı adınızı sadece bir kez değiştirebilirsiniz.
                       </p>
                     )}
                   </div>
