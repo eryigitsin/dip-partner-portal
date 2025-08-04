@@ -73,6 +73,9 @@ export default function PartnerDashboard() {
   const [performanceHelpDismissed, setPerformanceHelpDismissed] = useState(() => {
     return localStorage.getItem('performanceHelpDismissed') === 'true';
   });
+  const [projectsHelpDismissed, setProjectsHelpDismissed] = useState(() => {
+    return localStorage.getItem('projectsHelpDismissed') === 'true';
+  });
   const [selectedQuoteResponse, setSelectedQuoteResponse] = useState<any>(null);
   const [isQuoteDetailsDialogOpen, setIsQuoteDetailsDialogOpen] = useState(false);
   const [selectedPaymentConfirmation, setSelectedPaymentConfirmation] = useState<any>(null);
@@ -443,6 +446,11 @@ export default function PartnerDashboard() {
   const dismissQuotesHelp = () => {
     setQuotesHelpDismissed(true);
     localStorage.setItem('quotesHelpDismissed', 'true');
+  };
+
+  const dismissProjectsHelp = () => {
+    setProjectsHelpDismissed(true);
+    localStorage.setItem('projectsHelpDismissed', 'true');
   };
 
 
@@ -1444,7 +1452,42 @@ export default function PartnerDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="ongoing-projects">
+          <TabsContent value="ongoing-projects" className="space-y-6">
+            {/* Instructions for Projects */}
+            {!projectsHelpDismissed && (
+              <Card className="border-blue-200 bg-blue-50 relative">
+                <CardContent className="pt-6">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <FolderOpen className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-blue-800 mb-2">
+                        Nasıl Çalışır?
+                      </h3>
+                      <div className="text-sm text-blue-700">
+                        <p>Yakında buradan projenizi detaylı olarak yönetebileceksiniz.</p>
+                      </div>
+                    </div>
+                    <TooltipNoDelay delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 h-6 w-6 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                          onClick={dismissProjectsHelp}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Tekrar Gösterilmesin</p>
+                      </TooltipContent>
+                    </TooltipNoDelay>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <OngoingProjects userType="partner" />
           </TabsContent>
 

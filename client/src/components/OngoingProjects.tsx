@@ -107,7 +107,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
       return await apiRequest('POST', `/api/projects/${projectId}/request-completion`);
     },
     onSuccess: (data, variables) => {
-      const project = projects.find((p: OngoingProject) => p.id === variables);
+      const project = Array.isArray(projects) ? projects.find((p: OngoingProject) => p.id === variables) : undefined;
       const isMonthly = project?.projectType === 'monthly';
       toast({
         title: isMonthly ? "Sonlandırma talebi gönderildi" : "Tamamlanma talebi gönderildi",
@@ -137,7 +137,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
       return await apiRequest('POST', `/api/projects/${projectId}/approve-completion`);
     },
     onSuccess: (data, variables) => {
-      const project = projects.find((p: OngoingProject) => p.id === variables);
+      const project = Array.isArray(projects) ? projects.find((p: OngoingProject) => p.id === variables) : undefined;
       const isMonthly = project?.projectType === 'monthly';
       toast({
         title: isMonthly ? "Proje sonlandırıldı" : "Proje tamamlandı",
