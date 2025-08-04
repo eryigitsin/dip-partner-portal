@@ -814,12 +814,12 @@ export default function ServiceRequests() {
                         </div>
                         <div>
                           <Label className="text-xs text-gray-500">Birim Fiyat</Label>
-                          <p className="font-semibold">{formatCurrency(item.unitPrice)}</p>
+                          <p className="font-semibold">{formatCurrency(item.unitPrice / 100)}</p>
                         </div>
                       </div>
                       <div className="mt-2 text-right">
                         <Label className="text-xs text-gray-500">Toplam</Label>
-                        <p className="font-bold text-lg">{formatCurrency(item.totalPrice)}</p>
+                        <p className="font-bold text-lg">{formatCurrency((item.total || item.totalPrice) / 100)}</p>
                       </div>
                     </div>
                   ))}
