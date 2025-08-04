@@ -176,7 +176,7 @@ export const emailTemplates = {
   
   quoteStatus: {
     approved: {
-      toPartner: (partnerName: string, userName: string, serviceName: string) => ({
+      toPartner: (partnerName: string, userName: string, serviceName: string, userCompanyInfo?: any) => ({
         subject: "Teklif Onaylandı, Ödeme Bekleniyor",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -188,6 +188,24 @@ export const emailTemplates = {
               <h2 style="color: #333; margin-bottom: 20px;">Teklif Onaylandı!</h2>
               <p style="color: #666; line-height: 1.6;">Sayın ${partnerName},</p>
               <p style="color: #666; line-height: 1.6;">${userName} kullanıcısı "${serviceName}" hizmeti için teklifinizi onayladı. Ödeme bekleniyor.</p>
+              
+              ${userCompanyInfo ? `
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+                <h3 style="color: #333; margin-bottom: 15px; font-size: 16px;">📄 Müşteri Şirket Bilgileri</h3>
+                <div style="color: #666; line-height: 1.6;">
+                  ${userCompanyInfo.companyTitle ? `<p><strong>Şirket Ünvanı:</strong> ${userCompanyInfo.companyTitle}</p>` : ''}
+                  ${userCompanyInfo.companyName ? `<p><strong>Marka Adı:</strong> ${userCompanyInfo.companyName}</p>` : ''}
+                  ${userCompanyInfo.taxNumber ? `<p><strong>Vergi No:</strong> ${userCompanyInfo.taxNumber}</p>` : ''}
+                  ${userCompanyInfo.taxOffice ? `<p><strong>Vergi Dairesi:</strong> ${userCompanyInfo.taxOffice}</p>` : ''}
+                  ${userCompanyInfo.address ? `<p><strong>Adres:</strong> ${userCompanyInfo.address}, ${userCompanyInfo.city || ''} ${userCompanyInfo.postalCode || ''}</p>` : ''}
+                  ${userCompanyInfo.phone ? `<p><strong>Telefon:</strong> ${userCompanyInfo.phone}</p>` : ''}
+                  ${userCompanyInfo.email ? `<p><strong>E-posta:</strong> ${userCompanyInfo.email}</p>` : ''}
+                  ${userCompanyInfo.website ? `<p><strong>Website:</strong> <a href="${userCompanyInfo.website}" style="color: #667eea;">${userCompanyInfo.website}</a></p>` : ''}
+                  ${userCompanyInfo.linkedinProfile ? `<p><strong>LinkedIn:</strong> <a href="${userCompanyInfo.linkedinProfile}" style="color: #667eea;">${userCompanyInfo.linkedinProfile}</a></p>` : ''}
+                </div>
+              </div>
+              ` : ''}
+              
               <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <p style="color: #28a745; font-weight: bold;">✓ Teklif Onaylandı</p>
                 <p style="color: #ffc107; font-weight: bold;">⏳ Ödeme Bekleniyor</p>

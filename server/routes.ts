@@ -1655,10 +1655,15 @@ export function registerRoutes(app: Express): Server {
         
         if (partner && partnerUser && user) {
           if (status === 'approved') {
+            // Get user's company information
+            const userCompanyInfo = await storage.getUserBilling(user.id);
+            
             // Send to partner
             const partnerTemplate = emailTemplates.quoteStatus.approved.toPartner(
-              quoteRequest,
-              user
+              partner.companyName,
+              user.email,
+              quoteRequest.serviceType || "Hizmet",
+              userCompanyInfo
             );
             
             await sendEmail({
@@ -1669,8 +1674,9 @@ export function registerRoutes(app: Express): Server {
 
             // Send to user
             const userTemplate = emailTemplates.quoteStatus.approved.toUser(
-              quoteRequest,
-              partner
+              user.email,
+              partner.companyName,
+              quoteRequest.serviceType || "Hizmet"
             );
             
             await sendEmail({
@@ -1680,8 +1686,10 @@ export function registerRoutes(app: Express): Server {
             });
           } else if (status === 'rejected') {
             const rejectionTemplate = emailTemplates.quoteStatus.rejected.toPartner(
-              quoteRequest,
-              user
+              partner.companyName,
+              user.email,
+              quoteRequest.serviceType || "Hizmet",
+              reason
             );
             
             await sendEmail({
@@ -2786,7 +2794,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       const responseId = parseInt(req.params.id);
-      const { status } = req.body;
+      const { status, reason } = req.body;
 
       if (!['accepted', 'rejected'].includes(status)) {
         return res.status(400).json({ error: 'Invalid status' });
@@ -2816,8 +2824,16 @@ export function registerRoutes(app: Express): Server {
         const requestUser = await storage.getUserById(quoteRequest.userId);
 
         if (status === 'accepted' && partnerUser && requestUser) {
+          // Get user's company information
+          const userCompanyInfo = await storage.getUserBilling(requestUser.id);
+          
           // Send email to partner
-          const partnerEmailTemplate = emailTemplates.quoteStatus.approved.toPartner(quoteRequest, requestUser);
+          const partnerEmailTemplate = emailTemplates.quoteStatus.approved.toPartner(
+            partner.companyName,
+            requestUser.email,
+            quoteRequest.serviceType || "Hizmet",
+            userCompanyInfo
+          );
           await resendService.sendEmail({
             to: partnerUser.email,
             subject: partnerEmailTemplate.subject,
@@ -2825,7 +2841,11 @@ export function registerRoutes(app: Express): Server {
           });
 
           // Send email to user
-          const userEmailTemplate = emailTemplates.quoteStatus.approved.toUser(quoteRequest, partner);
+          const userEmailTemplate = emailTemplates.quoteStatus.approved.toUser(
+            requestUser.email,
+            partner.companyName,
+            quoteRequest.serviceType || "Hizmet"
+          );
           await resendService.sendEmail({
             to: requestUser.email,
             subject: userEmailTemplate.subject,
@@ -2833,7 +2853,12 @@ export function registerRoutes(app: Express): Server {
           });
         } else if (status === 'rejected' && partnerUser) {
           // Send email to partner
-          const rejectionTemplate = emailTemplates.quoteStatus.rejected.toPartner(quoteRequest, requestUser);
+          const rejectionTemplate = emailTemplates.quoteStatus.rejected.toPartner(
+            partner.companyName,
+            requestUser.email,
+            quoteRequest.serviceType || "Hizmet",
+            reason
+          );
           await resendService.sendEmail({
             to: partnerUser.email,
             subject: rejectionTemplate.subject,
