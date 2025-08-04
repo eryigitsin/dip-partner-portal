@@ -1264,11 +1264,13 @@ export default function PartnerDashboard() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600">Durum</label>
-                      <Badge variant={selectedQuoteResponse.status === 'accepted' ? 'default' : 'secondary'}>
-                        {selectedQuoteResponse.status === 'pending' && 'Beklemede'}
-                        {selectedQuoteResponse.status === 'accepted' && 'Kabul Edildi'}
-                        {selectedQuoteResponse.status === 'rejected' && 'Reddedildi'}
-                      </Badge>
+                      <div className="mt-1">
+                        <Badge variant={selectedQuoteResponse.status === 'accepted' ? 'default' : 'secondary'}>
+                          {selectedQuoteResponse.status === 'pending' && 'Beklemede'}
+                          {selectedQuoteResponse.status === 'accepted' && 'Kabul Edildi'}
+                          {selectedQuoteResponse.status === 'rejected' && 'Reddedildi'}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
