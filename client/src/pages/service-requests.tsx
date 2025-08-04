@@ -29,13 +29,15 @@ import {
   UserCheck,
   HandHeart,
   Upload,
-  Send
+  Send,
+  FolderOpen
 } from 'lucide-react';
 import { QuoteRequest, QuoteResponse, Partner } from '@shared/schema';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { PaymentConfirmationDialog } from '@/components/PaymentConfirmationDialog';
+import { OngoingProjects } from '@/components/OngoingProjects';
 
 // Utility function to clean HTML tags from text
 const cleanHTMLTags = (text: string): string => {
@@ -407,6 +409,10 @@ export default function ServiceRequests() {
               <FileText className="h-4 w-4" />
               Mevcut Talepler
             </TabsTrigger>
+            <TabsTrigger value="ongoing-projects" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[160px] px-4 py-2 text-sm">
+              <FolderOpen className="h-4 w-4" />
+              Devam Eden Projeler
+            </TabsTrigger>
             <TabsTrigger value="suggested" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[150px] px-4 py-2 text-sm">
               <Heart className="h-4 w-4" />
               Önerilen Partnerler
@@ -692,6 +698,10 @@ export default function ServiceRequests() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="ongoing-projects">
+            <OngoingProjects userType="user" />
           </TabsContent>
           </Tabs>
         </div>

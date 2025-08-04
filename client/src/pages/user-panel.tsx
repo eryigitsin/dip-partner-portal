@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save, Handshake, Briefcase, MessageSquare, FolderOpen } from 'lucide-react';
+import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save, Handshake, Briefcase, MessageSquare } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserProfile, CompanyBillingInfo, Partner } from '@shared/schema';
@@ -19,7 +19,6 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { PartnerApplicationDialog } from '@/components/forms/partner-application-dialog';
 import { FeedbackModal } from '@/components/feedback/feedback-modal';
-import { OngoingProjects } from '@/components/OngoingProjects';
 
 export default function UserPanel() {
   const { user, logoutMutation } = useAuth();
@@ -274,10 +273,7 @@ export default function UserPanel() {
               <Heart className="h-4 w-4" />
               Takip Ettiklerim
             </TabsTrigger>
-            <TabsTrigger value="ongoing-projects" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[160px] px-3 py-2 text-sm">
-              <FolderOpen className="h-4 w-4" />
-              Devam Eden Projeler
-            </TabsTrigger>
+
             <TabsTrigger value="settings" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[120px] px-3 py-2 text-sm">
               <Settings className="h-4 w-4" />
               Ayarlar
@@ -725,9 +721,7 @@ export default function UserPanel() {
             </div>
           </TabsContent>
 
-          <TabsContent value="ongoing-projects">
-            <OngoingProjects userType="user" />
-          </TabsContent>
+
           </Tabs>
         </div>
       </div>
