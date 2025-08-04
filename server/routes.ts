@@ -4217,7 +4217,7 @@ export function registerRoutes(app: Express): Server {
         try {
           const accountValidated = insertRecipientAccountSchema.parse({
             partnerId,
-            accountName: `${accountData.bankName} - ${accountData.accountHolderName}`,
+            accountName: accountData.bankName, // Only bank name as requested
             bankName: accountData.bankName,
             accountHolderName: accountData.accountHolderName,
             accountNumber: accountData.accountNumber || '',
@@ -4241,15 +4241,18 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Check if payment instructions were previously sent (for update notification)
+      const isUpdate = quoteResponse.paymentInstructions !== null && quoteResponse.paymentInstructions !== undefined;
+
       // Create payment instructions email
       const emailData = {
         to: user.email,
-        subject: `Ödeme Bilgileri - ${quoteRequest.serviceNeeded.replace(/\r?\n/g, ' ').trim()}`,
+        subject: isUpdate ? 'Havale / EFT ödeme bilgileri güncellendi!' : `Ödeme Bilgileri - ${quoteRequest.serviceNeeded.replace(/\r?\n/g, ' ').trim()}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #1e40af;">Ödeme Bilgileri</h2>
+            <h2 style="color: #1e40af;">${isUpdate ? 'Güncellenmiş ' : ''}Havale / EFT Bilgileri</h2>
             <p>Merhaba ${user.firstName},</p>
-            <p>Talep ettiğiniz hizmet için ödeme bilgileri aşağıda yer almaktadır:</p>
+            <p>Talep ettiğiniz hizmet için ${isUpdate ? 'güncellenmiş ' : ''}havale / EFT bilgileri aşağıda yer almaktadır:</p>
             
             <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
               <h3 style="margin-top: 0; color: #374151;">Banka Bilgileri</h3>

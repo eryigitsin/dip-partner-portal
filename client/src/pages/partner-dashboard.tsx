@@ -1510,7 +1510,7 @@ export default function PartnerDashboard() {
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
                   >
                     <Send className="h-4 w-4" />
-                    Ödeme Bilgisi Gönder
+                    Havale / EFT Bilgisi Gönder
                   </Button>
                 </div>
                 <Button
@@ -1661,38 +1661,30 @@ export default function PartnerDashboard() {
       <Dialog open={isPaymentInstructionsDialogOpen} onOpenChange={setIsPaymentInstructionsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Ödeme Bilgisi Gönder</DialogTitle>
+            <DialogTitle>Havale / EFT Bilgisi Gönder</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             {/* Account Selection */}
             <div className="space-y-3">
               <Label>Alıcı Hesabı Seçin</Label>
-              <div className="flex gap-2">
-                <Select 
-                  value={selectedRecipientAccount?.id?.toString() || ""} 
-                  onValueChange={(value) => {
-                    const account = recipientAccounts.find(acc => acc.id.toString() === value);
-                    setSelectedRecipientAccount(account);
-                  }}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Kayıtlı hesaplarınızdan seçin..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {recipientAccounts.map((account: any) => (
-                      <SelectItem key={account.id} value={account.id.toString()}>
-                        {account.accountName} - {account.bankName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setIsNewAccountDialogOpen(true)}
-                >
-                  Yeni Alıcı Hesabı Ekle
-                </Button>
+              <Select 
+                value={selectedRecipientAccount?.id?.toString() || ""} 
+                onValueChange={(value) => {
+                  const account = recipientAccounts.find(acc => acc.id.toString() === value);
+                  setSelectedRecipientAccount(account);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Kayıtlı hesaplarınızdan seçin..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {recipientAccounts.map((account: any) => (
+                    <SelectItem key={account.id} value={account.id.toString()}>
+                      {account.bankName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               </div>
             </div>
 
@@ -1773,29 +1765,11 @@ export default function PartnerDashboard() {
                 onClick={() => handleSendPaymentInstructions()}
               >
                 <Send className="h-4 w-4 mr-2" />
-                Ödeme Bilgisi Gönder
+                Havale / EFT Bilgisi Gönder
               </Button>
             </div>
-          </div>
         </DialogContent>
       </Dialog>
-
-      {/* New Account Dialog - Reusing RecipientAccountsSection component */}
-      {isNewAccountDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <RecipientAccountsSection partnerId={partner?.id} />
-            <div className="flex justify-end mt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsNewAccountDialogOpen(false)}
-              >
-                Kapat
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
