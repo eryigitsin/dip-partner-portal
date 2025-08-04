@@ -2853,6 +2853,51 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Check payment status for a quote response
+  app.get('/api/quote-responses/:id/payment-status', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const responseId = parseInt(req.params.id);
+      const quoteResponse = await storage.getQuoteResponseById(responseId);
+      
+      if (!quoteResponse) {
+        return res.status(404).json({ error: 'Quote response not found' });
+      }
+
+      // Check if user has permission to view payment status
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (!quoteRequest) {
+        return res.status(404).json({ error: 'Quote request not found' });
+      }
+
+      const partner = await storage.getPartnerByUserId(user.id);
+      const canView = 
+        (user.userType === 'partner' && partner && partner.id === quoteResponse.partnerId) ||
+        (user.userType === 'user' && quoteRequest.userId === user.id) ||
+        (user.userType === 'master_admin' || user.userType === 'editor_admin');
+
+      if (!canView) {
+        return res.status(403).json({ error: 'Unauthorized to view payment status' });
+      }
+
+      // Check if there's a confirmed payment for this quote response
+      const confirmedPayment = await storage.getConfirmedPaymentByQuoteResponse(responseId);
+      
+      res.json({ 
+        hasConfirmedPayment: !!confirmedPayment,
+        paymentConfirmation: confirmedPayment || null
+      });
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   app.get('/api/quote-responses/:id/pdf', async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
@@ -4757,11 +4802,43 @@ export function registerRoutes(app: Express): Server {
         partnerNotes: note || null
       });
 
-      // If confirmed, update quote request status to completed
+      // If confirmed, update quote request status to completed and create ongoing project
       if (status === 'confirmed') {
         await storage.updateQuoteRequest(quoteResponse.quoteRequestId, {
           status: 'completed'
         });
+
+        // Create ongoing project from the confirmed payment
+        const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+        if (quoteRequest && quoteResponse.items) {
+          // Parse quote items to determine project type
+          const items = typeof quoteResponse.items === 'string' 
+            ? JSON.parse(quoteResponse.items) 
+            : quoteResponse.items;
+          
+          // Check if it's a monthly project (any item has recurring payment)
+          const isMonthlyProject = items.some((item: any) => 
+            item.isRecurring === true || item.recurring === true || 
+            item.paymentType === 'monthly' || item.billing === 'monthly'
+          );
+
+          const projectType = isMonthlyProject ? 'monthly' : 'one_time';
+          const nextPaymentDue = isMonthlyProject ? 
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : // 30 days from now
+            undefined;
+
+          await storage.createOngoingProject({
+            quoteResponseId: quoteResponse.id,
+            userId: quoteRequest.userId,
+            partnerId: quoteResponse.partnerId,
+            projectTitle: quoteResponse.title,
+            projectNumber: quoteResponse.quoteNumber,
+            projectType,
+            status: 'active',
+            lastPaymentDate: new Date(),
+            nextPaymentDue
+          });
+        }
       }
 
       // Send email notification to customer
@@ -4968,6 +5045,28 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error updating payment confirmation status:', error);
       res.status(500).json({ message: "Failed to update payment confirmation status" });
+    }
+  });
+
+  // Check if quote response has confirmed payment
+  app.get('/api/quote-responses/:id/payment-status', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const quoteResponseId = parseInt(req.params.id);
+      
+      // Check for confirmed payment confirmations for this quote response
+      const confirmedPayment = await storage.getConfirmedPaymentByQuoteResponse(quoteResponseId);
+      
+      res.json({ 
+        hasConfirmedPayment: !!confirmedPayment,
+        paymentConfirmation: confirmedPayment || null
+      });
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      res.status(500).json({ message: "Failed to check payment status" });
     }
   });
 

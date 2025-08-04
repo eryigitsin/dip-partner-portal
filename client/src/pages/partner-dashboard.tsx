@@ -606,7 +606,7 @@ export default function PartnerDashboard() {
             <TabsTrigger value="quotes">Teklif Talepleri</TabsTrigger>
             <TabsTrigger value="ongoing-projects" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
-              Devam Eden Projeler
+              Projeler
             </TabsTrigger>
             <TabsTrigger value="performance">Performans</TabsTrigger>
             <TabsTrigger value="services">Hizmetler</TabsTrigger>

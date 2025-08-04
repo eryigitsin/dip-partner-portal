@@ -15,13 +15,15 @@ interface PaymentConfirmationDialogProps {
   onClose: () => void;
   quoteResponse: any;
   availableQuotes?: any[];
+  onPaymentConfirmed?: () => void;
 }
 
 export function PaymentConfirmationDialog({ 
   open, 
   onClose, 
   quoteResponse,
-  availableQuotes = []
+  availableQuotes = [],
+  onPaymentConfirmed
 }: PaymentConfirmationDialogProps) {
   const [selectedQuoteId, setSelectedQuoteId] = useState(quoteResponse?.id || "");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -58,6 +60,10 @@ export function PaymentConfirmationDialog({
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['/api/quote-requests'] });
       queryClient.invalidateQueries({ queryKey: ['/api/user/quote-requests'] });
+      // Trigger payment status refresh in parent component
+      if (onPaymentConfirmed) {
+        onPaymentConfirmed();
+      }
     },
     onError: (error: any) => {
       toast({

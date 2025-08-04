@@ -222,6 +222,7 @@ export interface IStorage {
   getPaymentConfirmationsByQuoteResponseId(quoteResponseId: number): Promise<PaymentConfirmation[]>;
   getPaymentConfirmationById(id: number): Promise<PaymentConfirmation | undefined>;
   updatePaymentConfirmation(id: number, updates: Partial<PaymentConfirmation>): Promise<PaymentConfirmation | undefined>;
+  getConfirmedPaymentByQuoteResponse(quoteResponseId: number): Promise<PaymentConfirmation | undefined>;
 
   // System configuration methods
   getSystemConfigs(): Promise<Array<{ key: string; value: any }>>;
@@ -880,6 +881,18 @@ export class DatabaseStorage implements IStorage {
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(paymentConfirmations.id, id))
       .returning();
+    return confirmation || undefined;
+  }
+
+  async getConfirmedPaymentByQuoteResponse(quoteResponseId: number): Promise<PaymentConfirmation | undefined> {
+    const [confirmation] = await db
+      .select()
+      .from(paymentConfirmations)
+      .where(and(
+        eq(paymentConfirmations.quoteResponseId, quoteResponseId),
+        eq(paymentConfirmations.status, 'confirmed')
+      ))
+      .limit(1);
     return confirmation || undefined;
   }
 

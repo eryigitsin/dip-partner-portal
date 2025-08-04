@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -115,6 +115,7 @@ export default function ServiceRequests() {
   const [paymentInstructions, setPaymentInstructions] = useState<any>(null);
   const [isPaymentConfirmationDialogOpen, setIsPaymentConfirmationDialogOpen] = useState(false);
   const [selectedQuoteForPayment, setSelectedQuoteForPayment] = useState<any>(null);
+  const [paymentStatuses, setPaymentStatuses] = useState<Record<number, boolean>>({});
 
   // Fetch user's quote requests
   const { data: quoteRequests, isLoading: requestsLoading } = useQuery<(QuoteRequest & { partner: Partner; responses: QuoteResponse[] })[]>({
@@ -139,6 +140,58 @@ export default function ServiceRequests() {
     queryKey: ['/api/user/quote-history'],
     enabled: !!user && activeTab === 'suggested',
   });
+
+  // Function to check payment status for a quote response
+  const checkPaymentStatus = async (quoteResponseId: number) => {
+    try {
+      const res = await apiRequest('GET', `/api/quote-responses/${quoteResponseId}/payment-status`);
+      const data = await res.json();
+      return data.hasConfirmedPayment;
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      return false;
+    }
+  };
+
+  // Load payment statuses for all accepted quote responses
+  const loadPaymentStatuses = async () => {
+    if (!quoteRequests) return;
+    
+    const statusChecks: Promise<{ id: number; hasConfirmedPayment: boolean }>[] = [];
+    
+    quoteRequests.forEach(request => {
+      request.responses?.forEach(response => {
+        if (response.status === 'accepted') {
+          statusChecks.push(
+            checkPaymentStatus(response.id).then(hasConfirmedPayment => ({
+              id: response.id,
+              hasConfirmedPayment
+            }))
+          );
+        }
+      });
+    });
+
+    const results = await Promise.all(statusChecks);
+    const newStatuses: Record<number, boolean> = {};
+    results.forEach(result => {
+      newStatuses[result.id] = result.hasConfirmedPayment;
+    });
+    
+    setPaymentStatuses(newStatuses);
+  };
+
+  // Load payment statuses when quote requests are loaded
+  React.useEffect(() => {
+    if (quoteRequests && activeTab === 'requests') {
+      loadPaymentStatuses();
+    }
+  }, [quoteRequests, activeTab]);
+
+  // Function to refresh payment statuses after payment confirmation
+  const refreshPaymentStatuses = () => {
+    loadPaymentStatuses();
+  };
 
   // Accept quote response mutation
   const acceptQuoteMutation = useMutation({
@@ -512,38 +565,47 @@ export default function ServiceRequests() {
 
 
                                 {response.status === 'accepted' && (
-                                  <div className="mt-4 flex gap-2">
-                                    <Button 
-                                      onClick={async () => {
-                                        setSelectedQuoteResponse(response);
-                                        // Fetch payment instructions when opening payment dialog
-                                        try {
-                                          const res = await apiRequest('GET', `/api/quote-responses/${response.id}/payment-instructions`);
-                                          const data = await res.json();
-                                          setPaymentInstructions(data);
-                                          if (data.hasPaymentInstructions) {
-                                            setActivePaymentTab('transfer'); // Switch to transfer tab if payment instructions exist
-                                          }
-                                        } catch (error) {
-                                          console.error('Failed to fetch payment instructions:', error);
-                                          setPaymentInstructions(null);
-                                        }
-                                        setIsPaymentDialogOpen(true);
-                                      }}
-                                      className="flex items-center gap-2"
-                                    >
-                                      <CreditCard className="h-4 w-4" />
-                                      Ödeme Yap
-                                    </Button>
-                                    <Button 
-                                      onClick={() => openPaymentConfirmation('transfer', response)}
-                                      variant="outline"
-                                      className="flex items-center gap-2 border-green-600 text-green-600 hover:bg-green-50"
-                                      data-testid="button-payment-confirmation-summary"
-                                    >
-                                      <CheckCircle className="h-4 w-4" />
-                                      Ödememi Yaptım
-                                    </Button>
+                                  <div className="mt-4">
+                                    {paymentStatuses[response.id] ? (
+                                      <div className="flex items-center gap-2 text-green-600">
+                                        <CheckCircle className="h-5 w-5" />
+                                        <span className="font-medium">Ödeme onaylandı - Proje başlatıldı</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex gap-2">
+                                        <Button 
+                                          onClick={async () => {
+                                            setSelectedQuoteResponse(response);
+                                            // Fetch payment instructions when opening payment dialog
+                                            try {
+                                              const res = await apiRequest('GET', `/api/quote-responses/${response.id}/payment-instructions`);
+                                              const data = await res.json();
+                                              setPaymentInstructions(data);
+                                              if (data.hasPaymentInstructions) {
+                                                setActivePaymentTab('transfer'); // Switch to transfer tab if payment instructions exist
+                                              }
+                                            } catch (error) {
+                                              console.error('Failed to fetch payment instructions:', error);
+                                              setPaymentInstructions(null);
+                                            }
+                                            setIsPaymentDialogOpen(true);
+                                          }}
+                                          className="flex items-center gap-2"
+                                        >
+                                          <CreditCard className="h-4 w-4" />
+                                          Ödeme Yap
+                                        </Button>
+                                        <Button 
+                                          onClick={() => openPaymentConfirmation('transfer', response)}
+                                          variant="outline"
+                                          className="flex items-center gap-2 border-green-600 text-green-600 hover:bg-green-50"
+                                          data-testid="button-payment-confirmation-summary"
+                                        >
+                                          <CheckCircle className="h-4 w-4" />
+                                          Ödememi Yaptım
+                                        </Button>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
@@ -796,27 +858,34 @@ export default function ServiceRequests() {
                       <CheckCircle className="h-4 w-4" />
                       Kabul Edildi
                     </Button>
-                    <Button
-                      onClick={async () => {
-                        // Fetch payment instructions when opening payment dialog
-                        try {
-                          const response = await apiRequest('GET', `/api/quote-responses/${selectedQuoteResponse.id}/payment-instructions`);
-                          const data = await response.json();
-                          setPaymentInstructions(data);
-                          if (data.hasPaymentInstructions) {
-                            setActivePaymentTab('transfer'); // Switch to transfer tab if payment instructions exist
+                    {paymentStatuses[selectedQuoteResponse.id] ? (
+                      <div className="flex items-center gap-2 text-green-600 px-3 py-2 bg-green-50 rounded-lg">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="font-medium">Ödeme onaylandı - Proje başlatıldı</span>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={async () => {
+                          // Fetch payment instructions when opening payment dialog
+                          try {
+                            const response = await apiRequest('GET', `/api/quote-responses/${selectedQuoteResponse.id}/payment-instructions`);
+                            const data = await response.json();
+                            setPaymentInstructions(data);
+                            if (data.hasPaymentInstructions) {
+                              setActivePaymentTab('transfer'); // Switch to transfer tab if payment instructions exist
+                            }
+                          } catch (error) {
+                            console.error('Failed to fetch payment instructions:', error);
+                            setPaymentInstructions(null);
                           }
-                        } catch (error) {
-                          console.error('Failed to fetch payment instructions:', error);
-                          setPaymentInstructions(null);
-                        }
-                        setIsPaymentDialogOpen(true);
-                      }}
-                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      Ödeme Yap
-                    </Button>
+                          setIsPaymentDialogOpen(true);
+                        }}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        Ödeme Yap
+                      </Button>
+                    )}
                   </>
                 ) : selectedQuoteResponse.status === 'rejected' ? (
                   <Button
@@ -1116,6 +1185,7 @@ export default function ServiceRequests() {
         open={isPaymentConfirmationDialogOpen}
         onClose={() => setIsPaymentConfirmationDialogOpen(false)}
         quoteResponse={selectedQuoteForPayment}
+        onPaymentConfirmed={refreshPaymentStatuses}
       />
 
       <Footer />
