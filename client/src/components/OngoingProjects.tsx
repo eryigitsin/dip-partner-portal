@@ -72,23 +72,13 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
 
   // Fetch ongoing projects
   const { data: projects = [], isLoading } = useQuery({
-    queryKey: ['/api/ongoing-projects', userType, userId || partnerId],
-    queryFn: async () => {
-      const endpoint = userType === 'user' 
-        ? `/api/ongoing-projects/user/${userId}`
-        : `/api/ongoing-projects/partner/${partnerId}`;
-      return await apiRequest(endpoint);
-    },
-    enabled: !!(userId || partnerId)
+    queryKey: [userType === 'user' ? '/api/user/ongoing-projects' : '/api/partner/ongoing-projects']
   });
 
   // Add comment mutation
   const addCommentMutation = useMutation({
     mutationFn: async ({ projectId, content, rating }: { projectId: number; content: string; rating?: number }) => {
-      return await apiRequest(`/api/projects/${projectId}/comments`, {
-        method: 'POST',
-        body: JSON.stringify({ content, rating, isPublic: false })
-      });
+      return await apiRequest(`/api/projects/${projectId}/comments`, 'POST', { content, rating, isPublic: false });
     },
     onSuccess: () => {
       toast({
@@ -114,9 +104,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
   // Request completion mutation
   const requestCompletionMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      return await apiRequest(`/api/projects/${projectId}/request-completion`, {
-        method: 'POST'
-      });
+      return await apiRequest(`/api/projects/${projectId}/request-completion`, 'POST');
     },
     onSuccess: () => {
       toast({
@@ -124,7 +112,10 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
         description: "Proje tamamlanma talebiniz karşı tarafa iletildi."
       });
       queryClient.invalidateQueries({
-        queryKey: ['/api/ongoing-projects']
+        queryKey: ['/api/user/ongoing-projects']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/partner/ongoing-projects']
       });
     },
     onError: (error) => {
@@ -139,9 +130,7 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
   // Approve completion mutation
   const approveCompletionMutation = useMutation({
     mutationFn: async (projectId: number) => {
-      return await apiRequest(`/api/projects/${projectId}/approve-completion`, {
-        method: 'POST'
-      });
+      return await apiRequest(`/api/projects/${projectId}/approve-completion`, 'POST');
     },
     onSuccess: () => {
       toast({
@@ -149,7 +138,10 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
         description: "Proje başarıyla tamamlandı olarak işaretlendi."
       });
       queryClient.invalidateQueries({
-        queryKey: ['/api/ongoing-projects']
+        queryKey: ['/api/user/ongoing-projects']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/partner/ongoing-projects']
       });
     },
     onError: (error) => {

@@ -4810,7 +4810,7 @@ export function registerRoutes(app: Express): Server {
 
         // Create ongoing project from the confirmed payment
         const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
-        if (quoteRequest && quoteResponse.items) {
+        if (quoteRequest && quoteRequest.userId && quoteResponse.items) {
           // Parse quote items to determine project type
           const items = typeof quoteResponse.items === 'string' 
             ? JSON.parse(quoteResponse.items) 
@@ -4973,7 +4973,7 @@ export function registerRoutes(app: Express): Server {
 
         // Create ongoing project from the approved payment
         const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
-        if (quoteRequest && quoteResponse.items) {
+        if (quoteRequest && quoteRequest.userId && quoteResponse.items) {
           // Parse quote items to determine project type
           const items = typeof quoteResponse.items === 'string' 
             ? JSON.parse(quoteResponse.items) 
@@ -5199,6 +5199,42 @@ export function registerRoutes(app: Express): Server {
       }
 
       const projects = await storage.getOngoingProjectsByPartner(partnerId);
+      res.json(projects);
+    } catch (error) {
+      console.error('Error fetching partner projects:', error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  // Get ongoing projects for current user (frontend endpoint)
+  app.get("/api/user/ongoing-projects", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const projects = await storage.getOngoingProjectsByUser(req.user.id);
+      res.json(projects);
+    } catch (error) {
+      console.error('Error fetching user projects:', error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  // Get ongoing projects for current partner (frontend endpoint)
+  app.get("/api/partner/ongoing-projects", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      // Get partner for this user
+      const partner = await storage.getPartnerByUserId(req.user.id);
+      if (!partner) {
+        return res.status(404).json({ message: "Partner not found" });
+      }
+
+      const projects = await storage.getOngoingProjectsByPartner(partner.id);
       res.json(projects);
     } catch (error) {
       console.error('Error fetching partner projects:', error);
