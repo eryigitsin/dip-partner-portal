@@ -4633,7 +4633,11 @@ export function registerRoutes(app: Express): Server {
           
           paymentConfirmations.push({
             ...confirmation,
-            quoteResponse,
+            quoteResponse: {
+              ...quoteResponse,
+              title: quoteResponse.title,
+              quoteNumber: quoteResponse.quoteNumber
+            },
             quoteRequest,
             customer,
             user: userInfo // Add user field for frontend compatibility

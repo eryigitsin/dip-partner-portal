@@ -1111,7 +1111,7 @@ export default function PartnerDashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Müşteri</TableHead>
+                        <TableHead>Müşteri & Teklif</TableHead>
                         <TableHead>Tutar</TableHead>
                         <TableHead>Ödeme Yöntemi</TableHead>
                         <TableHead>Tarih</TableHead>
@@ -1125,6 +1125,21 @@ export default function PartnerDashboard() {
                           <TableCell>
                             <div className="font-medium">{confirmation.user?.fullName || 'İsimsiz'}</div>
                             <div className="text-sm text-gray-500">{confirmation.user?.email}</div>
+                            {confirmation.quoteResponse && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                <span className="font-medium">{confirmation.quoteResponse.quoteNumber}</span>
+                                {confirmation.quoteResponse.title && (
+                                  <span 
+                                    className="ml-1 cursor-help" 
+                                    title={confirmation.quoteResponse.title}
+                                  >
+                                    - {confirmation.quoteResponse.title.length > 30 
+                                      ? `${confirmation.quoteResponse.title.substring(0, 30)}...` 
+                                      : confirmation.quoteResponse.title}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </TableCell>
                           <TableCell className="font-medium">
                             ₺{(confirmation.amount / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
@@ -1160,7 +1175,7 @@ export default function PartnerDashboard() {
                           </TableCell>
                           <TableCell>
                             {confirmation.status === 'pending' ? (
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 flex-wrap">
                                 <Button
                                   size="sm"
                                   variant="default"
@@ -1189,6 +1204,20 @@ export default function PartnerDashboard() {
                                 >
                                   Reddet
                                 </Button>
+                                {confirmation.receiptFileUrl && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      // Use backend API to download receipt properly
+                                      window.open(`/api/payment-confirmations/${confirmation.id}/receipt`, '_blank');
+                                    }}
+                                    data-testid={`button-download-receipt-pending-${confirmation.id}`}
+                                  >
+                                    <Download className="h-4 w-4 mr-1" />
+                                    Dekontu İndir
+                                  </Button>
+                                )}
                               </div>
                             ) : (
                               <div className="flex gap-2">
