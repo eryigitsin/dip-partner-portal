@@ -173,11 +173,11 @@ export default function ServiceRequests() {
         method: 'GET',
         credentials: 'include',
       });
-      
+
       if (!res.ok) {
         throw new Error('PDF download failed');
       }
-      
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -203,7 +203,7 @@ export default function ServiceRequests() {
     if (quoteResponse.items) {
       try {
         let items;
-        
+
         // Handle both string and object formats
         if (typeof quoteResponse.items === 'string') {
           items = JSON.parse(quoteResponse.items);
@@ -212,7 +212,7 @@ export default function ServiceRequests() {
         } else {
           throw new Error('Invalid items format');
         }
-        
+
         if (Array.isArray(items) && items.length > 0) {
           setRevisionItems(items.map((item: any) => ({
             ...item,
@@ -261,7 +261,7 @@ export default function ServiceRequests() {
       })),
       message: revisionMessage
     };
-    
+
     revisionRequestMutation.mutate(requestData);
   };
 
@@ -269,12 +269,12 @@ export default function ServiceRequests() {
   const updateRevisionItem = (index: number, field: string, value: number) => {
     const updatedItems = [...revisionItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
-    
+
     // Auto-calculate total if unit price or quantity changes
     if (field === 'requestedUnitPrice' || field === 'quantity') {
       updatedItems[index].requestedTotalPrice = updatedItems[index].requestedUnitPrice * updatedItems[index].quantity;
     }
-    
+
     setRevisionItems(updatedItems);
   };
 
@@ -302,7 +302,7 @@ export default function ServiceRequests() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6 sm:mb-8">
@@ -451,7 +451,7 @@ export default function ServiceRequests() {
                               <Eye className="h-4 w-4" />
                               Teklifi Gör
                             </Button>
-                            
+
                             {request.responses[0].status !== 'accepted' && request.responses[0].status !== 'rejected' && (
                               <Button
                                 onClick={() => handleRevisionRequest(request.responses[0])}
@@ -461,7 +461,7 @@ export default function ServiceRequests() {
                                 Revizyon İste
                               </Button>
                             )}
-                            
+
                             <Button
                               variant="outline"
                               className="flex items-center gap-2"
@@ -545,7 +545,7 @@ export default function ServiceRequests() {
           </Tabs>
         </div>
       </div>
-      
+
       {/* Quote Details Dialog */}
       <Dialog open={isQuoteDetailsDialogOpen} onOpenChange={setIsQuoteDetailsDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -632,7 +632,7 @@ export default function ServiceRequests() {
                     className="flex items-center gap-2 bg-green-600 opacity-75 cursor-not-allowed"
                   >
                     <CheckCircle className="h-4 w-4" />
-                    ✓ Kabul Edildi
+                    Kabul Edildi
                   </Button>
                 ) : selectedQuoteResponse.status === 'rejected' ? (
                   <Button
@@ -718,7 +718,7 @@ export default function ServiceRequests() {
             <p className="text-gray-600">
               Aşağıdaki hizmet kalemleri için önerdiğiniz fiyatları giriniz. Partner bu teklifi inceleyip kabul veya ret edecektir.
             </p>
-            
+
             <div className="space-y-4">
               {revisionItems.map((item, index) => (
                 <div key={index} className="border rounded-lg p-4 bg-gray-50">
@@ -785,7 +785,7 @@ export default function ServiceRequests() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       <Footer />
     </div>
   );
