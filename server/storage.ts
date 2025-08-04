@@ -26,6 +26,7 @@ import {
   partnerProfileVisits,
   userPartnerInteractions,
   dismissedInfoCards,
+  recipientAccounts,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -66,6 +67,8 @@ import {
   type InsertFeedback,
   type Message,
   type InsertMessage,
+  type RecipientAccount,
+  type InsertRecipientAccount,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql } from "drizzle-orm";
@@ -239,6 +242,13 @@ export interface IStorage {
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   updateFeedbackStatus(id: number, status: string): Promise<Feedback | undefined>;
   deleteFeedback(id: number): Promise<boolean>;
+
+  // Recipient Account methods
+  getRecipientAccounts(partnerId: number): Promise<RecipientAccount[]>;
+  createRecipientAccount(account: InsertRecipientAccount): Promise<RecipientAccount>;
+  updateRecipientAccount(id: number, account: Partial<InsertRecipientAccount>): Promise<RecipientAccount | undefined>;
+  deleteRecipientAccount(id: number): Promise<boolean>;
+  toggleDefaultRecipientAccount(accountId: number, isDefault: boolean, partnerId: number): Promise<RecipientAccount | undefined>;
 
   // Message methods
   getUserConversations(userId: number): Promise<Array<{
@@ -2010,6 +2020,78 @@ export class DatabaseStorage implements IStorage {
   async recordQuoteExpirationWarning(quoteId: number): Promise<void> {
     // For now, we'll just log this - in the future we could have a separate warnings table
     console.log(`Quote expiration warning recorded for quote ${quoteId}`);
+  }
+
+  // Recipient Account methods
+  async getRecipientAccounts(partnerId: number): Promise<RecipientAccount[]> {
+    const accounts = await db
+      .select()
+      .from(recipientAccounts)
+      .where(eq(recipientAccounts.partnerId, partnerId))
+      .orderBy(desc(recipientAccounts.isDefault), desc(recipientAccounts.createdAt));
+    
+    return accounts;
+  }
+
+  async createRecipientAccount(account: InsertRecipientAccount): Promise<RecipientAccount> {
+    // If this is being set as default, unset all other defaults for this partner
+    if (account.isDefault) {
+      await db
+        .update(recipientAccounts)
+        .set({ isDefault: false })
+        .where(eq(recipientAccounts.partnerId, account.partnerId));
+    }
+
+    const [newAccount] = await db
+      .insert(recipientAccounts)
+      .values(account)
+      .returning();
+    
+    return newAccount;
+  }
+
+  async updateRecipientAccount(id: number, account: Partial<InsertRecipientAccount>): Promise<RecipientAccount | undefined> {
+    // If this is being set as default, unset all other defaults for this partner
+    if (account.isDefault && account.partnerId) {
+      await db
+        .update(recipientAccounts)
+        .set({ isDefault: false })
+        .where(eq(recipientAccounts.partnerId, account.partnerId));
+    }
+
+    const [updatedAccount] = await db
+      .update(recipientAccounts)
+      .set(account)
+      .where(eq(recipientAccounts.id, id))
+      .returning();
+    
+    return updatedAccount || undefined;
+  }
+
+  async deleteRecipientAccount(id: number): Promise<boolean> {
+    const result = await db
+      .delete(recipientAccounts)
+      .where(eq(recipientAccounts.id, id));
+    
+    return result.rowCount > 0;
+  }
+
+  async toggleDefaultRecipientAccount(accountId: number, isDefault: boolean, partnerId: number): Promise<RecipientAccount | undefined> {
+    // If setting as default, unset all other defaults for this partner
+    if (isDefault) {
+      await db
+        .update(recipientAccounts)
+        .set({ isDefault: false })
+        .where(eq(recipientAccounts.partnerId, partnerId));
+    }
+
+    const [updatedAccount] = await db
+      .update(recipientAccounts)
+      .set({ isDefault })
+      .where(eq(recipientAccounts.id, accountId))
+      .returning();
+    
+    return updatedAccount || undefined;
   }
 
 }

@@ -413,6 +413,22 @@ export const dismissedInfoCards = pgTable("dismissed_info_cards", {
   dismissedAt: timestamp("dismissed_at").defaultNow(),
 });
 
+// Recipient accounts for partner payment information
+export const recipientAccounts = pgTable("recipient_accounts", {
+  id: serial("id").primaryKey(),
+  partnerId: integer("partner_id").references(() => partners.id).notNull(),
+  accountName: text("account_name").notNull(), // Custom name given by partner
+  bankName: text("bank_name").notNull(),
+  accountHolderName: text("account_holder_name").notNull(),
+  accountNumber: text("account_number"),
+  iban: text("iban").notNull(),
+  swiftCode: text("swift_code"),
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // System configuration table
 export const systemConfig = pgTable("system_config", {
   id: serial("id").primaryKey(),
@@ -587,6 +603,13 @@ export const dismissedInfoCardsRelations = relations(dismissedInfoCards, ({ one 
   }),
 }));
 
+export const recipientAccountsRelations = relations(recipientAccounts, ({ one }) => ({
+  partner: one(partners, {
+    fields: [recipientAccounts.partnerId],
+    references: [partners.id],
+  }),
+}));
+
 // Insert schemas for services system
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPartnerOfferedServiceSchema = createInsertSchema(partnerOfferedServices).omit({ id: true, createdAt: true, updatedAt: true });
@@ -650,6 +673,12 @@ export const insertQuoteResponseSchema = createInsertSchema(quoteResponses).omit
 });
 
 export const insertRevisionRequestSchema = createInsertSchema(revisionRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRecipientAccountSchema = createInsertSchema(recipientAccounts).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -749,6 +778,8 @@ export type QuoteResponse = typeof quoteResponses.$inferSelect;
 export type InsertQuoteResponse = z.infer<typeof insertQuoteResponseSchema>;
 export type RevisionRequest = typeof revisionRequests.$inferSelect;
 export type InsertRevisionRequest = z.infer<typeof insertRevisionRequestSchema>;
+export type RecipientAccount = typeof recipientAccounts.$inferSelect;
+export type InsertRecipientAccount = z.infer<typeof insertRecipientAccountSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type SmsOtpCode = typeof smsOtpCodes.$inferSelect;
 export type InsertSmsOtpCode = z.infer<typeof insertSmsOtpCodeSchema>;

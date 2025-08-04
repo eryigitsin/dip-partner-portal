@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertPartnerApplicationSchema, insertQuoteRequestSchema, insertTempUserRegistrationSchema, insertMessageSchema } from "@shared/schema";
+import { insertPartnerApplicationSchema, insertQuoteRequestSchema, insertTempUserRegistrationSchema, insertMessageSchema, insertRecipientAccountSchema } from "@shared/schema";
 import { z } from "zod";
 import { createNetGsmService } from "./netgsm";
 import { resendService } from './resend-service';
@@ -3987,6 +3987,195 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error recording profile visit:', error);
       res.status(500).json({ message: "Failed to record profile visit" });
+    }
+  });
+
+  // Recipient Accounts API endpoints
+  app.get("/api/partner/recipient-accounts", async (req, res) => {
+    if (!req.isAuthenticated() || !['partner', 'master_admin', 'editor_admin'].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Partner or admin access required" });
+    }
+
+    try {
+      let partnerId: number;
+      
+      if (req.user!.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(req.user!.id);
+        if (!partner) {
+          return res.status(404).json({ message: "Partner record not found" });
+        }
+        partnerId = partner.id;
+      } else {
+        // Admin accessing specific partner's accounts
+        const { partnerId: queryPartnerId } = req.query;
+        if (!queryPartnerId) {
+          return res.status(400).json({ message: "Partner ID required for admin access" });
+        }
+        partnerId = parseInt(queryPartnerId as string);
+      }
+
+      const accounts = await storage.getRecipientAccounts(partnerId);
+      res.json(accounts);
+    } catch (error) {
+      console.error('Error fetching recipient accounts:', error);
+      res.status(500).json({ message: "Failed to fetch recipient accounts" });
+    }
+  });
+
+  app.post("/api/partner/recipient-accounts", async (req, res) => {
+    if (!req.isAuthenticated() || !['partner', 'master_admin', 'editor_admin'].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Partner or admin access required" });
+    }
+
+    try {
+      let partnerId: number;
+      
+      if (req.user!.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(req.user!.id);
+        if (!partner) {
+          return res.status(404).json({ message: "Partner record not found" });
+        }
+        partnerId = partner.id;
+      } else {
+        // Admin creating account for specific partner
+        if (!req.body.partnerId) {
+          return res.status(400).json({ message: "Partner ID required for admin access" });
+        }
+        partnerId = req.body.partnerId;
+      }
+
+      const validatedData = insertRecipientAccountSchema.parse({
+        ...req.body,
+        partnerId
+      });
+
+      const newAccount = await storage.createRecipientAccount(validatedData);
+      res.json(newAccount);
+    } catch (error) {
+      console.error('Error creating recipient account:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create recipient account" });
+    }
+  });
+
+  app.put("/api/partner/recipient-accounts/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !['partner', 'master_admin', 'editor_admin'].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Partner or admin access required" });
+    }
+
+    try {
+      const accountId = parseInt(req.params.id);
+      
+      // Verify ownership for partners
+      if (req.user!.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(req.user!.id);
+        if (!partner) {
+          return res.status(404).json({ message: "Partner record not found" });
+        }
+        
+        const accounts = await storage.getRecipientAccounts(partner.id);
+        const accountExists = accounts.some(acc => acc.id === accountId);
+        if (!accountExists) {
+          return res.status(403).json({ message: "Account not found or access denied" });
+        }
+      }
+
+      const validatedData = insertRecipientAccountSchema.partial().parse(req.body);
+      const updatedAccount = await storage.updateRecipientAccount(accountId, validatedData);
+      
+      if (!updatedAccount) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+
+      res.json(updatedAccount);
+    } catch (error) {
+      console.error('Error updating recipient account:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update recipient account" });
+    }
+  });
+
+  app.delete("/api/partner/recipient-accounts/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !['partner', 'master_admin', 'editor_admin'].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Partner or admin access required" });
+    }
+
+    try {
+      const accountId = parseInt(req.params.id);
+      
+      // Verify ownership for partners
+      if (req.user!.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(req.user!.id);
+        if (!partner) {
+          return res.status(404).json({ message: "Partner record not found" });
+        }
+        
+        const accounts = await storage.getRecipientAccounts(partner.id);
+        const accountExists = accounts.some(acc => acc.id === accountId);
+        if (!accountExists) {
+          return res.status(403).json({ message: "Account not found or access denied" });
+        }
+      }
+
+      const success = await storage.deleteRecipientAccount(accountId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting recipient account:', error);
+      res.status(500).json({ message: "Failed to delete recipient account" });
+    }
+  });
+
+  app.patch("/api/partner/recipient-accounts/:id/toggle-default", async (req, res) => {
+    if (!req.isAuthenticated() || !['partner', 'master_admin', 'editor_admin'].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Partner or admin access required" });
+    }
+
+    try {
+      const accountId = parseInt(req.params.id);
+      const { isDefault } = req.body;
+      
+      let partnerId: number;
+      
+      if (req.user!.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(req.user!.id);
+        if (!partner) {
+          return res.status(404).json({ message: "Partner record not found" });
+        }
+        partnerId = partner.id;
+        
+        // Verify ownership
+        const accounts = await storage.getRecipientAccounts(partner.id);
+        const accountExists = accounts.some(acc => acc.id === accountId);
+        if (!accountExists) {
+          return res.status(403).json({ message: "Account not found or access denied" });
+        }
+      } else {
+        // Admin access - get partnerId from query or body
+        partnerId = req.body.partnerId || parseInt(req.query.partnerId as string);
+        if (!partnerId) {
+          return res.status(400).json({ message: "Partner ID required for admin access" });
+        }
+      }
+
+      const updatedAccount = await storage.toggleDefaultRecipientAccount(accountId, isDefault, partnerId);
+      
+      if (!updatedAccount) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+
+      res.json(updatedAccount);
+    } catch (error) {
+      console.error('Error toggling default account:', error);
+      res.status(500).json({ message: "Failed to toggle default account" });
     }
   });
 

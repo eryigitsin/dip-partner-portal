@@ -16,6 +16,7 @@ import { QuoteResponseDialog } from "@/components/quote/quote-response-dialog";
 import { QuoteEditForm } from "@/components/quote/quote-edit-form";
 import { PartnerServicesTab } from "@/components/partner-services-tab";
 import { PartnerMarketsTab } from "@/components/partner-markets-tab";
+import { RecipientAccountsSection } from "@/components/recipient-accounts-section";
 import { QuoteRequest, Partner } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -981,6 +982,19 @@ export default function PartnerDashboard() {
                     </TableBody>
                   </Table>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Recipient Account Information Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Alıcı Hesabı Bilgileri</CardTitle>
+                <CardDescription>
+                  Ödeme almak için hesap bilgilerinizi ekleyin ve yönetin
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RecipientAccountsSection partnerId={partner?.id} />
               </CardContent>
             </Card>
           </TabsContent>
