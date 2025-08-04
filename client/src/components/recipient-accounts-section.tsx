@@ -46,7 +46,7 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
 
   // Fetch recipient accounts
   const { data: accounts = [], isLoading } = useQuery<RecipientAccount[]>({
-    queryKey: ["/api/recipient-accounts", partnerId],
+    queryKey: ["/api/partner/recipient-accounts", partnerId],
     enabled: !!partnerId,
   });
 
@@ -54,15 +54,14 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
   const createAccountMutation = useMutation({
     mutationFn: (data: InsertRecipientAccount) => {
       const method = editingAccount ? 'PUT' : 'POST';
-      const url = `/api/recipient-accounts${editingAccount ? `/${editingAccount.id}` : ''}`;
-      return fetch(url, {
+      const url = `/api/partner/recipient-accounts${editingAccount ? `/${editingAccount.id}` : ''}`;
+      return apiRequest(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }).then(res => res.json());
+        body: data,
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/recipient-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
       setIsDialogOpen(false);
       setEditingAccount(null);
       form.reset();
@@ -83,9 +82,9 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
   // Delete account mutation
   const deleteAccountMutation = useMutation({
     mutationFn: (accountId: number) => 
-      fetch(`/api/recipient-accounts/${accountId}`, { method: 'DELETE' }).then(res => res.json()),
+      apiRequest(`/api/partner/recipient-accounts/${accountId}`, { method: 'DELETE' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/recipient-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
       toast({
         title: "Başarılı",
         description: "Hesap silindi",
@@ -103,13 +102,12 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
   // Toggle default account mutation
   const toggleDefaultMutation = useMutation({
     mutationFn: ({ accountId, isDefault }: { accountId: number; isDefault: boolean }) => 
-      fetch(`/api/recipient-accounts/${accountId}/toggle-default`, {
+      apiRequest(`/api/partner/recipient-accounts/${accountId}/toggle-default`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isDefault }),
-      }).then(res => res.json()),
+        body: { isDefault },
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/recipient-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
       toast({
         title: "Başarılı",
         description: "Varsayılan hesap güncellendi",
