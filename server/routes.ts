@@ -2263,6 +2263,44 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get user billing info for partners (for quote details)
+  app.get("/api/partner/user-billing/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const partner = await storage.getPartnerByUserId(req.user!.id);
+      if (!partner) {
+        return res.status(403).json({ message: "Only partners can access user billing information" });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      const billingInfo = await storage.getUserBillingInfo(userId);
+      
+      if (!billingInfo) {
+        return res.status(404).json({ message: "User billing information not found" });
+      }
+      
+      // Return only necessary billing info for partners
+      res.json({
+        companyTitle: billingInfo.companyTitle,
+        companyName: billingInfo.companyName,
+        website: billingInfo.website,
+        linkedinProfile: billingInfo.linkedinProfile,
+        taxNumber: billingInfo.taxNumber,
+        taxOffice: billingInfo.taxOffice,
+        address: billingInfo.address,
+        city: billingInfo.city,
+        country: billingInfo.country,
+        postalCode: billingInfo.postalCode,
+        phone: billingInfo.phone,
+        email: billingInfo.email,
+      });
+    } catch (error) {
+      console.error('Error fetching user billing info for partner:', error);
+      res.status(500).json({ message: "Failed to fetch billing information" });
+    }
+  });
+
   // Email preferences API routes
   app.get("/api/email-preferences", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

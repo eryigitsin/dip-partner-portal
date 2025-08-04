@@ -237,7 +237,8 @@ export const partnerApplications = pgTable("partner_applications", {
 export const companyBillingInfo = pgTable("company_billing_info", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  companyName: text("company_name").notNull(),
+  companyTitle: text("company_title"), // Official company title/name
+  companyName: text("company_name").notNull(), // Brand/trade name
   website: text("website"),
   linkedinProfile: text("linkedin_profile"),
   taxNumber: text("tax_number"),

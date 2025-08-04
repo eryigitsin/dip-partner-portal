@@ -1404,6 +1404,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(companyBillingInfo)
         .set({
+          companyTitle: data.companyTitle,
           companyName: data.companyName,
           website: data.website,
           linkedinProfile: data.linkedinProfile,
@@ -1427,6 +1428,7 @@ export class DatabaseStorage implements IStorage {
         .insert(companyBillingInfo)
         .values({
           userId,
+          companyTitle: data.companyTitle,
           companyName: data.companyName,
           website: data.website,
           linkedinProfile: data.linkedinProfile,

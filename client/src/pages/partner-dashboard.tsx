@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TooltipNoDelay, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip-no-delay";
 import { FeedbackModal } from "@/components/feedback/feedback-modal";
 import { OngoingProjects } from "@/components/OngoingProjects";
+import { UserBillingDialog } from "@/components/partner/user-billing-dialog";
 import { 
   BarChart3, 
   Users, 
@@ -51,7 +52,8 @@ import {
   Award,
   Target,
   Download,
-  FolderOpen
+  FolderOpen,
+  Building
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -1069,7 +1071,7 @@ export default function PartnerDashboard() {
                             {quote.createdAt ? new Date(quote.createdAt).toLocaleDateString('tr-TR') : 'Tarih belirtilmemiş'}
                           </TableCell>
                           <TableCell>
-                            <div className="flex space-x-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button 
                                 size="sm" 
                                 variant="outline"
@@ -1078,6 +1080,23 @@ export default function PartnerDashboard() {
                                 <Eye className="h-4 w-4 mr-2" />
                                 Detaylar
                               </Button>
+                              
+                              {quote.userId && (
+                                <UserBillingDialog 
+                                  userId={quote.userId} 
+                                  userName={quote.fullName}
+                                >
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                  >
+                                    <Building className="h-4 w-4 mr-2" />
+                                    Fatura Bilgilerini Gör
+                                  </Button>
+                                </UserBillingDialog>
+                              )}
+                              
                               {(quote.status === "pending" || quote.status === "under_review") && (
                                 <Button 
                                   size="sm" 

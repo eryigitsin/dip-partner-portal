@@ -208,6 +208,7 @@ export default function UserPanel() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = {
+      companyTitle: formData.get('companyTitle'),
       companyName: formData.get('companyName'),
       website: formData.get('website'),
       linkedinProfile: formData.get('linkedinProfile'),
@@ -441,6 +442,26 @@ export default function UserPanel() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCompanyBillingSubmit} className="space-y-6">
+                  {/* Company Title Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Şirket Ünvanı</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="companyTitle">Resmi Şirket Ünvanı</Label>
+                        <Input
+                          id="companyTitle"
+                          name="companyTitle"
+                          placeholder="Örn: ABC Teknoloji Anonim Şirketi"
+                          defaultValue={billingInfo?.companyTitle || ''}
+                          data-testid="input-company-title"
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Resmi şirket ünvanınızı yazın (A.Ş., Ltd. Şti., vb.)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Company Basic Info */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium text-gray-900">Temel Bilgiler</h3>
