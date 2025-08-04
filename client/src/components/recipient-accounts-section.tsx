@@ -59,7 +59,7 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts", partnerId] });
       setIsDialogOpen(false);
       setEditingAccount(null);
       form.reset();
@@ -84,7 +84,7 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts", partnerId] });
       toast({
         title: "Başarılı",
         description: "Hesap silindi",
@@ -106,7 +106,7 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts", partnerId] });
       toast({
         title: "Başarılı",
         description: "Varsayılan hesap güncellendi",
