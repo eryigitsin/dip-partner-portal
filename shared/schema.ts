@@ -236,7 +236,8 @@ export const partnerApplications = pgTable("partner_applications", {
 // Company billing information
 export const companyBillingInfo = pgTable("company_billing_info", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  partnerId: integer("partner_id").references(() => partners.id), // For partner billing info
+  userId: integer("user_id").references(() => users.id), // For direct user billing info (future use)
   companyTitle: text("company_title"), // Official company title/name
   companyName: text("company_name").notNull(), // Brand/trade name
   website: text("website"),
@@ -249,6 +250,8 @@ export const companyBillingInfo = pgTable("company_billing_info", {
   postalCode: text("postal_code"),
   phone: text("phone"),
   email: text("email"),
+  authorizedPerson: text("authorized_person"), // Match actual DB column
+  isDefault: boolean("is_default").default(true), // Match actual DB column
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

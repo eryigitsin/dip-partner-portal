@@ -1388,62 +1388,131 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserBillingInfo(userId: number): Promise<any> {
-    const [billingInfo] = await db
-      .select()
-      .from(companyBillingInfo)
-      .where(eq(companyBillingInfo.userId, userId));
+    // Get partner if user is a partner and get billing info via partner_id
+    const partner = await this.getPartnerByUserId(userId);
+    if (partner) {
+      const [billingInfo] = await db
+        .select()
+        .from(companyBillingInfo)
+        .where(eq(companyBillingInfo.partnerId, partner.id));
+      
+      return billingInfo || null;
+    }
     
-    return billingInfo || null;
+    // If not a partner, try to find direct user billing info (future functionality)
+    try {
+      const [billingInfo] = await db
+        .select()
+        .from(companyBillingInfo)
+        .where(eq(companyBillingInfo.userId, userId));
+      
+      return billingInfo || null;
+    } catch (error) {
+      console.log('Direct user billing not available yet');
+      return null;
+    }
   }
 
   async updateUserBillingInfo(userId: number, data: any): Promise<any> {
+    const partner = await this.getPartnerByUserId(userId);
     const existingInfo = await this.getUserBillingInfo(userId);
     
     if (existingInfo) {
       // Update existing billing info
-      const [updated] = await db
-        .update(companyBillingInfo)
-        .set({
-          companyTitle: data.companyTitle,
-          companyName: data.companyName,
-          website: data.website,
-          linkedinProfile: data.linkedinProfile,
-          taxNumber: data.taxNumber,
-          taxOffice: data.taxOffice,
-          address: data.address,
-          city: data.city,
-          country: data.country || 'Turkey',
-          postalCode: data.postalCode,
-          phone: data.phone,
-          email: data.email,
-          updatedAt: new Date(),
-        })
-        .where(eq(companyBillingInfo.userId, userId))
-        .returning();
-      
-      return updated;
+      if (partner) {
+        // Update via partnerId (current database structure)
+        const [updated] = await db
+          .update(companyBillingInfo)
+          .set({
+            companyTitle: data.companyTitle,
+            companyName: data.companyName,
+            website: data.website,
+            linkedinProfile: data.linkedinProfile,
+            taxNumber: data.taxNumber,
+            taxOffice: data.taxOffice,
+            address: data.address,
+            city: data.city,
+            country: data.country || 'Turkey',
+            postalCode: data.postalCode,
+            phone: data.phone,
+            email: data.email,
+            updatedAt: new Date(),
+          })
+          .where(eq(companyBillingInfo.partnerId, partner.id))
+          .returning();
+        
+        return updated;
+      } else {
+        // Try updating via userId (future functionality)
+        const [updated] = await db
+          .update(companyBillingInfo)
+          .set({
+            companyTitle: data.companyTitle,
+            companyName: data.companyName,
+            website: data.website,
+            linkedinProfile: data.linkedinProfile,
+            taxNumber: data.taxNumber,
+            taxOffice: data.taxOffice,
+            address: data.address,
+            city: data.city,
+            country: data.country || 'Turkey',
+            postalCode: data.postalCode,
+            phone: data.phone,
+            email: data.email,
+            updatedAt: new Date(),
+          })
+          .where(eq(companyBillingInfo.userId, userId))
+          .returning();
+        
+        return updated;
+      }
     } else {
       // Create new billing info
-      const [created] = await db
-        .insert(companyBillingInfo)
-        .values({
-          userId,
-          companyTitle: data.companyTitle,
-          companyName: data.companyName,
-          website: data.website,
-          linkedinProfile: data.linkedinProfile,
-          taxNumber: data.taxNumber,
-          taxOffice: data.taxOffice,
-          address: data.address,
-          city: data.city,
-          country: data.country || 'Turkey',
-          postalCode: data.postalCode,
-          phone: data.phone,
-          email: data.email,
-        })
-        .returning();
-      
-      return created;
+      if (partner) {
+        // Create via partnerId (current database structure)
+        const [created] = await db
+          .insert(companyBillingInfo)
+          .values({
+            partnerId: partner.id,
+            companyTitle: data.companyTitle,
+            companyName: data.companyName,
+            website: data.website,
+            linkedinProfile: data.linkedinProfile,
+            taxNumber: data.taxNumber,
+            taxOffice: data.taxOffice,
+            address: data.address,
+            city: data.city,
+            country: data.country || 'Turkey',
+            postalCode: data.postalCode,
+            phone: data.phone,
+            email: data.email,
+          })
+          .returning();
+        
+        return created;
+      } else {
+        // Create via userId (future functionality)
+        const [created] = await db
+          .insert(companyBillingInfo)
+          .values({
+            userId,
+            companyTitle: data.companyTitle,
+            companyName: data.companyName,
+            website: data.website,
+            linkedinProfile: data.linkedinProfile,
+            taxNumber: data.taxNumber,
+            taxOffice: data.taxOffice,
+            address: data.address,
+            city: data.city,
+            country: data.country || 'Turkey',
+            postalCode: data.postalCode,
+            phone: data.phone,
+            email: data.email,
+          })
+          .returning();
+        
+        return created;
+      }
     }
   }
 
