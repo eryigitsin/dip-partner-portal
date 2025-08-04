@@ -1505,7 +1505,23 @@ export default function PartnerDashboard() {
                     Teklifi İptal Et
                   </Button>
                   <Button
-                    onClick={() => setIsPaymentInstructionsDialogOpen(true)}
+                    onClick={() => {
+                      // Auto-select first account if available
+                      if (recipientAccounts.length > 0) {
+                        setSelectedRecipientAccount(recipientAccounts[0]);
+                      } else {
+                        setSelectedRecipientAccount(null);
+                        // Clear manual data only if no accounts exist
+                        setManualAccountData({
+                          bankName: '',
+                          accountHolderName: '',
+                          accountNumber: '',
+                          iban: '',
+                          swiftCode: ''
+                        });
+                      }
+                      setIsPaymentInstructionsDialogOpen(true);
+                    }}
                     size="sm"
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
                   >
@@ -1668,7 +1684,7 @@ export default function PartnerDashboard() {
             <div className="space-y-3">
               <Label>Alıcı Hesabı Seçin</Label>
               <Select 
-                value={selectedRecipientAccount?.id?.toString() || (!selectedRecipientAccount && (manualAccountData.bankName || manualAccountData.accountHolderName || manualAccountData.iban) ? "new_account" : "")} 
+                value={selectedRecipientAccount?.id?.toString() || ""} 
                 onValueChange={(value) => {
                   if (value === "new_account") {
                     setSelectedRecipientAccount(null);
@@ -1687,7 +1703,7 @@ export default function PartnerDashboard() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Kayıtlı hesaplarınızdan seçin..." />
+                  <SelectValue placeholder={selectedRecipientAccount ? undefined : (!selectedRecipientAccount && (manualAccountData.bankName || manualAccountData.accountHolderName || manualAccountData.iban) ? "+ Yeni Hesap Ekle" : "Kayıtlı hesaplarınızdan seçin...")} />
                 </SelectTrigger>
                 <SelectContent>
                   {recipientAccounts.map((account: any) => (
