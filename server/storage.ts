@@ -2170,19 +2170,81 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOngoingProjectsByUser(userId: number): Promise<OngoingProject[]> {
-    return await db
-      .select()
+    const projects = await db
+      .select({
+        id: ongoingProjects.id,
+        quoteResponseId: ongoingProjects.quoteResponseId,
+        userId: ongoingProjects.userId,
+        partnerId: ongoingProjects.partnerId,
+        projectTitle: ongoingProjects.projectTitle,
+        projectNumber: ongoingProjects.projectNumber,
+        projectType: ongoingProjects.projectType,
+        status: ongoingProjects.status,
+        startDate: ongoingProjects.startDate,
+        endDate: ongoingProjects.endDate,
+        nextPaymentDue: ongoingProjects.nextPaymentDue,
+        completionRequestedBy: ongoingProjects.completionRequestedBy,
+        completionRequestedAt: ongoingProjects.completionRequestedAt,
+        completedAt: ongoingProjects.completedAt,
+        createdAt: ongoingProjects.createdAt,
+        updatedAt: ongoingProjects.updatedAt,
+        // Include quote response details
+        quoteResponseItems: quoteResponses.items,
+        quoteResponseNotes: quoteResponses.notes,
+        quoteResponseDescription: quoteResponses.description
+      })
       .from(ongoingProjects)
+      .leftJoin(quoteResponses, eq(ongoingProjects.quoteResponseId, quoteResponses.id))
       .where(eq(ongoingProjects.userId, userId))
       .orderBy(desc(ongoingProjects.createdAt));
+
+    return projects.map(project => ({
+      ...project,
+      quoteResponse: project.quoteResponseItems ? {
+        items: project.quoteResponseItems,
+        notes: project.quoteResponseNotes,
+        description: project.quoteResponseDescription
+      } : undefined
+    }));
   }
 
   async getOngoingProjectsByPartner(partnerId: number): Promise<OngoingProject[]> {
-    return await db
-      .select()
+    const projects = await db
+      .select({
+        id: ongoingProjects.id,
+        quoteResponseId: ongoingProjects.quoteResponseId,
+        userId: ongoingProjects.userId,
+        partnerId: ongoingProjects.partnerId,
+        projectTitle: ongoingProjects.projectTitle,
+        projectNumber: ongoingProjects.projectNumber,
+        projectType: ongoingProjects.projectType,
+        status: ongoingProjects.status,
+        startDate: ongoingProjects.startDate,
+        endDate: ongoingProjects.endDate,
+        nextPaymentDue: ongoingProjects.nextPaymentDue,
+        completionRequestedBy: ongoingProjects.completionRequestedBy,
+        completionRequestedAt: ongoingProjects.completionRequestedAt,
+        completedAt: ongoingProjects.completedAt,
+        createdAt: ongoingProjects.createdAt,
+        updatedAt: ongoingProjects.updatedAt,
+        // Include quote response details
+        quoteResponseItems: quoteResponses.items,
+        quoteResponseNotes: quoteResponses.notes,
+        quoteResponseDescription: quoteResponses.description
+      })
       .from(ongoingProjects)
+      .leftJoin(quoteResponses, eq(ongoingProjects.quoteResponseId, quoteResponses.id))
       .where(eq(ongoingProjects.partnerId, partnerId))
       .orderBy(desc(ongoingProjects.createdAt));
+
+    return projects.map(project => ({
+      ...project,
+      quoteResponse: project.quoteResponseItems ? {
+        items: project.quoteResponseItems,
+        notes: project.quoteResponseNotes,
+        description: project.quoteResponseDescription
+      } : undefined
+    }));
   }
 
   async getOngoingProjectById(id: number): Promise<OngoingProject | undefined> {

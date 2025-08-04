@@ -1088,7 +1088,7 @@ export default function PartnerDashboard() {
                                   Teklif Hazırla
                                 </Button>
                               )}
-                              {(quote.status === "quote_sent" || quote.status === "accepted") && (
+                              {(quote.status === "quote_sent" || quote.status === "accepted" || quote.status === "completed") && (
                                 <Button 
                                   size="sm" 
                                   variant="outline"

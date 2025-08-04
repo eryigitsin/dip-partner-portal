@@ -34,6 +34,11 @@ interface OngoingProject {
   completedAt?: string;
   userId: number;
   partnerId: number;
+  quoteResponse?: {
+    items: any[];
+    notes?: string;
+    description?: string;
+  };
 }
 
 interface ProjectComment {
@@ -303,6 +308,44 @@ export function OngoingProjects({ userType, userId, partnerId }: OngoingProjects
                 </div>
               )}
             </div>
+            
+            {/* Quote Response Details */}
+            {project.quoteResponse && (
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-sm mb-3">Onaylanan Teklif Detayları</h4>
+                
+                {/* Service Items */}
+                {project.quoteResponse.items && project.quoteResponse.items.length > 0 && (
+                  <div className="mb-3">
+                    <div className="space-y-2">
+                      {project.quoteResponse.items.map((item: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center text-sm bg-white p-2 rounded border">
+                          <span className="font-medium">{item.description}</span>
+                          <span className="text-green-600">
+                            ₺{(item.totalPrice / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Partner Notes/Explanation */}
+                {project.quoteResponse.notes && (
+                  <div className="text-sm text-gray-700">
+                    <span className="font-medium">Partner Açıklaması: </span>
+                    <span>{project.quoteResponse.notes}</span>
+                  </div>
+                )}
+                
+                {project.quoteResponse.description && project.quoteResponse.description !== project.quoteResponse.notes && (
+                  <div className="text-sm text-gray-700 mt-2">
+                    <span className="font-medium">Açıklama: </span>
+                    <span>{project.quoteResponse.description}</span>
+                  </div>
+                )}
+              </div>
+            )}
             
             <div className="flex items-center gap-2 flex-wrap">
               {shouldShowPaymentButton(project) && (
