@@ -46,9 +46,11 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
 
   // Fetch recipient accounts
   const { data: accounts = [], isLoading } = useQuery<RecipientAccount[]>({
-    queryKey: ["/api/partner/recipient-accounts", partnerId],
+    queryKey: ["/api/partner/recipient-accounts"],
     enabled: !!partnerId,
   });
+
+
 
   // Create/Update account mutation
   const createAccountMutation = useMutation({
@@ -59,7 +61,14 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts", partnerId] });
+      // Invalidate and refetch the accounts query immediately
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/partner/recipient-accounts"],
+        refetchType: 'active'
+      });
+      queryClient.refetchQueries({ 
+        queryKey: ["/api/partner/recipient-accounts"] 
+      });
       setIsDialogOpen(false);
       setEditingAccount(null);
       form.reset();
@@ -84,7 +93,13 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts", partnerId] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/partner/recipient-accounts"],
+        refetchType: 'active'
+      });
+      queryClient.refetchQueries({ 
+        queryKey: ["/api/partner/recipient-accounts"] 
+      });
       toast({
         title: "Başarılı",
         description: "Hesap silindi",
@@ -106,7 +121,13 @@ export function RecipientAccountsSection({ partnerId }: RecipientAccountsSection
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/recipient-accounts", partnerId] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/partner/recipient-accounts"],
+        refetchType: 'active'
+      });
+      queryClient.refetchQueries({ 
+        queryKey: ["/api/partner/recipient-accounts"] 
+      });
       toast({
         title: "Başarılı",
         description: "Varsayılan hesap güncellendi",

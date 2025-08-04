@@ -67,6 +67,12 @@ Preferred communication style: Simple, everyday language.
 - **Favicon Integration**: Added DİP blue logo as site favicon for better brand recognition
 - **Footer Legal Links**: Added Terms of Service and Privacy Policy links to footer section with proper external linking
 
+### August 4, 2025
+- **Recipient Accounts Cache Fix**: Fixed critical issue where new recipient accounts weren't displaying after successful creation due to incorrect React Query cache invalidation
+- **API URL Structure Correction**: Corrected the recipient accounts API query URL structure from `/api/partner/recipient-accounts/{partnerId}` to `/api/partner/recipient-accounts` to match server endpoint expectations
+- **Query Key Optimization**: Updated all recipient accounts mutations to use consistent query keys for proper cache invalidation without partnerId parameter
+- **Cache Invalidation Enhancement**: Added explicit `refetchQueries` calls alongside `invalidateQueries` to ensure immediate UI updates after mutations
+
 ### August 1, 2025
 - **Feedback Management Enhancement**: Added comprehensive feedback deletion capability for master admins with confirmation dialogs
 - **Partner Edit Form Simplification**: Removed email and password fields from partner editing dialog, moving these to dedicated User Management section for better security and organization
