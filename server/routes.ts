@@ -4295,9 +4295,15 @@ export function registerRoutes(app: Express): Server {
               </p>
             </div>
 
-            <p style="color: #6b7280; font-size: 14px;">
-              Ödeme tamamlandığında lütfen dekont/makbuzu partner ile paylaşınız.
-            </p>
+            <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: center;">
+              <p style="margin: 0 0 15px 0; color: #374151; font-size: 14px;">
+                Ödeme yaptınız mı? Buradan partnere bilgi verin:
+              </p>
+              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/user-panel?tab=service-requests" 
+                 style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                Hizmet Taleplerim
+              </a>
+            </div>
             
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
             <p style="color: #9ca3af; font-size: 12px;">
