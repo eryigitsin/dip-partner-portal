@@ -238,6 +238,8 @@ export const companyBillingInfo = pgTable("company_billing_info", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   companyName: text("company_name").notNull(),
+  website: text("website"),
+  linkedinProfile: text("linkedin_profile"),
   taxNumber: text("tax_number"),
   taxOffice: text("tax_office"),
   address: text("address").notNull(),

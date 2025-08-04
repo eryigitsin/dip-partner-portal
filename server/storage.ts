@@ -81,6 +81,8 @@ import {
   type InsertProjectComment,
   type ProjectPayment,
   type InsertProjectPayment,
+  companyBillingInfo,
+  type CompanyBillingInfo,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
@@ -1386,13 +1388,61 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserBillingInfo(userId: number): Promise<any> {
-    // This method seems to be for legacy support, returning null for now
-    return null;
+    const [billingInfo] = await db
+      .select()
+      .from(companyBillingInfo)
+      .where(eq(companyBillingInfo.userId, userId));
+    
+    return billingInfo || null;
   }
 
   async updateUserBillingInfo(userId: number, data: any): Promise<any> {
-    // This method seems to be for legacy support, returning null for now
-    return null;
+    const existingInfo = await this.getUserBillingInfo(userId);
+    
+    if (existingInfo) {
+      // Update existing billing info
+      const [updated] = await db
+        .update(companyBillingInfo)
+        .set({
+          companyName: data.companyName,
+          website: data.website,
+          linkedinProfile: data.linkedinProfile,
+          taxNumber: data.taxNumber,
+          taxOffice: data.taxOffice,
+          address: data.address,
+          city: data.city,
+          country: data.country || 'Turkey',
+          postalCode: data.postalCode,
+          phone: data.phone,
+          email: data.email,
+          updatedAt: new Date(),
+        })
+        .where(eq(companyBillingInfo.userId, userId))
+        .returning();
+      
+      return updated;
+    } else {
+      // Create new billing info
+      const [created] = await db
+        .insert(companyBillingInfo)
+        .values({
+          userId,
+          companyName: data.companyName,
+          website: data.website,
+          linkedinProfile: data.linkedinProfile,
+          taxNumber: data.taxNumber,
+          taxOffice: data.taxOffice,
+          address: data.address,
+          city: data.city,
+          country: data.country || 'Turkey',
+          postalCode: data.postalCode,
+          phone: data.phone,
+          email: data.email,
+        })
+        .returning();
+      
+      return created;
+    }
   }
 
   async getUserFollowedPartners(userId: number): Promise<Partner[]> {

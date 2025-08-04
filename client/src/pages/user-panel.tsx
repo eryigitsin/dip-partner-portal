@@ -204,11 +204,13 @@ export default function UserPanel() {
     updateProfileMutation.mutate(data);
   };
 
-  const handleBillingSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCompanyBillingSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = {
       companyName: formData.get('companyName'),
+      website: formData.get('website'),
+      linkedinProfile: formData.get('linkedinProfile'),
       taxNumber: formData.get('taxNumber'),
       taxOffice: formData.get('taxOffice'),
       address: formData.get('address'),
@@ -261,13 +263,9 @@ export default function UserPanel() {
               <User className="h-4 w-4" />
               Profil
             </TabsTrigger>
-            <TabsTrigger value="company" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[120px] px-3 py-2 text-sm">
+            <TabsTrigger value="company" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[140px] px-3 py-2 text-sm">
               <Building className="h-4 w-4" />
-              Şirket
-            </TabsTrigger>
-            <TabsTrigger value="billing" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[120px] px-3 py-2 text-sm">
-              <CreditCard className="h-4 w-4" />
-              Faturalama
+              Şirket Bilgileri
             </TabsTrigger>
             <TabsTrigger value="following" className="flex items-center gap-2 flex-1 sm:flex-none sm:min-w-[140px] px-3 py-2 text-sm">
               <Heart className="h-4 w-4" />
@@ -432,134 +430,158 @@ export default function UserPanel() {
             </div>
           </TabsContent>
 
-          {/* Company Tab */}
+          {/* Company Information Tab */}
           <TabsContent value="company">
             <Card>
               <CardHeader>
                 <CardTitle>Şirket Bilgileri</CardTitle>
                 <CardDescription>
-                  Şirket bilgilerinizi güncelleyin
+                  Şirket ve faturalama bilgilerinizi güncelleyin
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleProfileSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="company">Şirket Adı</Label>
-                    <Input
-                      id="company"
-                      name="company"
-                      defaultValue={userProfile?.company || ''}
-                    />
+                <form onSubmit={handleCompanyBillingSubmit} className="space-y-6">
+                  {/* Company Basic Info */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Temel Bilgiler</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="companyName">Marka (Tabela İsmi) *</Label>
+                        <Input
+                          id="companyName"
+                          name="companyName"
+                          defaultValue={billingInfo?.companyName || ''}
+                          required
+                          data-testid="input-company-name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="website">Web Sitesi</Label>
+                        <Input
+                          id="website"
+                          name="website"
+                          type="url"
+                          placeholder="https://www.example.com"
+                          defaultValue={billingInfo?.website || ''}
+                          data-testid="input-website"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <Label htmlFor="linkedinProfile">LinkedIn Sayfası</Label>
+                        <Input
+                          id="linkedinProfile"
+                          name="linkedinProfile"
+                          type="url"
+                          placeholder="https://www.linkedin.com/company/your-company"
+                          defaultValue={billingInfo?.linkedinProfile || ''}
+                          data-testid="input-linkedin"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <Button 
-                    type="submit" 
-                    disabled={updateProfileMutation.isPending}
-                    className="flex items-center gap-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    {updateProfileMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* Billing Tab */}
-          <TabsContent value="billing">
-            <Card>
-              <CardHeader>
-                <CardTitle>Fatura Bilgileri</CardTitle>
-                <CardDescription>
-                  Faturalama için şirket bilgilerinizi girin
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleBillingSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="companyName">Şirket Unvanı</Label>
-                      <Input
-                        id="companyName"
-                        name="companyName"
-                        defaultValue={billingInfo?.companyName || ''}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="taxNumber">Vergi Numarası</Label>
-                      <Input
-                        id="taxNumber"
-                        name="taxNumber"
-                        defaultValue={billingInfo?.taxNumber || ''}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="taxOffice">Vergi Dairesi</Label>
-                      <Input
-                        id="taxOffice"
-                        name="taxOffice"
-                        defaultValue={billingInfo?.taxOffice || ''}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="city">Şehir</Label>
-                      <Input
-                        id="city"
-                        name="city"
-                        defaultValue={billingInfo?.city || ''}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="country">Ülke</Label>
-                      <Input
-                        id="country"
-                        name="country"
-                        defaultValue={billingInfo?.country || 'Turkey'}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="postalCode">Posta Kodu</Label>
-                      <Input
-                        id="postalCode"
-                        name="postalCode"
-                        defaultValue={billingInfo?.postalCode || ''}
-                      />
+                  {/* Tax Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Vergi Bilgileri</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="taxNumber">Vergi Numarası</Label>
+                        <Input
+                          id="taxNumber"
+                          name="taxNumber"
+                          defaultValue={billingInfo?.taxNumber || ''}
+                          data-testid="input-tax-number"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="taxOffice">Vergi Dairesi</Label>
+                        <Input
+                          id="taxOffice"
+                          name="taxOffice"
+                          defaultValue={billingInfo?.taxOffice || ''}
+                          data-testid="input-tax-office"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="address">Adres</Label>
-                    <Textarea
-                      id="address"
-                      name="address"
-                      defaultValue={billingInfo?.address || ''}
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                  {/* Address Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">Adres Bilgileri</h3>
                     <div>
-                      <Label htmlFor="phone">Telefon</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        defaultValue={billingInfo?.phone || ''}
+                      <Label htmlFor="address">Adres *</Label>
+                      <Textarea
+                        id="address"
+                        name="address"
+                        defaultValue={billingInfo?.address || ''}
+                        required
+                        data-testid="textarea-address"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="email">E-posta</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        defaultValue={billingInfo?.email || ''}
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="city">Şehir *</Label>
+                        <Input
+                          id="city"
+                          name="city"
+                          defaultValue={billingInfo?.city || ''}
+                          required
+                          data-testid="input-city"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="country">Ülke *</Label>
+                        <Input
+                          id="country"
+                          name="country"
+                          defaultValue={billingInfo?.country || 'Turkey'}
+                          required
+                          data-testid="input-country"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="postalCode">Posta Kodu</Label>
+                        <Input
+                          id="postalCode"
+                          name="postalCode"
+                          defaultValue={billingInfo?.postalCode || ''}
+                          data-testid="input-postal-code"
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  {/* Contact Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">İletişim Bilgileri</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="phone">Telefon</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          defaultValue={billingInfo?.phone || ''}
+                          data-testid="input-phone"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="email">E-posta</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          defaultValue={billingInfo?.email || ''}
+                          data-testid="input-email"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <Button 
                     type="submit" 
                     disabled={updateBillingMutation.isPending}
                     className="flex items-center gap-2"
+                    data-testid="button-save-company-info"
                   >
                     <Save className="h-4 w-4" />
                     {updateBillingMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
