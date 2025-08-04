@@ -1668,10 +1668,22 @@ export default function PartnerDashboard() {
             <div className="space-y-3">
               <Label>Alıcı Hesabı Seçin</Label>
               <Select 
-                value={selectedRecipientAccount?.id?.toString() || ""} 
+                value={selectedRecipientAccount?.id?.toString() || (!selectedRecipientAccount && (manualAccountData.bankName || manualAccountData.accountHolderName || manualAccountData.iban) ? "new_account" : "")} 
                 onValueChange={(value) => {
-                  const account = recipientAccounts.find(acc => acc.id.toString() === value);
-                  setSelectedRecipientAccount(account);
+                  if (value === "new_account") {
+                    setSelectedRecipientAccount(null);
+                    // Clear manual data when switching to new account
+                    setManualAccountData({
+                      bankName: '',
+                      accountHolderName: '',
+                      accountNumber: '',
+                      iban: '',
+                      swiftCode: ''
+                    });
+                  } else {
+                    const account = recipientAccounts.find(acc => acc.id.toString() === value);
+                    setSelectedRecipientAccount(account);
+                  }
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -1683,6 +1695,9 @@ export default function PartnerDashboard() {
                       {account.accountName}
                     </SelectItem>
                   ))}
+                  <SelectItem value="new_account" className="text-blue-600 font-medium">
+                    + Yeni Hesap Ekle
+                  </SelectItem>
                 </SelectContent>
               </Select>
               </div>

@@ -76,6 +76,10 @@ Preferred communication style: Simple, everyday language.
 - **API URL Structure Correction**: Corrected the recipient accounts API query URL structure from `/api/partner/recipient-accounts/{partnerId}` to `/api/partner/recipient-accounts` to match server endpoint expectations
 - **Query Key Optimization**: Updated all recipient accounts mutations to use consistent query keys for proper cache invalidation without partnerId parameter
 - **Cache Invalidation Enhancement**: Added explicit `refetchQueries` calls alongside `invalidateQueries` to ensure immediate UI updates after mutations
+- **Partner Payment UI Enhancement**: Updated partner dashboard payment instructions interface with "Havale / EFT Bilgisi Gönder" button text and added "+ Yeni Hesap Ekle" dropdown option for seamless manual account entry
+- **Payment Update Notifications**: Implemented update email notifications with subject "Havale / EFT ödeme bilgileri güncellendi!" when partners resend payment instructions for existing quotes
+- **Account Storage Optimization**: Modified new account creation to store only bank name as account name for cleaner recipient account management
+- **Currency Display Fix**: Corrected email template currency formatting to properly display TRY amounts by converting from cents storage format
 
 ### August 1, 2025
 - **Feedback Management Enhancement**: Added comprehensive feedback deletion capability for master admins with confirmation dialogs
