@@ -763,7 +763,7 @@ export default function ServiceRequests() {
           </TabsContent>
 
           <TabsContent value="ongoing-projects">
-            <OngoingProjects userType="user" />
+            <OngoingProjects userType="user" userId={user?.id} />
           </TabsContent>
           </Tabs>
         </div>

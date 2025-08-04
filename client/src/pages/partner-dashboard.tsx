@@ -1488,7 +1488,7 @@ export default function PartnerDashboard() {
                 </CardContent>
               </Card>
             )}
-            <OngoingProjects userType="partner" />
+            <OngoingProjects userType="partner" partnerId={partner?.id} />
           </TabsContent>
 
           <TabsContent value="services" className="space-y-6">
