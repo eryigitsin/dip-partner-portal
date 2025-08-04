@@ -92,7 +92,7 @@ export function QuoteRequestDetailModal({
                 <div className="flex items-center space-x-2">
                   <User className="h-4 w-4 text-gray-500" />
                   <span className="font-medium">Ad Soyad:</span>
-                  <span>{quoteRequest.firstName || ''} {quoteRequest.lastName || ''}</span>
+                  <span>{quoteRequest.fullName || ''}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Mail className="h-4 w-4 text-gray-500" />
