@@ -197,6 +197,11 @@ export default function PartnerDashboard() {
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
   });
 
+  // Helper function to get payment confirmation for a quote response
+  const getPaymentConfirmationForQuote = (quoteResponseId: number) => {
+    return paymentConfirmations.find(pc => pc.quoteResponseId === quoteResponseId);
+  };
+
   // Username change mutation
   const changeUsernameMutation = useMutation({
     mutationFn: async (newUsername: string) => {
@@ -1666,30 +1671,119 @@ export default function PartnerDashboard() {
                     <X className="h-4 w-4" />
                     Teklifi İptal Et
                   </Button>
-                  <Button
-                    onClick={() => {
-                      // Auto-select first account if available
-                      if (recipientAccounts.length > 0) {
-                        setSelectedRecipientAccount(recipientAccounts[0]);
-                      } else {
-                        setSelectedRecipientAccount(null);
-                        // Clear manual data only if no accounts exist
-                        setManualAccountData({
-                          bankName: '',
-                          accountHolderName: '',
-                          accountNumber: '',
-                          iban: '',
-                          swiftCode: ''
-                        });
+                  {(() => {
+                    const paymentConfirmation = getPaymentConfirmationForQuote(selectedQuoteResponse?.id);
+                    
+                    if (paymentConfirmation) {
+                      if (paymentConfirmation.status === 'pending') {
+                        return (
+                          <>
+                            <Button
+                              onClick={() => {
+                                if (window.confirm('Ödemeyi onaylamak istediğinizden emin misiniz?')) {
+                                  paymentConfirmationMutation.mutate({
+                                    confirmationId: paymentConfirmation.id,
+                                    status: 'confirmed',
+                                    note: 'Partner tarafından onaylandı'
+                                  });
+                                }
+                              }}
+                              size="sm"
+                              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                              data-testid={`button-confirm-payment-${paymentConfirmation.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              Ödemeyi Onayla
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                if (window.confirm('Ödemeyi reddetmek istediğinizden emin misiniz?')) {
+                                  paymentConfirmationMutation.mutate({
+                                    confirmationId: paymentConfirmation.id,
+                                    status: 'rejected',
+                                    note: 'Partner tarafından reddedildi'
+                                  });
+                                }
+                              }}
+                              size="sm"
+                              variant="destructive"
+                              className="flex items-center gap-2"
+                              data-testid={`button-reject-payment-${paymentConfirmation.id}`}
+                            >
+                              <XCircle className="h-4 w-4" />
+                              Ödeme Alınamadı
+                            </Button>
+                          </>
+                        );
+                      } else if (paymentConfirmation.status === 'confirmed') {
+                        return (
+                          <Button
+                            size="sm"
+                            disabled
+                            className="flex items-center gap-2 bg-gray-500"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            Ödeme Alındı
+                          </Button>
+                        );
+                      } else if (paymentConfirmation.status === 'rejected') {
+                        return (
+                          <Button
+                            onClick={() => {
+                              // Auto-select first account if available
+                              if (recipientAccounts.length > 0) {
+                                setSelectedRecipientAccount(recipientAccounts[0]);
+                              } else {
+                                setSelectedRecipientAccount(null);
+                                // Clear manual data only if no accounts exist
+                                setManualAccountData({
+                                  bankName: '',
+                                  accountHolderName: '',
+                                  accountNumber: '',
+                                  iban: '',
+                                  swiftCode: ''
+                                });
+                              }
+                              setIsPaymentInstructionsDialogOpen(true);
+                            }}
+                            size="sm"
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Send className="h-4 w-4" />
+                            Havale / EFT Bilgisi Gönder
+                          </Button>
+                        );
                       }
-                      setIsPaymentInstructionsDialogOpen(true);
-                    }}
-                    size="sm"
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Send className="h-4 w-4" />
-                    Havale / EFT Bilgisi Gönder
-                  </Button>
+                    } else {
+                      // No payment confirmation yet, show the default button
+                      return (
+                        <Button
+                          onClick={() => {
+                            // Auto-select first account if available
+                            if (recipientAccounts.length > 0) {
+                              setSelectedRecipientAccount(recipientAccounts[0]);
+                            } else {
+                              setSelectedRecipientAccount(null);
+                              // Clear manual data only if no accounts exist
+                              setManualAccountData({
+                                bankName: '',
+                                accountHolderName: '',
+                                accountNumber: '',
+                                iban: '',
+                                swiftCode: ''
+                              });
+                            }
+                            setIsPaymentInstructionsDialogOpen(true);
+                          }}
+                          size="sm"
+                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                        >
+                          <Send className="h-4 w-4" />
+                          Havale / EFT Bilgisi Gönder
+                        </Button>
+                      );
+                    }
+                  })()}
                 </div>
                 <Button
                   variant="outline"

@@ -4526,15 +4526,12 @@ export function registerRoutes(app: Express): Server {
         </div>
       `;
 
-      // Send email to partner with attachment
+      // Send email to partner with attachment using Resend
       let emailSuccess = false;
       
       if (receiptPath && receiptFile) {
         try {
-          // Import SendGrid service
-          const { sendEmailWithAttachment } = await import('./sendgrid');
-          
-          // Get file from Supabase and convert to base64
+          // Get file from Supabase and convert to base64 for Resend attachment
           const { data: fileData } = await supabaseStorage.supabase.storage
             .from('partner-documents')
             .download(receiptPath);
@@ -4543,17 +4540,17 @@ export function registerRoutes(app: Express): Server {
             const buffer = Buffer.from(await fileData.arrayBuffer());
             const base64Content = buffer.toString('base64');
             
-            emailSuccess = await sendEmailWithAttachment({
+            // Send email with attachment using Resend
+            const emailResult = await resendService.sendEmailWithAttachment({
               to: partnerUser.email,
               subject: `Ödeme Bildirimi - ${user.firstName} ${user.lastName}`,
               html: emailContent,
               attachments: [{
-                content: base64Content,
                 filename: receiptFile.originalname,
-                type: receiptFile.mimetype,
-                disposition: 'attachment'
+                content: base64Content
               }]
             });
+            emailSuccess = emailResult.success;
           }
         } catch (error) {
           console.error('Error attaching receipt to email:', error);
@@ -4700,6 +4697,131 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Update payment confirmation status (approve/reject)
+  // Update payment confirmation status (new endpoint format)
+  app.patch('/api/payment-confirmations/:id', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const user = req.user!;
+      const confirmationId = parseInt(req.params.id);
+      const { status, note } = req.body;
+
+      if (!['confirmed', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Status must be 'confirmed' or 'rejected'" });
+      }
+
+      // Get payment confirmation
+      const paymentConfirmation = await storage.getPaymentConfirmationById(confirmationId);
+      if (!paymentConfirmation) {
+        return res.status(404).json({ message: "Payment confirmation not found" });
+      }
+
+      // Get quote response to verify partner ownership
+      const quoteResponse = await storage.getQuoteResponseById(paymentConfirmation.quoteResponseId);
+      if (!quoteResponse) {
+        return res.status(404).json({ message: "Quote response not found" });
+      }
+
+      // Verify user is the partner for this quote
+      if (user.userType === 'partner') {
+        const partner = await storage.getPartnerByUserId(user.id);
+        if (!partner || partner.id !== quoteResponse.partnerId) {
+          return res.status(403).json({ message: "Unauthorized to update this payment confirmation" });
+        }
+      } else if (user.userType !== 'master_admin' && user.userType !== 'editor_admin') {
+        return res.status(403).json({ message: "Partner or admin access required" });
+      }
+
+      // Update payment confirmation status
+      await storage.updatePaymentConfirmation(confirmationId, {
+        status,
+        partnerNotes: note || null
+      });
+
+      // If confirmed, update quote request status to completed
+      if (status === 'confirmed') {
+        await storage.updateQuoteRequest(quoteResponse.quoteRequestId, {
+          status: 'completed'
+        });
+      }
+
+      // Send email notification to customer
+      const quoteRequest = await storage.getQuoteRequestById(quoteResponse.quoteRequestId);
+      if (quoteRequest && quoteRequest.userId) {
+        const customer = await storage.getUser(quoteRequest.userId);
+        const partner = await storage.getPartner(quoteResponse.partnerId);
+        
+        if (customer && partner) {
+          const statusText = status === 'confirmed' ? 'onaylandı' : 'reddedildi';
+          const statusColor = status === 'confirmed' ? '#10b981' : '#ef4444';
+          
+          const emailContent = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0;">DİP Partner Portal</h1>
+                <p style="color: white; margin: 10px 0 0 0;">Digital Export Platform</p>
+              </div>
+              <div style="padding: 30px; background: #f8f9fa;">
+                <h2 style="color: #333; margin-bottom: 20px;">Ödeme Durumu Güncellendi</h2>
+                
+                <div style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                  <h3 style="color: #333; margin: 0 0 10px 0;">Teklif Bilgileri</h3>
+                  <p><strong>Partner:</strong> ${partner.companyName}</p>
+                  <p><strong>Teklif Numarası:</strong> ${quoteResponse.quoteNumber}</p>
+                  <p><strong>Durum:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText.toUpperCase()}</span></p>
+                  ${note ? `<p><strong>Partner Notu:</strong> ${note}</p>` : ''}
+                </div>
+
+                ${status === 'confirmed' ? `
+                  <div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; color: #065f46;">
+                      <strong>✓ Ödemeniz onaylandı!</strong><br>
+                      İş ortağımız ödemenizi aldığını onayladı. İşbirliğiniz için teşekkür ederiz.
+                    </p>
+                  </div>
+                ` : `
+                  <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; color: #991b1b;">
+                      <strong>⚠ Ödeme Sorunu</strong><br>
+                      İş ortağımız ödemenizi alamadığını bildirdi. Lütfen ödeme durumunuzu kontrol edin ve gerekirse iş ortağı ile iletişime geçin.
+                    </p>
+                    <div style="margin-top: 15px;">
+                      <a href="${process.env.FRONTEND_URL || 'https://dip.tc'}/messages" 
+                         style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                        İş Ortağına Mesaj Gönder
+                      </a>
+                    </div>
+                  </div>
+                `}
+              </div>
+              
+              <div style="background: #e5e7eb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
+                <p style="margin: 0;">Bu e-posta DİP Partner Portal tarafından otomatik olarak gönderilmiştir.</p>
+                <p style="margin: 5px 0 0 0;">© 2025 Digital Export Platform. Tüm Hakları Saklıdır.</p>
+              </div>
+            </div>
+          `;
+
+          await resendService.sendEmail(
+            customer.email,
+            `Ödeme Durumu Güncellendi - ${quoteResponse.quoteNumber}`,
+            emailContent
+          );
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Payment ${status === 'confirmed' ? 'confirmed' : 'rejected'} successfully` 
+      });
+    } catch (error) {
+      console.error('Error updating payment confirmation:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.patch('/api/payment-confirmations/:id/status', async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Authentication required" });
@@ -4782,11 +4904,17 @@ export function registerRoutes(app: Express): Server {
                 <p style="color: #666; line-height: 1.6;">Ödemeniz onaylandı ve hizmet talebiniz tamamlandı olarak işaretlendi. Hizmet sürecinin devamı için partnerin sizinle iletişime geçmesini bekleyebilirsiniz.</p>
                 ` : `
                 <p style="color: #666; line-height: 1.6;">Ödeme bildiriminiz reddedildi. Sorularınız için lütfen partner ile doğrudan iletişime geçin.</p>
-                `}
-                
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/user-panel?tab=service-requests" 
-                     style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                  <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/messages" 
+                     style="background: #10b981; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                    İş ortağına mesaj gönder
+                  </a>
+                </div>
+                `}
+
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/service-requests" 
+                     style="background: #667eea; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                     Hizmet Taleplerim
                   </a>
                 </div>
@@ -4799,17 +4927,22 @@ export function registerRoutes(app: Express): Server {
             </div>
           `;
 
-          await resendService.sendEmail({
+          const emailResult = await resendService.sendEmail({
             to: customer.email,
             subject: `Ödeme ${statusText.charAt(0).toUpperCase() + statusText.slice(1)} - ${partner.companyName}`,
             html: emailContent,
           });
+
+          if (!emailResult.success) {
+            console.error('Failed to send payment status email:', emailResult.error);
+          }
         }
       }
 
       res.json({ 
         success: true, 
-        message: `Payment confirmation ${status} successfully` 
+        message: `Payment confirmation ${status}`,
+        status 
       });
 
     } catch (error) {

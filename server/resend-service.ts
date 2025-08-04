@@ -15,6 +15,15 @@ export interface SendEmailOptions {
   tags?: { name: string; value: string }[];
 }
 
+export interface EmailAttachment {
+  filename: string;
+  content: string; // base64 encoded content
+}
+
+export interface SendEmailWithAttachmentOptions extends SendEmailOptions {
+  attachments: EmailAttachment[];
+}
+
 export interface ContactData {
   email: string;
   firstName?: string;
@@ -54,6 +63,33 @@ export class ResendService {
       return { success: true, messageId: data?.id };
     } catch (error) {
       console.error('Email sending failed:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown email error' 
+      };
+    }
+  }
+
+  async sendEmailWithAttachment(options: SendEmailWithAttachmentOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: options.from || this.fromEmail,
+        to: Array.isArray(options.to) ? options.to : [options.to],
+        subject: options.subject,
+        html: options.html,
+        tags: options.tags,
+        attachments: options.attachments,
+      });
+
+      if (error) {
+        console.error('Resend email with attachment error:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('Email with attachment sent successfully:', data?.id);
+      return { success: true, messageId: data?.id };
+    } catch (error) {
+      console.error('Email with attachment sending failed:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown email error' 
