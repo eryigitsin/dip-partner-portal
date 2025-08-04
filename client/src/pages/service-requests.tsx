@@ -55,12 +55,23 @@ const getSmartBadge = (partner: any, userInteractions: any, userQuoteHistory: an
     return { text: 'Çalıştın', variant: 'default', icon: HandHeart };
   }
   
+  // Check if user has received a quote but hasn't completed payment
+  const hasReceivedQuote = userQuoteHistory?.some((req: any) => 
+    req.partnerId === partner.id && 
+    !req.hasWorkedTogether && 
+    (req.status === 'accepted' || req.status === 'rejected' || req.status === 'expired' || 
+     req.status === 'cancelled' || req.status === 'revision_requested')
+  );
+  if (hasReceivedQuote) {
+    return { text: 'Teklif Aldın', variant: 'secondary', icon: CheckCircle };
+  }
+  
   // Check if user has messaged this partner
   if (interaction?.hasMessaged) {
     return { text: 'İletişime Geçtin', variant: 'secondary', icon: MessageCircle };
   }
   
-  // Check if user has requested a quote from this partner but it's not finalized
+  // Check if user has requested a quote from this partner but hasn't received response yet
   const hasRequestedQuote = userQuoteHistory?.some((req: any) => 
     req.partnerId === partner.id && 
     !req.hasWorkedTogether && 
