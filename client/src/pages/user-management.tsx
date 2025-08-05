@@ -24,7 +24,8 @@ import {
   Phone,
   Calendar,
   MapPin,
-  Globe
+  Globe,
+  Search
 } from 'lucide-react';
 
 interface User {
@@ -61,6 +62,7 @@ export default function UserManagement() {
   const [isNewUserDialogOpen, setIsNewUserDialogOpen] = useState(false);
   const [isNewPartnerDialogOpen, setIsNewPartnerDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // New user form state
   const [newUserData, setNewUserData] = useState({
@@ -107,10 +109,24 @@ export default function UserManagement() {
     queryKey: ['/api/categories'],
   });
 
+  // Filter users by search term
+  const filteredUsers = users.filter((u: User) => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      u.firstName?.toLowerCase().includes(searchLower) ||
+      u.lastName?.toLowerCase().includes(searchLower) ||
+      u.email?.toLowerCase().includes(searchLower) ||
+      u.phone?.toLowerCase().includes(searchLower) ||
+      u.userType?.toLowerCase().includes(searchLower)
+    );
+  });
+
   // Filter users by type
-  const regularUsers = users.filter(u => u.userType === 'user');
-  const partnerUsers = users.filter(u => u.userType === 'partner');
-  const editorUsers = users.filter(u => u.userType === 'editor_admin');
+  const regularUsers = filteredUsers.filter(u => u.userType === 'user');
+  const partnerUsers = filteredUsers.filter(u => u.userType === 'partner');
+  const editorUsers = filteredUsers.filter(u => u.userType === 'editor_admin');
 
   // Create new user mutation
   const createUserMutation = useMutation({
@@ -250,6 +266,21 @@ export default function UserManagement() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Kullanıcı Yönetimi</h1>
           <p className="text-gray-600">Tüm kullanıcıları, partnerleri ve editörleri yönetin.</p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              data-testid="input-user-search"
+              type="text"
+              placeholder="Kullanıcı ara (ad, soyad, e-posta, telefon, rol...)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
 
         <div className="flex gap-4 mb-6">
