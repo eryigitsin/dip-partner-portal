@@ -17,7 +17,7 @@ import { supabaseStorage } from "./supabase-storage";
 import { setupSocketIO } from "./socket";
 import { supabaseAdmin } from "./supabase";
 import { db } from "./db";
-import { quoteResponses } from "@shared/schema";
+import { quoteResponses, partners } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 // Email templates and functionality
