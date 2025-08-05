@@ -162,6 +162,9 @@ export default function MessagesPage() {
         queryKey: ["/api/user/conversations"],
       });
     },
+    onError: (error) => {
+      console.error('Error sending message:', error);
+    },
   });
 
   // Mark messages as read mutation
@@ -179,16 +182,18 @@ export default function MessagesPage() {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
     
-    const conversation = conversations.find((c: ConversationWithPartner) => 
-      `${Math.min(c.partnerId, user.id)}-${Math.max(c.partnerId, user.id)}` === selectedConversation
-    );
+    // Parse conversation ID to get partner user ID
+    const parts = selectedConversation.split('-');
+    const userId1 = parseInt(parts[0]);
+    const userId2 = parseInt(parts[1]);
+    const receiverId = userId1 === user.id ? userId2 : userId1;
     
-    if (conversation) {
-      sendMessageMutation.mutate({
-        receiverId: conversation.partnerId,
-        content: newMessage.trim(),
-      });
-    }
+    console.log('Sending message:', { receiverId, content: newMessage.trim(), selectedConversation });
+    
+    sendMessageMutation.mutate({
+      receiverId,
+      content: newMessage.trim(),
+    });
   };
 
   const handleConversationSelect = (conversation: ConversationWithPartner) => {
@@ -205,6 +210,7 @@ export default function MessagesPage() {
   const handleNewMessageToPartner = (partner: Partner) => {
     if (!user) return;
     const conversationId = `${Math.min(partner.userId, user.id)}-${Math.max(partner.userId, user.id)}`;
+    console.log('Starting new conversation:', { conversationId, partnerId: partner.userId, userId: user.id });
     setSelectedConversation(conversationId);
     setNewMessageDialogOpen(false);
   };
@@ -304,14 +310,14 @@ export default function MessagesPage() {
             <p className="text-gray-600 dark:text-gray-400">İş ortaklarınızla mesajlaşın</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
             {/* Conversations List */}
             <Card className="lg:col-span-1">
             <CardContent className="p-0">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
               </div>
-              <ScrollArea className="h-[calc(100vh-300px)]">
+              <ScrollArea className="h-[calc(100vh-380px)]">
                 {conversations.length === 0 ? (
                   <div className="p-6 text-center">
                     <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
