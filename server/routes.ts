@@ -1331,6 +1331,19 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Mark messages as read in a conversation
+  app.post("/api/conversations/:conversationId/mark-read", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { conversationId } = req.params;
+      await storage.markMessagesAsRead(conversationId, req.user.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
+
   app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {

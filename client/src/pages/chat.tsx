@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MessageSquare, Plus, Send, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Plus, Send, ArrowLeft, Paperclip } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -70,12 +70,32 @@ export default function Chat() {
     refetchInterval: 2000, // Refresh every 2 seconds for real-time effect
   });
 
+  // Mark messages as read mutation
+  const markAsRead = useMutation({
+    mutationFn: async (conversationId: string) => {
+      return apiRequest('POST', `/api/conversations/${conversationId}/mark-read`, {});
+    },
+    onSuccess: () => {
+      // Refresh unread count in header
+      queryClient.invalidateQueries({ queryKey: ['/api/messages/unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
+    }
+  });
+
   // Update messages when conversation messages change
   useEffect(() => {
     if (conversationMessages) {
       setMessages(conversationMessages);
     }
   }, [conversationMessages]);
+
+  // Mark messages as read when conversation is opened
+  useEffect(() => {
+    if (selectedConversation && user) {
+      const conversationId = `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}`;
+      markAsRead.mutate(conversationId);
+    }
+  }, [selectedConversation?.partnerId, user?.id]);
 
   // Send message mutation
   const sendMessage = useMutation({
@@ -96,14 +116,17 @@ export default function Chat() {
     }
   });
 
-  // Auto scroll to bottom when new messages arrive
+  // Auto scroll to bottom only when new messages arrive (not when typing)
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Only scroll if messages length changed (new message arrived)
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages.length]);
 
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim() || !user) return;
@@ -409,6 +432,14 @@ export default function Chat() {
                     {/* Message Input */}
                     <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="px-2"
+                          data-testid="button-upload-file"
+                        >
+                          <Paperclip className="h-4 w-4" />
+                        </Button>
                         <Input
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
