@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SupabaseAuthProvider } from "@/hooks/use-supabase-auth";
 import { SocketProvider } from "@/components/SocketProvider";
+import { ChatPopup } from "@/components/ChatPopup";
 import { LanguageProvider } from "@/contexts/language-context";
 import { SeoHead } from "@/components/seo-head";
 import NotFound from "@/pages/not-found";
@@ -118,6 +119,7 @@ function App() {
               <TooltipProvider delayDuration={0}>
                 <InitApp />
                 <Toaster />
+                <ChatPopup />
                 <Router />
               </TooltipProvider>
             </SocketProvider>

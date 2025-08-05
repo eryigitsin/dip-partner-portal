@@ -78,6 +78,14 @@ Preferred communication style: Simple, everyday language.
   - **Auto-scroll**: Added automatic scrolling to latest messages for better user experience
   - **Browser Notifications**: Integrated notification permission requests and real-time desktop notifications for new messages
   - **Real-time Updates**: Messages refresh automatically via WebSocket without page reloads, with proper React Query cache invalidation
+- **LinkedIn-Style Chat Popup**: Replaced full-page messaging interface with modern popup-style chat in bottom-right corner to solve footer overlap issues
+  - **Popup Chat Interface**: Created ChatPopup.tsx component that opens from floating button in bottom-right corner, similar to LinkedIn messaging
+  - **Conversation Management**: Integrated conversation list with partner selection for new chats within compact popup interface
+  - **Minimizable Design**: Added minimize/maximize functionality with chevron controls for better user experience
+  - **Footer Overlap Resolution**: Eliminated footer overlap issues by moving chat interface to fixed-position popup overlay
+  - **Real-time Socket Integration**: Maintained all Socket.IO real-time messaging functionality within new popup interface
+  - **Notification Integration**: Preserved desktop notification system for new messages when popup is closed or minimized
+  - **Responsive Design**: Optimized popup size (396px width, 500px height) for desktop use with proper mobile considerations
 
 ### August 4, 2025
 - **Complete Payment Dialog System**: Implemented comprehensive payment dialog with three tabs (Kredi/Banka Kartı, Havale/EFT, Diğer Yöntemler) accessible from multiple "Ödeme Yap" buttons throughout the interface
