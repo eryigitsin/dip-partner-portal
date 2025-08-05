@@ -67,6 +67,9 @@ Preferred communication style: Simple, everyday language.
 - **Favicon Integration**: Added DİP blue logo as site favicon for better brand recognition
 - **Footer Legal Links**: Added Terms of Service and Privacy Policy links to footer section with proper external linking
 
+### August 5, 2025
+- **CRITICAL Email Template Parameter Bug Fix**: Resolved issue where partner name appeared as "undefined" in quote approval email notifications sent to users. The problem was caused by incorrect parameter order in email template function calls in routes.ts - was passing user.email instead of user's full name for both toUser and toPartner email templates. Fixed all instances to use `${user.firstName} ${user.lastName}` format for proper name display in all quote status email notifications (approved/rejected).
+
 ### August 4, 2025
 - **Complete Payment Dialog System**: Implemented comprehensive payment dialog with three tabs (Kredi/Banka Kartı, Havale/EFT, Diğer Yöntemler) accessible from multiple "Ödeme Yap" buttons throughout the interface
 - **Payment Instructions Integration**: Added full payment instructions functionality allowing partners to send bank details to users with professional email notifications including bank account information, payment amounts, and custom instructions
