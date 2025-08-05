@@ -60,9 +60,10 @@ export default function MarketingListPage() {
   }) as { data: MarketingContact[], isLoading: boolean, refetch: () => void };
 
   // Fetch newsletter subscribers
-  const { data: subscribers = [], isLoading: subscribersLoading } = useQuery({
+  const subscribersQuery = useQuery({
     queryKey: ['/api/admin/newsletter-subscribers'],
-  }) as { data: any[], isLoading: boolean };
+  });
+  const { data: subscribers = [], isLoading: subscribersLoading } = subscribersQuery as { data: any[], isLoading: boolean };
 
   // Sync contacts mutation
   const syncContactsMutation = useMutation({
@@ -70,9 +71,14 @@ export default function MarketingListPage() {
     onSuccess: (data: any) => {
       toast({
         title: "Başarılı!",
-        description: data?.message || 'Pazarlama listesi başarıyla senkronize edildi',
+        description: `${data.syncedCount || 0} kişi başarıyla senkronize edildi`,
       });
       refetch();
+      subscribersQuery.refetch();
+      // Refresh page to show updated data
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     },
     onError: (error: any) => {
       toast({
