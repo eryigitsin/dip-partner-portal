@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, ArrowLeft, User } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Partner {
   id: number;
@@ -38,37 +39,94 @@ interface Conversation {
 export default function MessagesPage() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [notifications, setNotifications] = useState<any[]>([]);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // WebSocket connection for real-time messaging
+  useEffect(() => {
+    if (!user) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      console.log('WebSocket connected');
+      // Authenticate user
+      socket.send(JSON.stringify({
+        type: 'auth',
+        userId: user.id
+      }));
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'notification' && data.data) {
+          const notification = data.data;
+          
+          // Add notification to list
+          setNotifications(prev => [notification, ...prev]);
+          
+          // Refresh conversations and messages
+          queryClient.invalidateQueries({ queryKey: ["/api/user/conversations"] });
+          if (selectedConversation) {
+            queryClient.invalidateQueries({ 
+              queryKey: ["/api/conversations", selectedConversation, "messages"] 
+            });
+          }
+
+          // Show browser notification if permission granted
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(notification.title || 'Yeni Mesaj', {
+              body: notification.message,
+              icon: '/favicon.ico'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    };
+
+    socket.onclose = () => {
+      console.log('WebSocket disconnected');
+    };
+
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [user, queryClient, selectedConversation]);
+
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   // Fetch user's conversations
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
     queryKey: ["/api/user/conversations"],
-    queryFn: async () => {
-      const response = await fetch("/api/user/conversations");
-      if (!response.ok) throw new Error("Failed to fetch conversations");
-      return response.json() as Conversation[];
-    },
+    enabled: !!user,
   });
 
   // Fetch messages for selected conversation
   const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/conversations", selectedConversation, "messages"],
-    queryFn: async () => {
-      if (!selectedConversation) return [];
-      const response = await fetch(`/api/conversations/${selectedConversation}/messages`);
-      if (!response.ok) throw new Error("Failed to fetch messages");
-      return response.json() as Message[];
-    },
-    enabled: !!selectedConversation,
+    enabled: !!selectedConversation && !!user,
   });
 
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { receiverId: number; content: string }) => {
-      return apiRequest("/api/messages", {
-        method: "POST",
-        body: JSON.stringify(messageData),
-      });
+      return apiRequest("/api/messages", "POST", messageData);
     },
     onSuccess: () => {
       setNewMessage("");
@@ -84,9 +142,7 @@ export default function MessagesPage() {
   // Mark messages as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: async (conversationId: string) => {
-      return apiRequest(`/api/conversations/${conversationId}/read`, {
-        method: "PATCH",
-      });
+      return apiRequest(`/api/conversations/${conversationId}/read`, "PATCH");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -96,10 +152,10 @@ export default function MessagesPage() {
   });
 
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim() || !selectedConversation || !user) return;
     
     const conversation = conversations.find(c => 
-      `${Math.min(c.partnerId, 6)}-${Math.max(c.partnerId, 6)}` === selectedConversation
+      `${Math.min(c.partnerId, user.id)}-${Math.max(c.partnerId, user.id)}` === selectedConversation
     );
     
     if (conversation) {
@@ -111,7 +167,8 @@ export default function MessagesPage() {
   };
 
   const handleConversationSelect = (conversation: Conversation) => {
-    const conversationId = `${Math.min(conversation.partnerId, 6)}-${Math.max(conversation.partnerId, 6)}`;
+    if (!user) return;
+    const conversationId = `${Math.min(conversation.partnerId, user.id)}-${Math.max(conversation.partnerId, user.id)}`;
     setSelectedConversation(conversationId);
     
     // Mark messages as read
@@ -138,7 +195,7 @@ export default function MessagesPage() {
     }
   };
 
-  if (conversationsLoading) {
+  if (conversationsLoading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
         <div className="max-w-7xl mx-auto">
@@ -183,7 +240,8 @@ export default function MessagesPage() {
                 ) : (
                   <div className="divide-y divide-gray-200 dark:divide-gray-700">
                     {conversations.map((conversation) => {
-                      const conversationId = `${Math.min(conversation.partnerId, 6)}-${Math.max(conversation.partnerId, 6)}`;
+                      if (!user) return null;
+                      const conversationId = `${Math.min(conversation.partnerId, user.id)}-${Math.max(conversation.partnerId, user.id)}`;
                       const isSelected = selectedConversation === conversationId;
                       
                       return (
@@ -239,8 +297,9 @@ export default function MessagesPage() {
                   {/* Chat Header */}
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                     {(() => {
+                      if (!user) return null;
                       const conversation = conversations.find(c => 
-                        `${Math.min(c.partnerId, 6)}-${Math.max(c.partnerId, 6)}` === selectedConversation
+                        `${Math.min(c.partnerId, user.id)}-${Math.max(c.partnerId, user.id)}` === selectedConversation
                       );
                       return conversation ? (
                         <div className="flex items-center gap-3">
@@ -275,20 +334,25 @@ export default function MessagesPage() {
                     ) : (
                       <div className="space-y-4">
                         {messages.map((message) => {
-                          const isOwn = message.senderId === 6; // Current user ID
+                          if (!user) return null;
+                          const isOwn = message.senderId === user.id;
                           return (
                             <div
                               key={message.id}
                               className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                             >
                               <div
-                                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                                className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
                                   isOwn
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                                    ? 'bg-blue-500 text-white rounded-br-md ml-auto'
+                                    : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-md border border-gray-200 dark:border-gray-600'
                                 }`}
+                                style={{
+                                  wordWrap: 'break-word',
+                                  borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px'
+                                }}
                               >
-                                <p className="text-sm">{message.message}</p>
+                                <p className="text-sm leading-relaxed">{message.message}</p>
                                 <p className={`text-xs mt-1 ${
                                   isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                                 }`}>
@@ -303,21 +367,32 @@ export default function MessagesPage() {
                   </ScrollArea>
 
                   {/* Message Input */}
-                  <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex gap-2">
-                      <Input
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Mesajınızı yazın..."
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        disabled={sendMessageMutation.isPending}
-                      />
+                  <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                    <div className="flex gap-3 items-end">
+                      <div className="flex-1 relative">
+                        <Input
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder="Mesajınızı yazın..."
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          disabled={sendMessageMutation.isPending}
+                          className="min-h-[44px] rounded-3xl border-2 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 px-4 py-3 pr-12 resize-none"
+                          data-testid="input-message"
+                        />
+                      </div>
                       <Button
                         onClick={handleSendMessage}
                         disabled={!newMessage.trim() || sendMessageMutation.isPending}
                         size="icon"
+                        className="h-[44px] w-[44px] rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                        data-testid="button-send-message"
                       >
-                        <Send className="h-4 w-4" />
+                        <Send className="h-5 w-5" />
                       </Button>
                     </div>
                   </div>

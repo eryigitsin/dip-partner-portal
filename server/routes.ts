@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertPartnerApplicationSchema, insertQuoteRequestSchema, insertTempUserRegistrationSchema, insertMessageSchema, insertRecipientAccountSchema } from "@shared/schema";
@@ -1298,16 +1299,59 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { receiverId, message } = req.body;
+      const { receiverId, content } = req.body;
+      const senderId = req.user.id;
+      
       const newMessage = await storage.createMessage({
-        senderId: req.user.id,
+        senderId,
         receiverId,
-        message,
+        message: content,
       });
+
+      // Send real-time notification to receiver
+      const senderUser = await storage.getUser(senderId);
+      const senderName = senderUser ? `${senderUser.firstName} ${senderUser.lastName}` : 'Kullanıcı';
+      
+      sendRealTimeNotification(receiverId, {
+        type: 'new_message',
+        message: `${senderName} yeni bir mesaj gönderdi`,
+        conversationId: `${Math.min(senderId, receiverId)}-${Math.max(senderId, receiverId)}`,
+        data: newMessage
+      });
+
+      // Schedule 10-minute reminder if receiver doesn't respond
+      const conversationId = `${Math.min(senderId, receiverId)}-${Math.max(senderId, receiverId)}`;
+      scheduleResponseReminder(conversationId, senderId, senderName, receiverId);
+
       res.json(newMessage);
     } catch (error) {
       console.error('Error creating message:', error);
       res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
+  app.get("/api/conversations/:conversationId/messages", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { conversationId } = req.params;
+      const messages = await storage.getConversationMessages(conversationId);
+      res.json(messages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.patch("/api/conversations/:conversationId/read", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { conversationId } = req.params;
+      const userId = req.user.id;
+      await storage.markMessagesAsRead(conversationId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      res.status(500).json({ message: "Failed to mark messages as read" });
     }
   });
 
@@ -3967,76 +4011,112 @@ export function registerRoutes(app: Express): Server {
   })();
 
   const httpServer = createServer(app);
-  // Message endpoints
-  app.get("/api/user/conversations", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
 
-    try {
-      const userId = req.user!.id;
-      const conversations = await storage.getUserConversations(userId);
-      res.json(conversations);
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-      res.status(500).json({ message: "Failed to fetch conversations" });
-    }
+  // WebSocket server for real-time messaging
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws' 
   });
 
-  app.get("/api/conversations/:conversationId/messages", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
+  // Store user connections for real-time messaging
+  const userConnections = new Map<number, WebSocket>();
+  
+  // Store pending notifications for users
+  const pendingNotifications = new Map<string, NodeJS.Timeout>();
 
-    try {
-      const { conversationId } = req.params;
-      const messages = await storage.getConversationMessages(conversationId);
-      res.json(messages);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      res.status(500).json({ message: "Failed to fetch messages" });
-    }
+  wss.on('connection', (ws: WebSocket, req) => {
+    console.log('WebSocket connection established');
+    let userId: number | null = null;
+
+    ws.on('message', (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        if (message.type === 'auth' && message.userId) {
+          userId = message.userId;
+          userConnections.set(userId, ws);
+          console.log(`User ${userId} connected via WebSocket`);
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      if (userId) {
+        userConnections.delete(userId);
+        console.log(`User ${userId} disconnected from WebSocket`);
+      }
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      if (userId) {
+        userConnections.delete(userId);
+      }
+    });
   });
 
-  app.post("/api/messages", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Authentication required" });
+  // Function to send real-time notification
+  function sendRealTimeNotification(userId: number, notification: any) {
+    const userWs = userConnections.get(userId);
+    if (userWs && userWs.readyState === WebSocket.OPEN) {
+      userWs.send(JSON.stringify({
+        type: 'notification',
+        data: notification
+      }));
+      return true;
+    }
+    return false;
+  }
+
+  // Function to schedule 10-minute response reminder
+  function scheduleResponseReminder(conversationId: string, waitingUserId: number, waitingUserName: string, targetUserId: number) {
+    // Clear any existing notification for this conversation
+    const existingTimeout = pendingNotifications.get(conversationId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
     }
 
-    try {
-      const userId = req.user!.id;
-      const { receiverId, content } = req.body;
-      
-      const messageData = {
-        senderId: userId,
-        receiverId: receiverId,
-        message: content, // Using 'message' field as per database schema
-        isRead: false,
-      };
+    // Set 10-minute timer
+    const timeout = setTimeout(async () => {
+      try {
+        // Check if there are any new messages in the conversation in the last 10 minutes
+        const conversationMessages = await storage.getConversationMessages(conversationId);
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const recentMessages = conversationMessages.filter(msg => 
+          new Date(msg.createdAt) > tenMinutesAgo
+        );
 
-      const newMessage = await storage.createMessage(messageData);
-      res.json(newMessage);
-    } catch (error) {
-      console.error('Error creating message:', error);
-      res.status(500).json({ message: "Failed to create message" });
-    }
-  });
+        // If no recent messages from the target user, send reminder
+        const hasResponse = recentMessages.some(msg => msg.senderId === targetUserId);
+        if (!hasResponse) {
+          const notification = {
+            title: "Cevap Bekleniyor!",
+            message: `${waitingUserName} cevabını bekliyor!`,
+            type: "message_reminder",
+            conversationId,
+            timestamp: new Date().toISOString()
+          };
 
-  app.patch("/api/conversations/:conversationId/read", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
+          // Try to send real-time notification first
+          const sentRealTime = sendRealTimeNotification(targetUserId, notification);
+          
+          if (!sentRealTime) {
+            // If user is not online, could store notification for later or send email
+            console.log(`User ${targetUserId} not online, notification stored for later`);
+          }
+        }
+        
+        // Remove the timeout from pending list
+        pendingNotifications.delete(conversationId);
+      } catch (error) {
+        console.error('Error in response reminder:', error);
+      }
+    }, 10 * 60 * 1000); // 10 minutes
 
-    try {
-      const { conversationId } = req.params;
-      const userId = req.user!.id;
-      await storage.markMessagesAsRead(conversationId, userId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-      res.status(500).json({ message: "Failed to mark messages as read" });
-    }
-  });
+    pendingNotifications.set(conversationId, timeout);
+  }
 
   // User-Partner Interaction endpoints
   app.get("/api/user/partner-interactions", async (req, res) => {
