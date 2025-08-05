@@ -11,6 +11,7 @@ import { PartnersCatalog } from '@/components/sections/partners-catalog';
 import { PartnershipCta } from '@/components/sections/partnership-cta';
 import { PartnerApplicationDialog } from '@/components/forms/partner-application-dialog';
 import { QuoteRequestModal } from '@/components/modals/quote-request-modal';
+import { NewsletterSection } from '@/components/sections/newsletter-section';
 import { Partner, UserProfile } from '@shared/schema';
 
 export default function HomePage() {
@@ -117,6 +118,8 @@ export default function HomePage() {
         />
         
         <PartnershipCta onBecomePartner={handleBecomePartner} />
+        
+        <NewsletterSection />
       </main>
       
       <Footer />

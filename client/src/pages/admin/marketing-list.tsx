@@ -59,6 +59,11 @@ export default function MarketingListPage() {
     queryKey: ['/api/admin/marketing-contacts'],
   }) as { data: MarketingContact[], isLoading: boolean, refetch: () => void };
 
+  // Fetch newsletter subscribers
+  const { data: subscribers = [], isLoading: subscribersLoading } = useQuery({
+    queryKey: ['/api/admin/newsletter-subscribers'],
+  }) as { data: any[], isLoading: boolean };
+
   // Sync contacts mutation
   const syncContactsMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/admin/sync-marketing-contacts'),
@@ -78,8 +83,26 @@ export default function MarketingListPage() {
     },
   });
 
+  // Combine contacts and subscribers for display
+  const allData = [...contacts, ...subscribers.map(sub => ({
+    ...sub,
+    firstName: '',
+    lastName: '',
+    phone: '',
+    company: '',
+    title: '',
+    website: '',
+    linkedinProfile: '',
+    userType: 'subscriber',
+    source: sub.source || 'homepage',
+    tags: [],
+    isActive: sub.isActive,
+    createdAt: sub.subscribedAt,
+    updatedAt: sub.subscribedAt
+  }))];
+
   // Filter contacts based on search and tab
-  const filteredContacts = contacts.filter((contact: MarketingContact) => {
+  const filteredContacts = allData.filter((contact: any) => {
     const matchesSearch = 
       contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -91,7 +114,8 @@ export default function MarketingListPage() {
       (activeTab === 'users' && contact.userType === 'user') ||
       (activeTab === 'partners' && contact.userType === 'partner') ||
       (activeTab === 'admins' && contact.userType === 'admin') ||
-      (activeTab === 'applicants' && contact.userType === 'applicant');
+      (activeTab === 'applicants' && contact.userType === 'applicant') ||
+      (activeTab === 'subscribers' && contact.userType === 'subscriber');
 
     return matchesSearch && matchesTab;
   });
@@ -132,11 +156,12 @@ export default function MarketingListPage() {
   };
 
   const stats = {
-    total: contacts.length,
+    total: allData.length,
     users: contacts.filter((c: MarketingContact) => c.userType === 'user').length,
     partners: contacts.filter((c: MarketingContact) => c.userType === 'partner').length,
     admins: contacts.filter((c: MarketingContact) => c.userType === 'admin').length,
     applicants: contacts.filter((c: MarketingContact) => c.userType === 'applicant').length,
+    subscribers: subscribers.length,
   };
 
   return (
@@ -151,7 +176,7 @@ export default function MarketingListPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -211,6 +236,18 @@ export default function MarketingListPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <Mail className="h-4 w-4 text-indigo-500" />
+              <div className="ml-2">
+                <p className="text-2xl font-bold">{stats.subscribers}</p>
+                <p className="text-xs text-gray-500">Abone</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Controls */}
@@ -266,12 +303,13 @@ export default function MarketingListPage() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-5 w-full mb-4">
+            <TabsList className="grid grid-cols-6 w-full mb-4">
               <TabsTrigger value="all">Tümü ({stats.total})</TabsTrigger>
               <TabsTrigger value="users">Kullanıcılar ({stats.users})</TabsTrigger>
               <TabsTrigger value="partners">Partnerler ({stats.partners})</TabsTrigger>
               <TabsTrigger value="admins">Adminler ({stats.admins})</TabsTrigger>
               <TabsTrigger value="applicants">Başvuranlar ({stats.applicants})</TabsTrigger>
+              <TabsTrigger value="subscribers">Abone ({stats.subscribers})</TabsTrigger>
             </TabsList>
 
             <TabsContent value={activeTab}>
@@ -303,7 +341,7 @@ export default function MarketingListPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredContacts.map((contact: MarketingContact) => (
+                      filteredContacts.map((contact: any) => (
                         <TableRow key={contact.id}>
                           <TableCell>
                             <div className="space-y-1">
@@ -370,12 +408,14 @@ export default function MarketingListPage() {
                                 contact.userType === 'admin' ? 'destructive' :
                                 contact.userType === 'partner' ? 'default' :
                                 contact.userType === 'applicant' ? 'secondary' :
+                                contact.userType === 'subscriber' ? 'default' :
                                 'outline'
                               }
                             >
                               {contact.userType === 'admin' ? 'Admin' :
                                contact.userType === 'partner' ? 'Partner' :
                                contact.userType === 'applicant' ? 'Başvuran' :
+                               contact.userType === 'subscriber' ? 'Abone' :
                                'Kullanıcı'}
                             </Badge>
                           </TableCell>

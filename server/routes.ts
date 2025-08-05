@@ -2775,6 +2775,42 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Newsletter subscription endpoint
+  app.post("/api/newsletter/subscribe", async (req, res) => {
+    try {
+      const { email, source = "homepage" } = req.body;
+      
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ error: "Geçerli bir e-posta adresi gereklidir" });
+      }
+
+      const result = await storage.subscribeToNewsletter({ email, source });
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error subscribing to newsletter:", error);
+      if (error.message && error.message.includes('duplicate')) {
+        res.status(409).json({ error: "Bu e-posta adresi zaten abone listesinde bulunuyor" });
+      } else {
+        res.status(500).json({ error: "Abonelik işlemi başarısız" });
+      }
+    }
+  });
+
+  // Get newsletter subscribers (Admin only)
+  app.get("/api/admin/newsletter-subscribers", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const subscribers = await storage.getNewsletterSubscribers();
+      res.json(subscribers);
+    } catch (error: any) {
+      console.error("Error fetching newsletter subscribers:", error);
+      res.status(500).json({ error: "Failed to fetch newsletter subscribers" });
+    }
+  });
+
   // Quote Response Management Routes
   app.post('/api/quote-responses', async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

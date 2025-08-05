@@ -73,6 +73,9 @@ import {
   type PaymentConfirmation,
   type InsertPaymentConfirmation,
   ongoingProjects,
+  newsletterSubscribers,
+  type NewsletterSubscriber,
+  type InsertNewsletterSubscriber,
   projectComments,
   projectPayments,
   type OngoingProject,
@@ -2531,6 +2534,57 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projectPayments.id, id))
       .returning();
     return updatedPayment;
+  }
+
+  // Newsletter methods
+  async subscribeToNewsletter(data: InsertNewsletterSubscriber): Promise<{ success: boolean; message: string }> {
+    try {
+      const [subscriber] = await db
+        .insert(newsletterSubscribers)
+        .values(data)
+        .returning();
+      
+      return {
+        success: true,
+        message: "Newsletter aboneliği başarıyla oluşturuldu"
+      };
+    } catch (error: any) {
+      if (error.code === '23505') { // Unique constraint violation
+        throw new Error('Bu e-posta adresi zaten abone listesinde bulunuyor');
+      }
+      throw error;
+    }
+  }
+
+  async getNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
+    return await db
+      .select()
+      .from(newsletterSubscribers)
+      .where(eq(newsletterSubscribers.isActive, true))
+      .orderBy(desc(newsletterSubscribers.subscribedAt));
+  }
+
+  async unsubscribeFromNewsletter(email: string): Promise<{ success: boolean; message: string }> {
+    const [updated] = await db
+      .update(newsletterSubscribers)
+      .set({ 
+        isActive: false, 
+        unsubscribedAt: new Date() 
+      })
+      .where(eq(newsletterSubscribers.email, email))
+      .returning();
+      
+    if (!updated) {
+      return {
+        success: false,
+        message: "Bu e-posta adresi abone listesinde bulunamadı"
+      };
+    }
+    
+    return {
+      success: true,
+      message: "Newsletter aboneliğiniz başarıyla iptal edildi"
+    };
   }
 
 }

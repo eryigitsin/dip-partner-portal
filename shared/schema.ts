@@ -945,3 +945,22 @@ export type UserPartnerInteraction = typeof userPartnerInteractions.$inferSelect
 export type InsertUserPartnerInteraction = z.infer<typeof insertUserPartnerInteractionSchema>;
 export type DismissedInfoCard = typeof dismissedInfoCards.$inferSelect;
 export type InsertDismissedInfoCard = z.infer<typeof insertDismissedInfoCardSchema>;
+
+// Newsletter subscribers table
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  isActive: boolean("is_active").default(true),
+  subscribedAt: timestamp("subscribed_at").defaultNow(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+  source: text("source").default("homepage"), // homepage, admin_panel, etc.
+});
+
+export const insertNewsletterSubscriberSchema = createInsertSchema(newsletterSubscribers).omit({
+  id: true,
+  subscribedAt: true,
+  unsubscribedAt: true,
+});
+
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+export type InsertNewsletterSubscriber = z.infer<typeof insertNewsletterSubscriberSchema>;
