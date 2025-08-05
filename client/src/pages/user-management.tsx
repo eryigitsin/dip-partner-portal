@@ -123,6 +123,21 @@ export default function UserManagement() {
     );
   });
 
+  // Filter partners by search term
+  const filteredPartners = partners.filter((p: Partner) => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      p.companyName?.toLowerCase().includes(searchLower) ||
+      p.contactPerson?.toLowerCase().includes(searchLower) ||
+      p.serviceCategory?.toLowerCase().includes(searchLower) ||
+      p.city?.toLowerCase().includes(searchLower) ||
+      p.country?.toLowerCase().includes(searchLower) ||
+      p.website?.toLowerCase().includes(searchLower)
+    );
+  });
+
   // Filter users by type
   const regularUsers = filteredUsers.filter(u => u.userType === 'user');
   const partnerUsers = filteredUsers.filter(u => u.userType === 'partner');
@@ -275,7 +290,7 @@ export default function UserManagement() {
             <Input
               data-testid="input-user-search"
               type="text"
-              placeholder="Kullanıcı ara (ad, soyad, e-posta, telefon, rol...)"
+              placeholder="Kullanıcı ve partner ara (ad, şirket, e-posta, telefon, şehir...)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -607,11 +622,13 @@ export default function UserManagement() {
                   <div className="flex justify-center py-8">
                     <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
                   </div>
-                ) : partners.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">Henüz partner bulunmuyor.</p>
+                ) : filteredPartners.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">
+                    {searchTerm ? 'Arama kriterlerine uygun partner bulunmuyor.' : 'Henüz partner bulunmuyor.'}
+                  </p>
                 ) : (
                   <div className="space-y-4">
-                    {partners.map((partner) => {
+                    {filteredPartners.map((partner) => {
                       const partnerUser = partnerUsers.find(u => u.id === partner.userId);
                       return (
                         <div key={partner.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
