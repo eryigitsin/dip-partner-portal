@@ -151,7 +151,7 @@ export default function MessagesPage() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { receiverId: number; content: string }) => {
-      return apiRequest("/api/messages", "POST", messageData);
+      return apiRequest("POST", "/api/messages", messageData);
     },
     onSuccess: () => {
       setNewMessage("");
