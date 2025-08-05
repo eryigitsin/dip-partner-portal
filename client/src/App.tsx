@@ -32,7 +32,7 @@ import EmailSubscribers from "@/pages/admin/email-subscribers";
 import PartnerProfile from "@/pages/partner-profile";
 
 
-import TestUpload from "@/pages/test-upload";
+
 import { ProtectedRoute } from "./lib/protected-route";
 import { useQuery } from "@tanstack/react-query";
 
@@ -107,7 +107,7 @@ function Router() {
       <ProtectedRoute path="/admin/quote-requests" component={QuoteRequestsPage} />
       <Route path="/application-status/:id" component={ApplicationStatus} />
       <Route path="/partner/:username" component={PartnerProfile} />
-      <Route path="/test-upload" component={TestUpload} />
+
       <Route component={NotFound} />
     </Switch>
   );
