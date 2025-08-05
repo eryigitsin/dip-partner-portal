@@ -50,13 +50,13 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       
       // Handle password reset and email confirmation redirects
       if (event === 'PASSWORD_RECOVERY') {
-        window.location.href = '/password-reset';
+        window.location.href = '/password-reset-html';
         return;
       }
       
       if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && 
           window.location.hash.includes('type=signup')) {
-        window.location.href = '/email-confirmed';
+        window.location.href = '/?confirmed=true';
         return;
       }
       
@@ -66,7 +66,8 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
         // Skip auto-sync for password reset and email confirmation flows
         if (window.location.pathname === '/password-reset' || 
-            window.location.pathname === '/email-confirmed') {
+            window.location.pathname === '/email-confirmed' ||
+            window.location.pathname === '/password-reset-html') {
           return;
         }
         
@@ -158,7 +159,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     <SupabaseAuthContext.Provider value={{
       supabaseUser,
       session,
-      localUser,
+      localUser: localUser || null,
       isLoading,
       signOut,
     }}>

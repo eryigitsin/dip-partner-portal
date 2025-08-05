@@ -385,11 +385,7 @@ export function registerRoutes(app: Express): Server {
   
   // Note: File storage is now handled by Supabase Storage
   // No need for local upload directories
-  
-  // Serve test page
-  app.get('/test-upload', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'test-upload.html'));
-  });
+
 
   // Initialize service categories
   app.get("/api/init", async (req, res) => {

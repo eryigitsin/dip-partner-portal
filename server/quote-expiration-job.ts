@@ -1,5 +1,5 @@
 import { storage } from './storage';
-import { resend } from './email';
+import { resendService } from './resend-service';
 
 export class QuoteExpirationJob {
   private intervalId: NodeJS.Timeout | null = null;
@@ -102,8 +102,7 @@ export class QuoteExpirationJob {
           </div>
         `;
 
-        await resend.emails.send({
-          from: 'DİP Ortaklar <noreply@dip.tc>',
+        await resendService.sendEmail({
           to: customer.email,
           subject: `⚠️ Teklif Süresi Yakında Doluyor - ${partner.companyName}`,
           html: customerEmailContent,
@@ -150,8 +149,7 @@ export class QuoteExpirationJob {
           </div>
         `;
 
-        await resend.emails.send({
-          from: 'DİP Ortaklar <noreply@dip.tc>',
+        await resendService.sendEmail({
           to: customer.email,
           subject: `Teklif Süresi Doldu - ${partner.companyName}`,
           html: customerEmailContent,
@@ -185,8 +183,7 @@ export class QuoteExpirationJob {
             </div>
           `;
 
-          await resend.emails.send({
-            from: 'DİP Ortaklar <noreply@dip.tc>',
+          await resendService.sendEmail({
             to: partnerUser.email,
             subject: `Gönderdiğiniz Teklif Süresi Doldu - ${customer.firstName} ${customer.lastName}`,
             html: partnerEmailContent,

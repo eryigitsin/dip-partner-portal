@@ -2,6 +2,7 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { EmailConfirmedBanner } from "@/components/email-confirmed-banner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SupabaseAuthProvider } from "@/hooks/use-supabase-auth";
@@ -13,6 +14,7 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home";
 import AuthPage from "@/pages/auth";
 import PasswordResetPage from "@/pages/password-reset";
+import PasswordResetHTML from "@/pages/password-reset-html";
 import EmailConfirmedPage from "@/pages/email-confirmed";
 import PartnerDashboard from "@/pages/partner-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -66,18 +68,21 @@ function InitApp() {
   });
 
   return (
-    <SeoHead
-      title={systemConfig?.seoSettings?.metaTitle || 'dip | iş ortakları platformu'}
-      description={systemConfig?.seoSettings?.metaDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
-      keywords={systemConfig?.seoSettings?.metaKeywords || 'dip, iş ortakları, dijital ihracat, platform, işbirliği, hizmet sağlayıcıları'}
-      ogTitle={systemConfig?.seoSettings?.ogTitle || 'dip | iş ortakları platformu'}
-      ogDescription={systemConfig?.seoSettings?.ogDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
-      ogImage={systemConfig?.seoSettings?.ogImage || ''}
-      ogUrl={systemConfig?.seoSettings?.ogUrl || ''}
-      twitterTitle={systemConfig?.seoSettings?.twitterTitle || 'dip | iş ortakları platformu'}
-      twitterDescription={systemConfig?.seoSettings?.twitterDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
-      twitterImage={systemConfig?.seoSettings?.twitterImage || ''}
-    />
+    <>
+      <SeoHead
+        title={systemConfig?.seoSettings?.metaTitle || 'dip | iş ortakları platformu'}
+        description={systemConfig?.seoSettings?.metaDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
+        keywords={systemConfig?.seoSettings?.metaKeywords || 'dip, iş ortakları, dijital ihracat, platform, işbirliği, hizmet sağlayıcıları'}
+        ogTitle={systemConfig?.seoSettings?.ogTitle || 'dip | iş ortakları platformu'}
+        ogDescription={systemConfig?.seoSettings?.ogDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
+        ogImage={systemConfig?.seoSettings?.ogImage || ''}
+        ogUrl={systemConfig?.seoSettings?.ogUrl || ''}
+        twitterTitle={systemConfig?.seoSettings?.twitterTitle || 'dip | iş ortakları platformu'}
+        twitterDescription={systemConfig?.seoSettings?.twitterDescription || 'DİP İş Ortakları Platformu - Dijital ihracat süreçleriniz için güvenilir iş ortakları bulun ve işbirliği yapın'}
+        twitterImage={systemConfig?.seoSettings?.twitterImage || ''}
+      />
+      <EmailConfirmedBanner />
+    </>
   );
 }
 
@@ -87,6 +92,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/password-reset" component={PasswordResetPage} />
+      <Route path="/password-reset-html" component={PasswordResetHTML} />
       <Route path="/email-confirmed" component={EmailConfirmedPage} />
       <ProtectedRoute path="/partner-dashboard" component={PartnerDashboard} />
 
