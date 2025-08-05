@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SupabaseAuthProvider } from "@/hooks/use-supabase-auth";
+import { SendbirdProvider } from "@/components/SendbirdProvider";
 import { LanguageProvider } from "@/contexts/language-context";
 import { SeoHead } from "@/components/seo-head";
 import NotFound from "@/pages/not-found";
@@ -18,6 +19,7 @@ import QuoteRequestsPage from "@/pages/admin/quote-requests";
 import UserPanel from "@/pages/user-panel";
 import ServiceRequests from "@/pages/service-requests";
 import Messages from "@/pages/messages";
+import SendbirdMessages from "@/pages/sendbird-messages";
 import ApplicationStatus from "@/pages/application-status";
 import UserManagement from "@/pages/user-management";
 import Statistics from "@/pages/statistics";
@@ -89,6 +91,7 @@ function Router() {
       <ProtectedRoute path="/user-panel" component={UserPanel} />
       <ProtectedRoute path="/service-requests" component={ServiceRequests} />
       <ProtectedRoute path="/messages" component={Messages} />
+      <ProtectedRoute path="/sendbird-messages" component={SendbirdMessages} />
       <ProtectedRoute path="/user-management" component={UserManagement} />
       <ProtectedRoute path="/statistics" component={Statistics} />
       <ProtectedRoute path="/system-status" component={SystemStatus} />
@@ -112,11 +115,13 @@ function App() {
       <LanguageProvider>
         <SupabaseAuthProvider>
           <AuthProvider>
-            <TooltipProvider delayDuration={0}>
-              <InitApp />
-              <Toaster />
-              <Router />
-            </TooltipProvider>
+            <SendbirdProvider>
+              <TooltipProvider delayDuration={0}>
+                <InitApp />
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </SendbirdProvider>
           </AuthProvider>
         </SupabaseAuthProvider>
       </LanguageProvider>
