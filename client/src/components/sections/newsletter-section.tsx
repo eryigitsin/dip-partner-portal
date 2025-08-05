@@ -44,20 +44,20 @@ export function NewsletterSection() {
   };
 
   return (
-    <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-600">
+    <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex justify-center mb-6">
-            <div className="bg-white/10 p-4 rounded-full">
-              <Mail className="h-8 w-8 text-white" />
+            <div className="bg-blue-100 p-4 rounded-full">
+              <Mail className="h-8 w-8 text-blue-600" />
             </div>
           </div>
           
-          <h2 className="text-3xl font-bold text-white mb-4">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Özel Fırsatlardan Haberdar Olun
           </h2>
           
-          <p className="text-xl text-white/90 mb-8 leading-relaxed">
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed">
             Partnerlerimizin DİP'e özel sunduğu avantajlardan ve (dijital) ihracata dair fırsatlardan haberdar olmak için abone olun.
           </p>
           
@@ -68,13 +68,13 @@ export function NewsletterSection() {
                 placeholder="E-posta adresiniz"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 bg-white/90 border-0 focus:bg-white"
+                className="flex-1 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 data-testid="input-newsletter-email"
                 disabled={subscribeToNewsletter.isPending}
               />
               <Button
                 type="submit"
-                className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-8"
+                className="bg-blue-600 text-white hover:bg-blue-700 font-semibold px-8"
                 disabled={subscribeToNewsletter.isPending}
                 data-testid="button-newsletter-subscribe"
               >
@@ -83,7 +83,7 @@ export function NewsletterSection() {
             </div>
           </form>
           
-          <p className="text-white/70 text-sm mt-4">
+          <p className="text-gray-500 text-sm mt-4">
             Spam göndermeyiz. İstediğiniz zaman aboneliğinizi iptal edebilirsiniz.
           </p>
         </div>
