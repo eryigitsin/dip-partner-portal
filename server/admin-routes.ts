@@ -200,5 +200,220 @@ export function createAdminRoutes(storage: IStorage): Router {
     }
   });
 
+  // Create partner directly with auto-approval (admin only)
+  router.post('/create-partner-direct', requireAdmin, async (req, res) => {
+    try {
+      const multer = require('multer');
+      const supabaseStorage = require('./supabase-storage.js');
+      const resendService = require('./resend-service.js');
+      const { createClient } = require('@supabase/supabase-js');
+
+      // Configure multer for file upload
+      const upload = multer({ 
+        storage: multer.memoryStorage(),
+        limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+      });
+
+      const uploadHandler = upload.fields([
+        { name: 'logo', maxCount: 1 },
+        { name: 'coverImage', maxCount: 1 }
+      ]);
+
+      // Process file upload
+      uploadHandler(req, res, async (err) => {
+        if (err) {
+          console.error('File upload error:', err);
+          return res.status(400).json({ message: 'File upload failed', error: err.message });
+        }
+
+        try {
+          // Extract form data
+          const {
+            firstName, lastName, email, phone, company, contactPerson,
+            website, companyAddress, serviceCategory, businessDescription,
+            companySize, foundingYear, sectorExperience, targetMarkets,
+            dipAdvantages, whyPartner, references, linkedinProfile,
+            twitterProfile, instagramProfile, facebookProfile, city, country
+          } = req.body;
+
+          // Parse services
+          let services = '';
+          try {
+            if (req.body.services) {
+              const servicesList = JSON.parse(req.body.services);
+              services = Array.isArray(servicesList) ? servicesList.join('\n') : req.body.services;
+            }
+          } catch (e) {
+            services = req.body.services || '';
+          }
+
+          // Create Supabase user account
+          const supabaseAdmin = createClient(
+            process.env.VITE_SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+          );
+
+          // Check if user already exists
+          let user = await storage.getUserByEmail(email);
+          
+          if (!user) {
+            // Create Supabase user account
+            const { data: supabaseUser, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
+              email,
+              email_confirm: true,
+              user_metadata: {
+                firstName,
+                lastName,
+                phone,
+                userType: 'partner',
+                companyName: company
+              }
+            });
+
+            if (supabaseError) {
+              console.error('Supabase user creation error:', supabaseError);
+              throw new Error(`Supabase kullanıcı hesabı oluşturulamadı: ${supabaseError.message}`);
+            }
+
+            // Create local user record
+            user = await storage.createUser({
+              email,
+              password: 'supabase-managed',
+              firstName,
+              lastName,
+              phone,
+              userType: 'partner',
+              availableUserTypes: ['user', 'partner'],
+              activeUserType: 'partner',
+              isVerified: true,
+              supabaseId: supabaseUser.user?.id,
+            });
+
+            // Send password setup email
+            const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+              type: 'recovery',
+              email,
+              options: {
+                redirectTo: `${req.protocol}://${req.get('host')}/auth`
+              }
+            });
+
+            if (resetError) {
+              console.error('Password setup email error:', resetError);
+            }
+          }
+
+          // Create partner profile with all data
+          const partnerData = {
+            userId: user.id,
+            companyName: company,
+            contactPerson: contactPerson || `${firstName} ${lastName}`,
+            serviceCategory,
+            description: businessDescription || '',
+            services,
+            dipAdvantages: dipAdvantages || '',
+            companySize: companySize || '',
+            foundingYear: foundingYear || '',
+            sectorExperience: sectorExperience || '',
+            targetMarkets: targetMarkets || '',
+            website: website || '',
+            linkedinProfile: linkedinProfile || '',
+            twitterProfile: twitterProfile || '',
+            instagramProfile: instagramProfile || '',
+            facebookProfile: facebookProfile || '',
+            isApproved: true,
+            isActive: true,
+          };
+
+          // Check if partner already exists
+          const existingPartner = await storage.getPartnerByUserId(user.id);
+          let partner;
+          
+          if (existingPartner) {
+            partner = await storage.updatePartner(existingPartner.id, partnerData);
+          } else {
+            partner = await storage.createPartner(partnerData);
+          }
+
+          // Handle file uploads if present
+          const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+          
+          if (files?.logo && files.logo[0]) {
+            try {
+              const logoFile = files.logo[0];
+              const logoUploadResult = await supabaseStorage.uploadPartnerLogo(logoFile, partner.id.toString());
+              if (logoUploadResult.success && logoUploadResult.url) {
+                console.log('Logo uploaded:', logoUploadResult.url);
+                // Update partner with logo URL if needed
+              }
+            } catch (logoError) {
+              console.error('Logo upload failed:', logoError);
+            }
+          }
+
+          if (files?.coverImage && files.coverImage[0]) {
+            try {
+              const coverFile = files.coverImage[0];
+              const coverUploadResult = await supabaseStorage.uploadPartnerCover(coverFile, partner.id.toString());
+              if (coverUploadResult.success && coverUploadResult.url) {
+                console.log('Cover image uploaded:', coverUploadResult.url);
+                // Update partner with cover URL if needed
+              }
+            } catch (coverError) {
+              console.error('Cover upload failed:', coverError);
+            }
+          }
+
+          // Send welcome email
+          try {
+            const approvalEmailTemplate = resendService.createPartnerApprovalEmail(
+              firstName,
+              company,
+              `${process.env.VITE_APP_URL || 'https://partner.dip.tc'}/partner-login?setup=true`
+            );
+
+            const emailResult = await resendService.sendEmail({
+              to: email,
+              subject: approvalEmailTemplate.subject,
+              html: approvalEmailTemplate.html
+            });
+
+            if (emailResult.success) {
+              console.log('Partner welcome email sent via Resend');
+            }
+          } catch (emailError) {
+            console.error('Failed to send welcome email:', emailError);
+          }
+
+          res.status(201).json({
+            success: true,
+            message: 'Partner oluşturuldu ve onaylandı',
+            partner,
+            user: {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName
+            }
+          });
+
+        } catch (error) {
+          console.error('Error creating partner:', error);
+          res.status(500).json({ 
+            message: 'Partner oluşturulurken hata oluştu', 
+            error: error.message 
+          });
+        }
+      });
+
+    } catch (error) {
+      console.error('Error in create-partner-direct endpoint:', error);
+      res.status(500).json({ 
+        message: 'Partner oluşturulurken hata oluştu', 
+        error: error.message 
+      });
+    }
+  });
+
   return router;
 }

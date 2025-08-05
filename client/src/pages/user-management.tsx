@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -25,7 +25,10 @@ import {
   Calendar,
   MapPin,
   Globe,
-  Search
+  Search,
+  Upload,
+  X,
+  ImageIcon
 } from 'lucide-react';
 
 interface User {
@@ -80,17 +83,98 @@ export default function UserManagement() {
     firstName: '',
     lastName: '',
     email: '',
-    password: '',
-    companyName: '',
+    phone: '',
+    company: '',
     contactPerson: '',
-    description: '',
-    serviceCategory: '',
-    services: '',
-    city: '',
-    country: 'Türkiye',
     website: '',
-    dipAdvantages: ''
+    companyAddress: '',
+    serviceCategory: '',
+    businessDescription: '',
+    companySize: '',
+    foundingYear: '',
+    sectorExperience: '',
+    targetMarkets: '',
+    services: '',
+    dipAdvantages: '',
+    whyPartner: '',
+    references: '',
+    linkedinProfile: '',
+    twitterProfile: '',
+    instagramProfile: '',
+    facebookProfile: '',
+    city: '',
+    country: 'Türkiye'
   });
+  
+  // File upload states for new partner
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const [coverPreview, setCoverPreview] = useState<string>('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [serviceInput, setServiceInput] = useState('');
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // File upload handlers
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: 'Dosya Boyutu Hatası',
+          description: 'Logo dosyası 5MB\'dan küçük olmalıdır.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setLogoPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast({
+          title: 'Dosya Boyutu Hatası',
+          description: 'Kapak dosyası 10MB\'dan küçük olmalıdır.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setCoverFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setCoverPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Service management
+  const addService = (serviceName: string) => {
+    const trimmedName = serviceName.trim();
+    if (!trimmedName) return;
+
+    const isDuplicateInSelected = selectedServices.some(service => 
+      service.toLowerCase() === trimmedName.toLowerCase()
+    );
+    
+    if (isDuplicateInSelected) return;
+
+    const newServices = [...selectedServices, trimmedName];
+    setSelectedServices(newServices);
+    setNewPartnerData(prev => ({ ...prev, services: newServices.join('\n') }));
+    setServiceInput('');
+  };
+
+  const removeService = (serviceName: string) => {
+    const newServices = selectedServices.filter(s => s !== serviceName);
+    setSelectedServices(newServices);
+    setNewPartnerData(prev => ({ ...prev, services: newServices.join('\n') }));
+  };
 
   // Fetch all users
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -176,39 +260,83 @@ export default function UserManagement() {
   });
 
   // Create new partner mutation
+  // Create partner mutation (using partner-applications endpoint for consistency)
   const createPartnerMutation = useMutation({
     mutationFn: async (partnerData: typeof newPartnerData) => {
-      const response = await apiRequest('POST', '/api/admin/partners', partnerData);
-      return response.json();
+      const formData = new FormData();
+      
+      // Add all text fields (matching partner application form structure)
+      Object.entries(partnerData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value as string);
+        }
+      });
+      
+      // Add services as JSON string
+      formData.append('services', JSON.stringify(selectedServices));
+      
+      // Add status as approved for auto-approval
+      formData.append('status', 'approved');
+      
+      // Add files
+      if (logoFile) {
+        formData.append('logo', logoFile);
+      }
+      if (coverFile) {
+        formData.append('coverImage', coverFile);
+      }
+      
+      return await apiRequest('/api/admin/create-partner-direct', {
+        method: 'POST',
+        body: formData,
+      });
     },
     onSuccess: () => {
       toast({
         title: "Başarılı",
-        description: "Yeni partner oluşturuldu ve hoş geldin e-postası gönderildi.",
+        description: "Partner başarıyla oluşturuldu ve kataloga eklendi.",
       });
       setIsNewPartnerDialogOpen(false);
+      // Reset form data
       setNewPartnerData({
         firstName: '',
         lastName: '',
         email: '',
-        password: '',
-        companyName: '',
+        phone: '',
+        company: '',
         contactPerson: '',
-        description: '',
-        serviceCategory: '',
-        services: '',
-        city: '',
-        country: 'Türkiye',
         website: '',
-        dipAdvantages: ''
+        companyAddress: '',
+        serviceCategory: '',
+        businessDescription: '',
+        companySize: '',
+        foundingYear: '',
+        sectorExperience: '',
+        targetMarkets: '',
+        services: '',
+        dipAdvantages: '',
+        whyPartner: '',
+        references: '',
+        linkedinProfile: '',
+        twitterProfile: '',
+        instagramProfile: '',
+        facebookProfile: '',
+        city: '',
+        country: 'Türkiye'
       });
+      setLogoFile(null);
+      setCoverFile(null);
+      setLogoPreview('');
+      setCoverPreview('');
+      setSelectedServices([]);
+      setServiceInput('');
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/partners'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partners'] });
     },
     onError: (error: any) => {
       toast({
         title: "Hata",
-        description: error.message || "Partner oluşturulurken bir hata oluştu.",
+        description: error.message || "Partner oluşturulurken hata oluştu",
         variant: "destructive",
       });
     },
@@ -392,128 +520,308 @@ export default function UserManagement() {
               <DialogHeader>
                 <DialogTitle>Yeni Partner Ekle</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
+                {/* Personal Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Kişisel Bilgiler</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="partnerFirstName">Ad *</Label>
+                      <Input
+                        id="partnerFirstName"
+                        value={newPartnerData.firstName}
+                        onChange={(e) => setNewPartnerData(prev => ({ ...prev, firstName: e.target.value }))}
+                        placeholder="Adınız"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="partnerLastName">Soyad *</Label>
+                      <Input
+                        id="partnerLastName"
+                        value={newPartnerData.lastName}
+                        onChange={(e) => setNewPartnerData(prev => ({ ...prev, lastName: e.target.value }))}
+                        placeholder="Soyadınız"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="partnerEmail">E-posta *</Label>
+                      <Input
+                        id="partnerEmail"
+                        type="email"
+                        value={newPartnerData.email}
+                        onChange={(e) => setNewPartnerData(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="ornek@email.com"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="partnerPhone">Telefon</Label>
+                      <Input
+                        id="partnerPhone"
+                        value={newPartnerData.phone}
+                        onChange={(e) => setNewPartnerData(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="+90 555 123 4567"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Şirket Bilgileri</h3>
                   <div>
-                    <Label htmlFor="partnerFirstName">İletişim Kişisi Adı</Label>
+                    <Label htmlFor="companyName">Şirket Adı *</Label>
                     <Input
-                      id="partnerFirstName"
-                      value={newPartnerData.firstName}
-                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, firstName: e.target.value }))}
+                      id="companyName"
+                      value={newPartnerData.company}
+                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, company: e.target.value }))}
+                      placeholder="Şirket adınız"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="partnerLastName">İletişim Kişisi Soyadı</Label>
+                    <Label htmlFor="contactPerson">İletişim Kişisi</Label>
                     <Input
-                      id="partnerLastName"
-                      value={newPartnerData.lastName}
-                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, lastName: e.target.value }))}
+                      id="contactPerson"
+                      value={newPartnerData.contactPerson}
+                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, contactPerson: e.target.value }))}
+                      placeholder="İletişim sorumlusu"
                     />
                   </div>
-                </div>
-                <div>
-                  <Label htmlFor="partnerEmail">E-posta</Label>
-                  <Input
-                    id="partnerEmail"
-                    type="email"
-                    value={newPartnerData.email}
-                    onChange={(e) => setNewPartnerData(prev => ({ ...prev, email: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="partnerPassword">Şifre</Label>
-                  <Input
-                    id="partnerPassword"
-                    type="password"
-                    value={newPartnerData.password}
-                    onChange={(e) => setNewPartnerData(prev => ({ ...prev, password: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="companyName">Şirket Adı</Label>
-                  <Input
-                    id="companyName"
-                    value={newPartnerData.companyName}
-                    onChange={(e) => setNewPartnerData(prev => ({ ...prev, companyName: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contactPerson">İletişim Kişisi</Label>
-                  <Input
-                    id="contactPerson"
-                    value={newPartnerData.contactPerson}
-                    onChange={(e) => setNewPartnerData(prev => ({ ...prev, contactPerson: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="serviceCategory">Hizmet Kategorisi</Label>
-                  <Select
-                    value={newPartnerData.serviceCategory}
-                    onValueChange={(value) => setNewPartnerData(prev => ({ ...prev, serviceCategory: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Kategori seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category: any) => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="services">Sunulan Hizmetler</Label>
-                  <Textarea
-                    id="services"
-                    value={newPartnerData.services}
-                    onChange={(e) => setNewPartnerData(prev => ({ ...prev, services: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Şirket Açıklaması</Label>
-                  <Textarea
-                    id="description"
-                    value={newPartnerData.description}
-                    onChange={(e) => setNewPartnerData(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="website">Web Sitesi</Label>
+                      <Input
+                        id="website"
+                        value={newPartnerData.website}
+                        onChange={(e) => setNewPartnerData(prev => ({ ...prev, website: e.target.value }))}
+                        placeholder="https://www.sirketiniz.com"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="companySize">Şirket Büyüklüğü</Label>
+                      <Input
+                        id="companySize"
+                        value={newPartnerData.companySize}
+                        onChange={(e) => setNewPartnerData(prev => ({ ...prev, companySize: e.target.value }))}
+                        placeholder="1-10, 11-50, 51-200 vb."
+                      />
+                    </div>
+                  </div>
                   <div>
-                    <Label htmlFor="city">Şehir</Label>
-                    <Input
-                      id="city"
-                      value={newPartnerData.city}
-                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, city: e.target.value }))}
+                    <Label htmlFor="companyAddress">Şirket Adresi</Label>
+                    <Textarea
+                      id="companyAddress"
+                      value={newPartnerData.companyAddress}
+                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, companyAddress: e.target.value }))}
+                      placeholder="Tam adres bilgileriniz"
+                      rows={2}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="website">Web Sitesi</Label>
-                    <Input
-                      id="website"
-                      value={newPartnerData.website}
-                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, website: e.target.value }))}
+                    <Label htmlFor="businessDescription">Şirket Açıklaması</Label>
+                    <Textarea
+                      id="businessDescription"
+                      value={newPartnerData.businessDescription}
+                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, businessDescription: e.target.value }))}
+                      placeholder="Şirketinizin faaliyet alanı ve açıklaması"
+                      rows={3}
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="dipAdvantages">DİP Üyelerine Özel Avantajlar</Label>
-                  <Textarea
-                    id="dipAdvantages"
-                    value={newPartnerData.dipAdvantages}
-                    onChange={(e) => setNewPartnerData(prev => ({ ...prev, dipAdvantages: e.target.value }))}
-                    rows={2}
-                  />
+
+                {/* Service Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Hizmet Bilgileri</h3>
+                  <div>
+                    <Label htmlFor="serviceCategory">Hizmet Kategorisi *</Label>
+                    <Select
+                      value={newPartnerData.serviceCategory}
+                      onValueChange={(value) => setNewPartnerData(prev => ({ ...prev, serviceCategory: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Kategori seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category: any) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="services">Sunduğunuz Hizmetler *</Label>
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Input
+                          value={serviceInput}
+                          onChange={(e) => setServiceInput(e.target.value)}
+                          placeholder="Hizmet adı yazın..."
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (serviceInput.trim()) {
+                                addService(serviceInput);
+                              }
+                            }
+                          }}
+                        />
+                        {serviceInput && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8"
+                            onClick={() => {
+                              if (serviceInput.trim()) {
+                                addService(serviceInput);
+                              }
+                            }}
+                          >
+                            Ekle
+                          </Button>
+                        )}
+                      </div>
+                      {selectedServices.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedServices.map((service, index) => (
+                            <Badge key={index} variant="secondary" className="text-sm">
+                              {service}
+                              <button
+                                type="button"
+                                onClick={() => removeService(service)}
+                                className="ml-2 text-red-500 hover:text-red-700"
+                              >
+                                <X size={14} />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+                {/* File Uploads */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Görseller</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Logo Upload */}
+                    <div>
+                      <Label>Şirket Logosu</Label>
+                      <div className="mt-2">
+                        <div 
+                          onClick={() => logoInputRef.current?.click()}
+                          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                        >
+                          {logoPreview ? (
+                            <div className="relative">
+                              <img src={logoPreview} alt="Logo Preview" className="max-h-20 mx-auto rounded" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLogoPreview('');
+                                  setLogoFile(null);
+                                }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                              <p className="text-sm text-gray-600 mt-2">Logo yükleyin</p>
+                              <p className="text-xs text-gray-400">PNG, JPG (maks. 5MB)</p>
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          ref={logoInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Cover Image Upload */}
+                    <div>
+                      <Label>Kapak Görseli</Label>
+                      <div className="mt-2">
+                        <div 
+                          onClick={() => coverInputRef.current?.click()}
+                          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                        >
+                          {coverPreview ? (
+                            <div className="relative">
+                              <img src={coverPreview} alt="Cover Preview" className="max-h-20 mx-auto rounded" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCoverPreview('');
+                                  setCoverFile(null);
+                                }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+                              <p className="text-sm text-gray-600 mt-2">Kapak görseli yükleyin</p>
+                              <p className="text-xs text-gray-400">PNG, JPG (maks. 10MB)</p>
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          ref={coverInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Ek Bilgiler</h3>
+                  <div>
+                    <Label htmlFor="dipAdvantages">DİP Üyelerine Özel Avantajlarınız</Label>
+                    <Textarea
+                      id="dipAdvantages"
+                      value={newPartnerData.dipAdvantages}
+                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, dipAdvantages: e.target.value }))}
+                      placeholder="İndirim oranları, özel hizmetler vb..."
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="whyPartner">Neden DİP ile Çalışmak İstiyorsunuz?</Label>
+                    <Textarea
+                      id="whyPartner"
+                      value={newPartnerData.whyPartner}
+                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, whyPartner: e.target.value }))}
+                      placeholder="Motivasyonunuzu açıklayın..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
                 <Button 
                   onClick={() => createPartnerMutation.mutate(newPartnerData)}
                   disabled={createPartnerMutation.isPending}
                   className="w-full"
                 >
-                  {createPartnerMutation.isPending ? 'Oluşturuluyor...' : 'Partner Oluştur'}
+                  {createPartnerMutation.isPending ? 'Oluşturuluyor...' : 'Partner Oluştur ve Onayla'}
                 </Button>
               </div>
             </DialogContent>
