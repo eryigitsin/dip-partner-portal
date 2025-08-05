@@ -46,21 +46,45 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Supabase auth event:', event);
+      console.log('Supabase auth event:', event, 'session:', session?.user?.email, 'hash:', window.location.hash, 'pathname:', window.location.pathname);
       
-      // Handle password reset and email confirmation redirects
+      // Handle auth event flows based on type
       if (event === 'PASSWORD_RECOVERY') {
+        console.log('Password recovery detected, redirecting to password reset page');
         window.location.href = '/password-reset-html';
         return;
       }
       
-      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
-        // Check if this is email confirmation from signup
-        if (window.location.hash.includes('type=signup') || 
-            window.location.hash.includes('type=email_change') ||
-            !localStorage.getItem('email_confirmed_shown')) {
-          localStorage.setItem('email_confirmed_shown', 'true');
-          window.location.href = '/?confirmed=true';
+      if (event === 'SIGNED_IN') {
+        const hash = window.location.hash;
+        const search = window.location.search;
+        
+        console.log('SIGNED_IN event - hash:', hash, 'search:', search);
+        
+        // Check if this is a magic link authentication (OTP)
+        if (hash.includes('type=magiclink') || hash.includes('type=signup')) {
+          console.log('Magic link or signup authentication detected');
+          
+          if (hash.includes('type=magiclink')) {
+            console.log('Redirecting for magic link success');
+            window.location.href = '/?magic=true';
+            return;
+          }
+          
+          if (hash.includes('type=signup') && session?.user?.email_confirmed_at) {
+            console.log('Redirecting for email confirmation success');
+            localStorage.setItem('email_confirmed_shown', 'true');
+            window.location.href = '/?confirmed=true';
+            return;
+          }
+        }
+        
+        // Check for manual magic link parameter
+        const urlParams = new URLSearchParams(search);
+        if (urlParams.get('magic') === 'true') {
+          console.log('Manual magic link parameter detected, redirecting to home');
+          window.history.replaceState({}, '', '/');
+          window.location.href = '/?magic=true';
           return;
         }
       }

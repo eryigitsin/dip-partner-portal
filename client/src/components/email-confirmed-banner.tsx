@@ -3,14 +3,17 @@ import { X } from 'lucide-react';
 
 export function EmailConfirmedBanner() {
   const [isVisible, setIsVisible] = useState(false);
+  const [isMagicLink, setIsMagicLink] = useState(false);
 
   useEffect(() => {
-    // Check if this is from email confirmation
+    // Check if this is from email confirmation or magic link
     const params = new URLSearchParams(window.location.search);
     const confirmed = params.get('confirmed') === 'true';
+    const magic = params.get('magic') === 'true';
     
-    if (confirmed) {
+    if (confirmed || magic) {
       setIsVisible(true);
+      setIsMagicLink(magic);
       
       // Auto-hide after 10 seconds
       const timer = setTimeout(() => {
@@ -35,7 +38,9 @@ export function EmailConfirmedBanner() {
           </svg>
         </div>
         <span className="font-medium">
-          Hesabınız doğrulandı! Aramıza hoş geldiniz!
+          {isMagicLink 
+            ? 'Sihirli bağlantıyla giriş başarılı! Hoş geldiniz!' 
+            : 'Hesabınız doğrulandı! Aramıza hoş geldiniz!'}
         </span>
       </div>
       <button

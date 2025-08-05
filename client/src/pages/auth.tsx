@@ -25,6 +25,7 @@ export default function AuthPage() {
     phone: ''
   });
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const { localUser } = useSupabaseAuth();
   const { toast } = useToast();
 
@@ -199,6 +200,50 @@ export default function AuthPage() {
     }
   };
 
+  const handleMagicLink = async () => {
+    if (!formData.email) {
+      toast({
+        title: "Hata",
+        description: "Lütfen e-posta adresinizi girin",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: formData.email,
+        options: {
+          emailRedirectTo: window.location.origin + '/?magic=true'
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: "Hata",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setMagicLinkSent(true);
+        toast({
+          title: "Sihirli bağlantı gönderildi",
+          description: "E-posta kutunuzu kontrol edin ve gelen bağlantıya tıklayın",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Sihirli bağlantı gönderilemedi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
@@ -278,6 +323,46 @@ export default function AuthPage() {
                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                         Giriş Yap
                       </Button>
+                      
+                      {/* Magic Link Section */}
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-white px-2 text-gray-500">
+                            veya
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={handleMagicLink}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Gönderiliyor...
+                          </>
+                        ) : (
+                          'Şifresiz Giriş'
+                        )}
+                      </Button>
+                      
+                      <p className="text-xs text-gray-500 text-center">
+                        E-postanıza gelecek sihirli bir bağlantı ile tek tıkla giriş yapın.
+                      </p>
+                      
+                      {magicLinkSent && (
+                        <div className="text-sm text-green-600 text-center p-3 bg-green-50 rounded-md">
+                          ✓ Sihirli bağlantı gönderildi! E-posta kutunuzu kontrol edin.
+                        </div>
+                      )}
+                      
                       <Button
                         type="button"
                         variant="link"
