@@ -409,7 +409,7 @@ export class DatabaseStorage implements IStorage {
     limit?: number; 
     offset?: number 
   } = {}): Promise<Partner[]> {
-    const { category, search, approved = true, visible = true, limit = 20, offset = 0 } = options;
+    const { category, search, approved = true, visible, limit = 20, offset = 0 } = options;
     
     const conditions = [];
     
