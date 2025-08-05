@@ -484,12 +484,12 @@ export function registerRoutes(app: Express): Server {
       // Admin can see all partners (including invisible ones), others see only visible partners
       const isAdmin = req.isAuthenticated() && 
         (req.user.userType === 'master_admin' || req.user.userType === 'editor_admin');
-      const showHidden = admin === 'true' && isAdmin;
+      const isAdminView = admin === 'true' && isAdmin;
       
       const partners = await storage.getPartners({
         category: category as string,
         search: search as string,
-        visible: showHidden ? undefined : true, // Show all if admin viewing admin panel, otherwise only visible
+        visible: isAdminView ? undefined : true, // Admin view shows all, public view only visible
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
       });
