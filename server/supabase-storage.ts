@@ -203,4 +203,46 @@ export class SupabaseStorageService {
   }
 }
 
+// Create a singleton instance
 export const supabaseStorage = new SupabaseStorageService();
+
+// Export a simple file upload function for chat files
+export async function uploadFile(buffer: Buffer, fileName: string, mimeType: string) {
+  try {
+    const bucketName = 'chat-files';
+    
+    // Ensure chat-files bucket exists
+    const { data: bucket } = await supabase.storage.getBucket(bucketName);
+    if (!bucket) {
+      await supabase.storage.createBucket(bucketName, {
+        public: true,
+        allowedMimeTypes: ['*/*'],
+        fileSizeLimit: 10485760 // 10MB
+      });
+    }
+
+    // Upload file
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(fileName, buffer, {
+        contentType: mimeType,
+        upsert: true
+      });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(fileName);
+
+    return { 
+      publicUrl: publicUrlData.publicUrl,
+      path: data.path 
+    };
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
+}

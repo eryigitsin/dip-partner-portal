@@ -41,7 +41,9 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch partners for new conversations
   const { data: partners = [] } = useQuery<Partner[]>({
@@ -145,6 +147,73 @@ export default function Chat() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  // File upload handler
+  const handleFileUpload = async (file: File) => {
+    if (!selectedConversation || !user) return;
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf', 'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv', 'text/plain'
+    ];
+
+    if (file.size > maxSize) {
+      alert('Dosya boyutu 10MB\'dan büyük olamaz');
+      return;
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      alert('Desteklenmeyen dosya türü. Lütfen resim, PDF, Word, Excel veya metin dosyası seçin.');
+      return;
+    }
+
+    try {
+      setUploadingFile(true);
+
+      // Upload to Supabase Storage
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'chat-files');
+
+      const uploadResponse = await apiRequest('POST', '/api/upload/file', formData);
+      
+      if (uploadResponse.url) {
+        // Send message with file link
+        const conversationId = `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}`;
+        
+        const fileMessage = `📎 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)\n${uploadResponse.url}`;
+        
+        sendMessage.mutate({
+          message: fileMessage,
+          conversationId: conversationId,
+          recipientId: selectedConversation.partnerId
+        });
+      }
+    } catch (error) {
+      console.error('File upload failed:', error);
+      alert('Dosya yüklenemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+    // Reset input
+    e.target.value = '';
   };
 
   const createConversationWithPartner = async (partner: Partner) => {
@@ -296,7 +365,7 @@ export default function Chat() {
                 <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
                 </div>
-                <ScrollArea className="flex-1 h-[250px] sm:h-[calc(100vh-320px)]">
+                <ScrollArea className="flex-1 h-[400px] sm:h-[500px] lg:h-[calc(100vh-300px)]">
                   {conversations.length === 0 ? (
                     <div className="p-6 text-center">
                       <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -408,7 +477,30 @@ export default function Chat() {
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-md'
                                 } shadow-sm`}
                               >
-                                <p className="text-sm">{message.message}</p>
+                                {message.message.includes('📎') && message.message.includes('http') ? (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <Paperclip className="h-4 w-4" />
+                                      <span className="text-sm font-medium">
+                                        {message.message.split('\n')[0].replace('📎 ', '')}
+                                      </span>
+                                    </div>
+                                    <a 
+                                      href={message.message.split('\n')[1]} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className={`inline-block px-3 py-1 rounded text-xs ${
+                                        isFromUser 
+                                          ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                          : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200'
+                                      } transition-colors`}
+                                    >
+                                      İndir
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm">{message.message}</p>
+                                )}
                                 <div className="flex items-center justify-between mt-1">
                                   <p className={`text-xs ${
                                     isFromUser ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
@@ -432,26 +524,35 @@ export default function Chat() {
                     {/* Message Input */}
                     <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex gap-2">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={onFileChange}
+                          className="hidden"
+                          accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                        />
                         <Button
                           variant="ghost"
                           size="sm"
                           className="px-2"
+                          onClick={handleFileSelect}
+                          disabled={uploadingFile}
                           data-testid="button-upload-file"
                         >
-                          <Paperclip className="h-4 w-4" />
+                          <Paperclip className={`h-4 w-4 ${uploadingFile ? 'animate-spin' : ''}`} />
                         </Button>
                         <Input
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyDown={handleKeyDown}
                           placeholder="Mesajınızı yazın..."
-                          disabled={sendMessage.isPending}
+                          disabled={sendMessage.isPending || uploadingFile}
                           className="flex-1 text-sm sm:text-base"
                           data-testid="input-message"
                         />
                         <Button
                           onClick={handleSendMessage}
-                          disabled={!newMessage.trim() || sendMessage.isPending}
+                          disabled={!newMessage.trim() || sendMessage.isPending || uploadingFile}
                           size="sm"
                           data-testid="button-send-message"
                         >

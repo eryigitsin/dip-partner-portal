@@ -2170,6 +2170,32 @@ export class DatabaseStorage implements IStorage {
     return result[0]?.count || 0;
   }
 
+  // Mark messages as read in a conversation
+  async markMessagesAsRead(conversationId: string, userId: number): Promise<void> {
+    try {
+      // Parse conversation ID to get both user IDs
+      const [user1Id, user2Id] = conversationId.split('-').map(Number);
+      
+      // Find the other user in the conversation (the sender)
+      const otherUserId = user1Id === userId ? user2Id : user1Id;
+      
+      // Mark all messages from the other user as read
+      await db.update(messages)
+        .set({ 
+          isRead: true,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(messages.senderId, otherUserId),
+          eq(messages.receiverId, userId),
+          eq(messages.isRead, false)
+        ));
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      throw error;
+    }
+  }
+
   // User-Partner Interaction methods
   async getUserPartnerInteractions(userId: number): Promise<any[]> {
     const interactions = await db

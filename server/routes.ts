@@ -1344,6 +1344,48 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // File upload for chat messages
+  app.post("/api/upload/file", multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  }).single('file'), async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const file = req.file;
+      const folder = req.body.folder || 'chat-files';
+      
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(2, 15);
+      const extension = file.originalname.split('.').pop();
+      const fileName = `${folder}/${timestamp}-${randomString}.${extension}`;
+
+      // Upload to Supabase Storage
+      const { uploadFile } = await import('./supabase-storage');
+      const uploadResult = await uploadFile(file.buffer, fileName, file.mimetype);
+      
+      if (uploadResult.error) {
+        console.error('Supabase upload error:', uploadResult.error);
+        return res.status(500).json({ error: "File upload failed" });
+      }
+
+      res.json({ 
+        url: uploadResult.publicUrl,
+        fileName: file.originalname,
+        size: file.size,
+        type: file.mimetype
+      });
+    } catch (error) {
+      console.error('File upload error:', error);
+      res.status(500).json({ error: "File upload failed" });
+    }
+  });
+
   app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
