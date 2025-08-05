@@ -24,6 +24,14 @@ export default function PasswordResetPage() {
   useEffect(() => {
     // Check if user accessed this page from password reset email
     const hash = window.location.hash;
+    
+    // Check for expired token error
+    if (hash.includes('error_description=Email+link+is+invalid+or+has+expired') || 
+        hash.includes('error=invalid_request')) {
+      setLocation('/auth?expired=true');
+      return;
+    }
+    
     if (!hash || !hash.includes('access_token')) {
       // Redirect to auth page if no valid reset token
       setLocation('/auth');

@@ -790,7 +790,7 @@ export function registerRoutes(app: Express): Server {
               type: 'recovery',
               email: application.email,
               options: {
-                redirectTo: `${process.env.VITE_APP_URL || 'https://partner.dip.tc'}/partner-login?setup=true`
+                redirectTo: `${req.protocol}://${req.get('host')}/auth`
               }
             });
 

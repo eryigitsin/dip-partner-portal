@@ -70,6 +70,16 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         
+        // Handle password recovery (reset)
+        if (hash.includes('type=recovery')) {
+          console.log('Password recovery detected, redirecting to password reset page');
+          // Don't redirect immediately, let the user stay on the password reset page
+          if (window.location.pathname !== '/password-reset') {
+            window.location.href = '/password-reset';
+          }
+          return;
+        }
+        
         // Handle email confirmation from signup
         if (hash.includes('type=signup') && session?.user?.email_confirmed_at) {
           console.log('Email confirmation detected, redirecting to home');

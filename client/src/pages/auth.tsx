@@ -34,6 +34,16 @@ export default function AuthPage() {
     const params = new URLSearchParams(window.location.search);
     const fromQuote = params.get('from') === 'quote';
     const fromPartner = params.get('from') === 'partner';
+    const expired = params.get('expired') === 'true';
+    
+    if (expired) {
+      toast({
+        title: 'Bağlantının süresi doldu',
+        description: 'Bu bağlantının geçerlilik süresi doldu! Lütfen yeni bir talepte bulunun.',
+        variant: 'destructive',
+        duration: 5000,
+      });
+    }
     
     if (fromQuote) {
       toast({
@@ -117,7 +127,7 @@ export default function AuthPage() {
             last_name: formData.lastName,
             phone: formData.phone,
           },
-          emailRedirectTo: 'https://partner.dip.tc/auth'
+          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
 
@@ -177,7 +187,9 @@ export default function AuthPage() {
     }
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email);
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: `${window.location.origin}/auth`
+      });
       
       if (error) {
         toast({

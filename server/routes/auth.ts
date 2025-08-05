@@ -108,4 +108,31 @@ router.post('/logout', (req, res) => {
   });
 });
 
+// Password reset endpoint
+router.post('/send-password-reset', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email gerekli' });
+    }
+
+    console.log('Sending password reset email to:', email, 'redirect URL:', `${req.protocol}://${req.get('host')}/auth`);
+
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo: `${req.protocol}://${req.get('host')}/auth`,
+    });
+
+    if (error) {
+      console.error('Password reset error:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ message: 'Şifre sıfırlama e-postası gönderildi' });
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    res.status(500).json({ error: 'Şifre sıfırlama e-postası gönderilemedi' });
+  }
+});
+
 export default router;

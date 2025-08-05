@@ -69,6 +69,12 @@ Preferred communication style: Simple, everyday language.
 
 ### August 5, 2025
 - **CRITICAL Email Template Parameter Bug Fix**: Resolved issue where partner name appeared as "undefined" in quote approval email notifications sent to users. The problem was caused by incorrect parameter order in email template function calls in routes.ts - was passing user.email instead of user's full name for both toUser and toPartner email templates. Fixed all instances to use `${user.firstName} ${user.lastName}` format for proper name display in all quote status email notifications (approved/rejected).
+- **Authentication Domain Issues Resolution**: Fixed critical domain configuration problems affecting all Supabase auth flows including magic links, password reset, and email confirmation
+  - **Magic Link Fix**: Corrected redirect URL from hardcoded `partner.dip.tc` to dynamic `window.location.origin/auth` for proper domain handling
+  - **Password Reset Enhancement**: Added proper password reset endpoint in server/routes/auth.ts with correct domain redirect URLs, fixed expired link detection
+  - **Email Confirmation Fix**: Updated signup emailRedirectTo URL to use current domain instead of hardcoded partner.dip.tc
+  - **Expired Link Handling**: Implemented "Bu bağlantının geçerlilik süresi doldu!" message display when users click expired auth links
+  - **Auth Flow Debugging**: Enhanced console logging throughout auth system to track Supabase events and URL parameters for better troubleshooting
 - **COMPLETE Messaging System Overhaul**: Implemented comprehensive real-time messaging system with WebSocket support, replacing hardcoded user authentication issues and fixing all duplicate API endpoints
   - **WebSocket Integration**: Added real-time messaging with proper WebSocket server on `/ws` path, user authentication, and connection management
   - **iMessage-Style UI**: Redesigned conversation interface with modern bubble design, proper message alignment, rounded corners, and shadow effects
