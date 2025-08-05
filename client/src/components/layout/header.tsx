@@ -156,6 +156,24 @@ export function Header() {
 
             {user ? (
               <div className="flex items-center space-x-3">
+                {/* Notification and Message buttons for all logged-in users */}
+                <div className="flex items-center space-x-2">
+                  {/* Notification Dropdown */}
+                  <NotificationsDropdown unreadCount={unreadCount} />
+
+                  {/* Message Button */}
+                  <Link href="/messages">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2"
+                      data-testid="button-messages"
+                    >
+                      <MessageSquare className="h-5 w-5 text-gray-600 hover:text-gray-900" />
+                    </Button>
+                  </Link>
+                </div>
+
                 {/* Dropdown menu for regular users */}
                 {(user.activeUserType || user.userType) === 'user' && (
                   <DropdownMenu>
@@ -349,24 +367,6 @@ export function Header() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-
-                {/* Notification and Message buttons for all logged-in users */}
-                <div className="flex items-center space-x-2">
-                  {/* Notification Dropdown */}
-                  <NotificationsDropdown unreadCount={unreadCount} />
-
-                  {/* Message Button */}
-                  <Link href="/messages">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2"
-                      data-testid="button-messages"
-                    >
-                      <MessageSquare className="h-5 w-5 text-gray-600 hover:text-gray-900" />
-                    </Button>
-                  </Link>
-                </div>
               </div>
             ) : (
               <>
