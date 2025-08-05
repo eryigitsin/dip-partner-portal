@@ -12,7 +12,7 @@ import { MessageSquare, Plus, Send, ArrowLeft } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { useQuery } from '@tanstack/react-query';
-import { GroupChannel } from '@sendbird/chat/groupChannel';
+import { GroupChannel, GroupChannelModule } from '@sendbird/chat/groupChannel';
 import type { BaseMessage, UserMessage } from '@sendbird/chat/message';
 import type { Partner } from '@shared/schema';
 
@@ -39,7 +39,8 @@ export default function Chat() {
 
     const loadChannels = async () => {
       try {
-        const channelListQuery = sb.groupChannel.createMyGroupChannelListQuery({
+        const channelModule = sb.getModule(new GroupChannelModule());
+        const channelListQuery = channelModule.createMyGroupChannelListQuery({
           includeEmpty: true,
           limit: 50,
         });
@@ -83,11 +84,13 @@ export default function Chat() {
     };
 
     const handlerId = 'message-handler-' + Date.now();
-    sb?.groupChannel.addGroupChannelHandler(handlerId, channelHandler);
+    const channelModule = sb?.getModule(new GroupChannelModule());
+    channelModule?.addGroupChannelHandler(handlerId, channelHandler);
 
     return () => {
       if (sb) {
-        sb.groupChannel.removeGroupChannelHandler(handlerId);
+        const channelModule = sb.getModule(new GroupChannelModule());
+        channelModule?.removeGroupChannelHandler(handlerId);
       }
     };
   }, [selectedChannel, sb]);
@@ -102,7 +105,7 @@ export default function Chat() {
       };
 
       const message = await selectedChannel.sendUserMessage(params);
-      setMessages(prev => [...prev, message]);
+      setMessages(prev => [...prev, message as BaseMessage]);
       setNewMessage('');
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -132,7 +135,8 @@ export default function Chat() {
         customType: 'partner_chat',
       };
 
-      const channel = await sb.groupChannel.createChannel(params);
+      const channelModule = sb.getModule(new GroupChannelModule());
+      const channel = await channelModule.createChannel(params);
       setChannels(prev => [channel, ...prev]);
       setSelectedChannel(channel);
       setNewMessageDialogOpen(false);
