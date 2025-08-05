@@ -1300,31 +1300,23 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { receiverId, content } = req.body;
+      const { recipientId, message, conversationId } = req.body;
       const senderId = req.user.id;
       
       const newMessage = await storage.createMessage({
         senderId,
-        receiverId,
-        message: content,
+        receiverId: recipientId,
+        message: message,
       });
 
-      // Send real-time notification to receiver
-      const senderUser = await storage.getUser(senderId);
-      const senderName = senderUser ? `${senderUser.firstName} ${senderUser.lastName}` : 'Kullanıcı';
-      
-      sendRealTimeNotification(receiverId, {
-        type: 'new_message',
-        message: `${senderName} yeni bir mesaj gönderdi`,
-        conversationId: `${Math.min(senderId, receiverId)}-${Math.max(senderId, receiverId)}`,
-        data: newMessage
-      });
+      // Send real-time notification to receiver via Socket.IO
+      // The message will include the conversationId for the frontend
+      const messageWithConversationId = {
+        ...newMessage,
+        conversationId: conversationId
+      };
 
-      // Schedule 10-minute reminder if receiver doesn't respond
-      const conversationId = `${Math.min(senderId, receiverId)}-${Math.max(senderId, receiverId)}`;
-      scheduleResponseReminder(conversationId, senderId, senderName, receiverId);
-
-      res.json(newMessage);
+      res.json(messageWithConversationId);
     } catch (error) {
       console.error('Error creating message:', error);
       res.status(500).json({ error: 'Failed to send message' });
