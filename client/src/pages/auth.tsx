@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,11 @@ export default function AuthPage() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const { localUser } = useSupabaseAuth();
   const { toast } = useToast();
+
+  // Fetch categories to get dynamic count
+  const { data: categories = [] } = useQuery({
+    queryKey: ["/api/categories"],
+  });
 
   // Show auth warning message when coming from quote request or partner application
   useEffect(() => {
@@ -559,7 +565,7 @@ export default function AuthPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-white rounded-full mr-3"></span>
-                  <span>16 farklı hizmet kategorisi</span>
+                  <span>{categories.length || 16} farklı hizmet kategorisi</span>
                 </div>
                 <div className="flex items-center justify-center">
                   <span className="w-2 h-2 bg-white rounded-full mr-3"></span>
