@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useSendbird } from '@/components/SendbirdProvider';
+import { useSocket } from '@/components/SocketProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,20 +12,36 @@ import { MessageSquare, Plus, Send, ArrowLeft } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { useQuery } from '@tanstack/react-query';
-import { GroupChannel, GroupChannelModule } from '@sendbird/chat/groupChannel';
-import type { BaseMessage, UserMessage } from '@sendbird/chat/message';
 import type { Partner } from '@shared/schema';
+
+interface ChatMessage {
+  id: string;
+  senderId: number;
+  receiverId: number;
+  message: string;
+  timestamp: Date;
+  isRead: boolean;
+}
+
+interface Conversation {
+  roomId: string;
+  partnerId: number;
+  lastMessage?: ChatMessage;
+  unreadCount: number;
+  lastActivity: Date;
+}
 
 export default function Chat() {
   const { user } = useAuth();
   const isAuthenticated = !!user;
-  const { sb, currentUser, isConnected, error } = useSendbird();
-  const [channels, setChannels] = useState<GroupChannel[]>([]);
-  const [selectedChannel, setSelectedChannel] = useState<GroupChannel | null>(null);
-  const [messages, setMessages] = useState<BaseMessage[]>([]);
+  const { socket, isConnected, error } = useSocket();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch partners for new conversations
   const { data: partners = [] } = useQuery<Partner[]>({
@@ -33,79 +49,88 @@ export default function Chat() {
     enabled: isAuthenticated,
   });
 
-  // Load channels when Sendbird is connected
+  // Initialize Socket.IO connection when authenticated
   useEffect(() => {
-    if (!sb || !isConnected) return;
+    if (!socket || !isConnected || !user) return;
 
-    const loadChannels = async () => {
-      try {
-        const channelModule = sb.getModule(new GroupChannelModule());
-        const channelListQuery = channelModule.createMyGroupChannelListQuery({
-          includeEmpty: true,
-          limit: 50,
-        });
-        
-        const channelList = await channelListQuery.next();
-        setChannels(channelList);
-      } catch (err) {
-        console.error('Failed to load channels:', err);
+    // Authenticate user with socket
+    socket.emit('user:authenticate', {
+      userId: user.id,
+      userName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+      userEmail: user.email,
+    });
+
+    // Listen for conversation list
+    socket.on('conversations:list', (data: Conversation[]) => {
+      setConversations(data);
+    });
+
+    // Listen for authentication confirmation
+    socket.on('user:authenticated', (data: { success: boolean }) => {
+      if (data.success) {
+        console.log('Socket.IO user authenticated successfully');
       }
-    };
-
-    loadChannels();
-  }, [sb, isConnected]);
-
-  // Load messages when a channel is selected
-  useEffect(() => {
-    if (!selectedChannel) return;
-
-    const loadMessages = async () => {
-      try {
-        const messageListQuery = selectedChannel.createPreviousMessageListQuery({
-          limit: 50,
-        });
-        
-        const messageList = await messageListQuery.load();
-        setMessages(messageList.reverse());
-      } catch (err) {
-        console.error('Failed to load messages:', err);
-      }
-    };
-
-    loadMessages();
-
-    // Set up message event handlers
-    const channelHandler = {
-      onMessageReceived: (channel: GroupChannel, message: BaseMessage) => {
-        if (channel.url === selectedChannel.url) {
-          setMessages(prev => [...prev, message]);
-        }
-      },
-    };
-
-    const handlerId = 'message-handler-' + Date.now();
-    const channelModule = sb?.getModule(new GroupChannelModule());
-    channelModule?.addGroupChannelHandler(handlerId, channelHandler);
+    });
 
     return () => {
-      if (sb) {
-        const channelModule = sb.getModule(new GroupChannelModule());
-        channelModule?.removeGroupChannelHandler(handlerId);
-      }
+      socket.off('conversations:list');
+      socket.off('user:authenticated');
     };
-  }, [selectedChannel, sb]);
+  }, [socket, isConnected, user]);
+
+  // Handle conversation selection and message loading
+  useEffect(() => {
+    if (!selectedConversation || !socket) return;
+
+    // Join conversation room
+    socket.emit('conversation:create', { partnerId: selectedConversation.partnerId });
+
+    // Listen for conversation created and messages
+    socket.on('conversation:created', (data: { roomId: string; partnerId: number; messages: ChatMessage[] }) => {
+      setMessages(data.messages);
+    });
+
+    // Listen for new messages
+    socket.on('message:received', (message: ChatMessage) => {
+      setMessages(prev => [...prev, message]);
+      scrollToBottom();
+    });
+
+    // Listen for message read updates
+    socket.on('message:read_updated', (data: { messageId: string; isRead: boolean }) => {
+      setMessages(prev => prev.map(msg => 
+        msg.id === data.messageId ? { ...msg, isRead: data.isRead } : msg
+      ));
+    });
+
+    return () => {
+      socket.off('conversation:created');
+      socket.off('message:received');
+      socket.off('message:read_updated');
+    };
+  }, [selectedConversation, socket]);
+
+  // Auto scroll to bottom when new messages arrive
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!selectedChannel || !newMessage.trim()) return;
+    if (!selectedConversation || !newMessage.trim() || !socket) return;
 
     try {
       setLoading(true);
-      const params = {
+      
+      socket.emit('message:send', {
+        roomId: selectedConversation.roomId,
         message: newMessage.trim(),
-      };
+        receiverId: selectedConversation.partnerId,
+      });
 
-      const message = await selectedChannel.sendUserMessage(params);
-      setMessages(prev => [...prev, message as BaseMessage]);
       setNewMessage('');
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -121,27 +146,36 @@ export default function Chat() {
     }
   };
 
-  const createChannelWithPartner = async (partner: Partner) => {
-    if (!sb || !currentUser) return;
+  const createConversationWithPartner = async (partner: Partner) => {
+    if (!socket || !user) return;
 
     try {
       setLoading(true);
       
-      // Create channel with partner
-      const params = {
-        userIds: [partner.userId.toString()],
-        name: `${currentUser?.nickname || 'User'} & ${partner.companyName}`,
-        isDistinct: true, // Prevent duplicate channels
-        customType: 'partner_chat',
+      // Generate room ID for this conversation
+      const roomId = `room:${Math.min(user.id, partner.userId)}:${Math.max(user.id, partner.userId)}`;
+      
+      // Check if conversation already exists
+      const existingConversation = conversations.find(conv => conv.partnerId === partner.userId);
+      if (existingConversation) {
+        setSelectedConversation(existingConversation);
+        setNewMessageDialogOpen(false);
+        return;
+      }
+
+      // Create new conversation
+      const newConversation: Conversation = {
+        roomId,
+        partnerId: partner.userId,
+        unreadCount: 0,
+        lastActivity: new Date(),
       };
 
-      const channelModule = sb.getModule(new GroupChannelModule());
-      const channel = await channelModule.createChannel(params);
-      setChannels(prev => [channel, ...prev]);
-      setSelectedChannel(channel);
+      setConversations(prev => [newConversation, ...prev]);
+      setSelectedConversation(newConversation);
       setNewMessageDialogOpen(false);
     } catch (err) {
-      console.error('Failed to create channel:', err);
+      console.error('Failed to create conversation:', err);
     } finally {
       setLoading(false);
     }
@@ -269,7 +303,7 @@ export default function Chat() {
                           <div
                             key={partner.id}
                             className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            onClick={() => createChannelWithPartner(partner)}
+                            onClick={() => createConversationWithPartner(partner)}
                           >
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10">
@@ -302,7 +336,7 @@ export default function Chat() {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
                 </div>
                 <ScrollArea className="h-[calc(100vh-380px)]">
-                  {channels.length === 0 ? (
+                  {conversations.length === 0 ? (
                     <div className="p-6 text-center">
                       <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500 dark:text-gray-400">Henüz konuşmanız yok</p>
@@ -312,42 +346,43 @@ export default function Chat() {
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {channels.map((channel) => {
-                        const isSelected = selectedChannel?.url === channel.url;
+                      {conversations.map((conversation) => {
+                        const partner = partners.find(p => p.userId === conversation.partnerId);
+                        const partnerName = partner?.companyName || 'Partner';
+                        const isSelected = selectedConversation?.roomId === conversation.roomId;
                         
                         return (
                           <div
-                            key={channel.url}
+                            key={conversation.roomId}
                             className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                               isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
                             }`}
-                            onClick={() => setSelectedChannel(channel)}
+                            onClick={() => setSelectedConversation(conversation)}
                           >
                             <div className="flex items-center gap-3">
                               <Avatar className="h-12 w-12">
+                                <AvatarImage src={partner?.logo} />
                                 <AvatarFallback>
-                                  {channel.name.charAt(0).toUpperCase()}
+                                  {partnerName.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-1">
                                   <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                    {channel.name}
+                                    {partnerName}
                                   </h3>
-                                  {channel.lastMessage && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {formatTime(channel.lastMessage.createdAt)}
-                                    </span>
-                                  )}
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {formatTime(new Date(conversation.lastActivity).getTime())}
+                                  </span>
                                 </div>
-                                {channel.lastMessage && (
+                                {conversation.lastMessage && (
                                   <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                                    {channel.lastMessage.message || 'Medya mesajı'}
+                                    {conversation.lastMessage.message || 'Medya mesajı'}
                                   </p>
                                 )}
-                                {channel.unreadMessageCount > 0 && (
+                                {conversation.unreadCount > 0 && (
                                   <Badge variant="destructive" className="mt-1">
-                                    {channel.unreadMessageCount}
+                                    {conversation.unreadCount}
                                   </Badge>
                                 )}
                               </div>
@@ -364,7 +399,7 @@ export default function Chat() {
             {/* Chat Area */}
             <Card className="lg:col-span-2">
               <CardContent className="p-0 h-full">
-                {selectedChannel ? (
+                {selectedConversation ? (
                   <div className="flex flex-col h-full">
                     {/* Chat Header */}
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -373,21 +408,22 @@ export default function Chat() {
                           variant="ghost"
                           size="sm"
                           className="lg:hidden"
-                          onClick={() => setSelectedChannel(null)}
+                          onClick={() => setSelectedConversation(null)}
                         >
                           <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <Avatar className="h-10 w-10">
+                          <AvatarImage src={partners.find(p => p.userId === selectedConversation.partnerId)?.logo} />
                           <AvatarFallback>
-                            {selectedChannel.name.charAt(0).toUpperCase()}
+                            {(partners.find(p => p.userId === selectedConversation.partnerId)?.companyName || 'Partner').charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <h3 className="font-medium text-gray-900 dark:text-white">
-                            {selectedChannel.name}
+                            {partners.find(p => p.userId === selectedConversation.partnerId)?.companyName || 'Partner'}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {selectedChannel.memberCount} üye
+                            {isConnected ? 'Çevrimiçi' : 'Çevrimdışı'}
                           </p>
                         </div>
                       </div>
@@ -397,33 +433,37 @@ export default function Chat() {
                     <ScrollArea className="flex-1 p-4">
                       <div className="space-y-4">
                         {messages.map((message) => {
-                          if (message.messageType !== 'user') return null;
-                          
-                          const userMessage = message as UserMessage;
-                          const isOwn = userMessage.sender?.userId === currentUser?.userId;
-                          
+                          const isFromUser = message.senderId === user?.id;
                           return (
                             <div
-                              key={message.messageId}
-                              className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                              key={message.id}
+                              className={`flex ${isFromUser ? 'justify-end' : 'justify-start'}`}
                             >
                               <div
                                 className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                                  isOwn
+                                  isFromUser
                                     ? 'bg-blue-500 text-white rounded-br-md'
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-md'
                                 } shadow-sm`}
                               >
-                                <p className="text-sm">{userMessage.message}</p>
-                                <p className={`text-xs mt-1 ${
-                                  isOwn ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                                }`}>
-                                  {formatTime(message.createdAt)}
-                                </p>
+                                <p className="text-sm">{message.message}</p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <p className={`text-xs ${
+                                    isFromUser ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                                  }`}>
+                                    {formatTime(new Date(message.timestamp).getTime())}
+                                  </p>
+                                  {isFromUser && (
+                                    <span className="text-xs text-blue-100 ml-2">
+                                      {message.isRead ? '✓✓' : '✓'}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );
                         })}
+                        <div ref={messagesEndRef} />
                       </div>
                     </ScrollArea>
 

@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SupabaseAuthProvider } from "@/hooks/use-supabase-auth";
-import { SendbirdProvider } from "@/components/SendbirdProvider";
+import { SocketProvider } from "@/components/SocketProvider";
 import { LanguageProvider } from "@/contexts/language-context";
 import { SeoHead } from "@/components/seo-head";
 import NotFound from "@/pages/not-found";
@@ -114,13 +114,13 @@ function App() {
       <LanguageProvider>
         <SupabaseAuthProvider>
           <AuthProvider>
-            <SendbirdProvider>
+            <SocketProvider>
               <TooltipProvider delayDuration={0}>
                 <InitApp />
                 <Toaster />
                 <Router />
               </TooltipProvider>
-            </SendbirdProvider>
+            </SocketProvider>
           </AuthProvider>
         </SupabaseAuthProvider>
       </LanguageProvider>

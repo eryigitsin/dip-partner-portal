@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
+// Removed WebSocket import as we're using Socket.IO now
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertPartnerApplicationSchema, insertQuoteRequestSchema, insertTempUserRegistrationSchema, insertMessageSchema, insertRecipientAccountSchema } from "@shared/schema";
@@ -14,6 +14,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import { supabaseStorage } from "./supabase-storage";
+import { setupSocketIO } from "./socket";
 import { supabaseAdmin } from "./supabase";
 import { db } from "./db";
 import { quoteResponses } from "@shared/schema";
@@ -4012,111 +4013,10 @@ export function registerRoutes(app: Express): Server {
 
   const httpServer = createServer(app);
 
-  // WebSocket server for real-time messaging
-  const wss = new WebSocketServer({ 
-    server: httpServer, 
-    path: '/ws' 
-  });
+  // Initialize Socket.IO for real-time messaging
+  setupSocketIO(httpServer);
 
-  // Store user connections for real-time messaging
-  const userConnections = new Map<number, WebSocket>();
-  
-  // Store pending notifications for users
-  const pendingNotifications = new Map<string, NodeJS.Timeout>();
-
-  wss.on('connection', (ws: WebSocket, req) => {
-    console.log('WebSocket connection established');
-    let userId: number | null = null;
-
-    ws.on('message', (data) => {
-      try {
-        const message = JSON.parse(data.toString());
-        
-        if (message.type === 'auth' && message.userId) {
-          userId = message.userId;
-          userConnections.set(userId, ws);
-          console.log(`User ${userId} connected via WebSocket`);
-        }
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-      }
-    });
-
-    ws.on('close', () => {
-      if (userId) {
-        userConnections.delete(userId);
-        console.log(`User ${userId} disconnected from WebSocket`);
-      }
-    });
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-      if (userId) {
-        userConnections.delete(userId);
-      }
-    });
-  });
-
-  // Function to send real-time notification
-  function sendRealTimeNotification(userId: number, notification: any) {
-    const userWs = userConnections.get(userId);
-    if (userWs && userWs.readyState === WebSocket.OPEN) {
-      userWs.send(JSON.stringify({
-        type: 'notification',
-        data: notification
-      }));
-      return true;
-    }
-    return false;
-  }
-
-  // Function to schedule 10-minute response reminder
-  function scheduleResponseReminder(conversationId: string, waitingUserId: number, waitingUserName: string, targetUserId: number) {
-    // Clear any existing notification for this conversation
-    const existingTimeout = pendingNotifications.get(conversationId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-
-    // Set 10-minute timer
-    const timeout = setTimeout(async () => {
-      try {
-        // Check if there are any new messages in the conversation in the last 10 minutes
-        const conversationMessages = await storage.getConversationMessages(conversationId);
-        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-        const recentMessages = conversationMessages.filter(msg => 
-          new Date(msg.createdAt) > tenMinutesAgo
-        );
-
-        // If no recent messages from the target user, send reminder
-        const hasResponse = recentMessages.some(msg => msg.senderId === targetUserId);
-        if (!hasResponse) {
-          const notification = {
-            title: "Cevap Bekleniyor!",
-            message: `${waitingUserName} cevabını bekliyor!`,
-            type: "message_reminder",
-            conversationId,
-            timestamp: new Date().toISOString()
-          };
-
-          // Try to send real-time notification first
-          const sentRealTime = sendRealTimeNotification(targetUserId, notification);
-          
-          if (!sentRealTime) {
-            // If user is not online, could store notification for later or send email
-            console.log(`User ${targetUserId} not online, notification stored for later`);
-          }
-        }
-        
-        // Remove the timeout from pending list
-        pendingNotifications.delete(conversationId);
-      } catch (error) {
-        console.error('Error in response reminder:', error);
-      }
-    }, 10 * 60 * 1000); // 10 minutes
-
-    pendingNotifications.set(conversationId, timeout);
-  }
+  // Socket.IO handles real-time messaging now
 
   // User-Partner Interaction endpoints
   app.get("/api/user/partner-interactions", async (req, res) => {
