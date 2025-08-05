@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 interface Partner {
   id: number;
+  userId: number;
   companyName: string;
   logo?: string;
 }
@@ -36,6 +37,13 @@ interface Conversation {
   lastMessage: Message;
   unreadCount: number;
   messages: Message[];
+}
+
+interface ConversationWithPartner {
+  partnerId: number;
+  partner: Partner;
+  lastMessage: Message;
+  unreadCount: number;
 }
 
 export default function MessagesPage() {
@@ -238,7 +246,7 @@ export default function MessagesPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 pt-16 pb-20">
         <div className="max-w-7xl mx-auto p-6">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -450,7 +458,7 @@ export default function MessagesPage() {
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           placeholder="Mesajınızı yazın..."
-                          onKeyPress={(e) => {
+                          onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
                               handleSendMessage();
