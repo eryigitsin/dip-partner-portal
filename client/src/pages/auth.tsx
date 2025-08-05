@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Wand2 } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import dipLogo from '@assets/dip ince_1753361664425.png';
 import workshopBg from '@assets/dip-workshop-kck_1753705308627.png';
@@ -266,6 +266,38 @@ export default function AuthPage() {
               </p>
             </div>
 
+            {/* Magic Link Section */}
+            <div className="w-full space-y-3 mb-6">
+              <Button 
+                type="button" 
+                className="w-full bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-300" 
+                onClick={handleMagicLink}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Gönderiliyor...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Şifresiz Giriş
+                  </>
+                )}
+              </Button>
+              
+              <p className="text-xs text-gray-500 text-center leading-tight">
+                E-postanıza gelecek sihirli bir bağlantı ile tek tıkla giriş yapın.
+              </p>
+              
+              {magicLinkSent && (
+                <div className="text-sm text-green-600 text-center p-3 bg-green-50 rounded-md">
+                  ✓ Sihirli bağlantı gönderildi! E-posta kutunuzu kontrol edin.
+                </div>
+              )}
+            </div>
+
             {/* Auth Form */}
             <Card className="w-full">
               <CardContent className="pt-6">
@@ -323,45 +355,6 @@ export default function AuthPage() {
                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                         Giriş Yap
                       </Button>
-                      
-                      {/* Magic Link Section */}
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-white px-2 text-gray-500">
-                            veya
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full" 
-                        onClick={handleMagicLink}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Gönderiliyor...
-                          </>
-                        ) : (
-                          'Şifresiz Giriş'
-                        )}
-                      </Button>
-                      
-                      <p className="text-xs text-gray-500 text-center">
-                        E-postanıza gelecek sihirli bir bağlantı ile tek tıkla giriş yapın.
-                      </p>
-                      
-                      {magicLinkSent && (
-                        <div className="text-sm text-green-600 text-center p-3 bg-green-50 rounded-md">
-                          ✓ Sihirli bağlantı gönderildi! E-posta kutunuzu kontrol edin.
-                        </div>
-                      )}
                       
                       <Button
                         type="button"
