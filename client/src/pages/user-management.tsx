@@ -111,8 +111,6 @@ export default function UserManagement() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [coverPreview, setCoverPreview] = useState<string>('');
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [serviceInput, setServiceInput] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,28 +151,7 @@ export default function UserManagement() {
     }
   };
 
-  // Service management
-  const addService = (serviceName: string) => {
-    const trimmedName = serviceName.trim();
-    if (!trimmedName) return;
 
-    const isDuplicateInSelected = selectedServices.some(service => 
-      service.toLowerCase() === trimmedName.toLowerCase()
-    );
-    
-    if (isDuplicateInSelected) return;
-
-    const newServices = [...selectedServices, trimmedName];
-    setSelectedServices(newServices);
-    setNewPartnerData(prev => ({ ...prev, services: newServices.join('\n') }));
-    setServiceInput('');
-  };
-
-  const removeService = (serviceName: string) => {
-    const newServices = selectedServices.filter(s => s !== serviceName);
-    setSelectedServices(newServices);
-    setNewPartnerData(prev => ({ ...prev, services: newServices.join('\n') }));
-  };
 
   // Fetch all users
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -272,8 +249,8 @@ export default function UserManagement() {
         }
       });
       
-      // Add services as JSON string
-      formData.append('services', JSON.stringify(selectedServices));
+      // Add services field
+      formData.append('services', partnerData.services || '');
       
       // Add status as approved for auto-approval
       formData.append('status', 'approved');
@@ -286,10 +263,17 @@ export default function UserManagement() {
         formData.append('coverImage', coverFile);
       }
       
-      return await apiRequest('/api/admin/create-partner-direct', {
+      const response = await fetch('/api/admin/create-partner-direct', {
         method: 'POST',
         body: formData,
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Partner oluşturulamadı');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -328,8 +312,6 @@ export default function UserManagement() {
       setCoverFile(null);
       setLogoPreview('');
       setCoverPreview('');
-      setSelectedServices([]);
-      setServiceInput('');
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/partners'] });
     },
@@ -643,63 +625,23 @@ export default function UserManagement() {
                         <SelectValue placeholder="Kategori seçin" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((category: any) => (
+                        {categories ? (categories as any[]).map((category: any) => (
                           <SelectItem key={category.id} value={category.name}>
                             {category.name}
                           </SelectItem>
-                        ))}
+                        )) : null}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="services">Sunduğunuz Hizmetler *</Label>
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <Input
-                          value={serviceInput}
-                          onChange={(e) => setServiceInput(e.target.value)}
-                          placeholder="Hizmet adı yazın..."
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (serviceInput.trim()) {
-                                addService(serviceInput);
-                              }
-                            }
-                          }}
-                        />
-                        {serviceInput && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="absolute right-1 top-1 h-8"
-                            onClick={() => {
-                              if (serviceInput.trim()) {
-                                addService(serviceInput);
-                              }
-                            }}
-                          >
-                            Ekle
-                          </Button>
-                        )}
-                      </div>
-                      {selectedServices.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedServices.map((service, index) => (
-                            <Badge key={index} variant="secondary" className="text-sm">
-                              {service}
-                              <button
-                                type="button"
-                                onClick={() => removeService(service)}
-                                className="ml-2 text-red-500 hover:text-red-700"
-                              >
-                                <X size={14} />
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <Label htmlFor="services">Sunduğunuz Hizmetler</Label>
+                    <Textarea
+                      id="services"
+                      value={newPartnerData.services}
+                      onChange={(e) => setNewPartnerData(prev => ({ ...prev, services: e.target.value }))}
+                      placeholder="Sunduğunuz hizmetleri açıklayın... (Partner daha sonra detaylandırabilir)"
+                      rows={3}
+                    />
                   </div>
                 </div>
 

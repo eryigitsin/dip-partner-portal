@@ -220,7 +220,7 @@ export function createAdminRoutes(storage: IStorage): Router {
       ]);
 
       // Process file upload
-      uploadHandler(req, res, async (err) => {
+      uploadHandler(req, res, async (err: any) => {
         if (err) {
           console.error('File upload error:', err);
           return res.status(400).json({ message: 'File upload failed', error: err.message });
@@ -236,16 +236,8 @@ export function createAdminRoutes(storage: IStorage): Router {
             twitterProfile, instagramProfile, facebookProfile, city, country
           } = req.body;
 
-          // Parse services
-          let services = '';
-          try {
-            if (req.body.services) {
-              const servicesList = JSON.parse(req.body.services);
-              services = Array.isArray(servicesList) ? servicesList.join('\n') : req.body.services;
-            }
-          } catch (e) {
-            services = req.body.services || '';
-          }
+          // Get services directly from form data
+          const services = req.body.services || '';
 
           // Create Supabase user account
           const supabaseAdmin = createClient(
@@ -335,6 +327,10 @@ export function createAdminRoutes(storage: IStorage): Router {
             partner = await storage.createPartner(partnerData);
           }
 
+          if (!partner) {
+            throw new Error('Partner oluşturulamadı');
+          }
+
           // Handle file uploads if present
           const files = req.files as { [fieldname: string]: Express.Multer.File[] };
           
@@ -401,7 +397,7 @@ export function createAdminRoutes(storage: IStorage): Router {
           console.error('Error creating partner:', error);
           res.status(500).json({ 
             message: 'Partner oluşturulurken hata oluştu', 
-            error: error.message 
+            error: error instanceof Error ? error.message : 'Bilinmeyen hata'
           });
         }
       });
@@ -410,7 +406,7 @@ export function createAdminRoutes(storage: IStorage): Router {
       console.error('Error in create-partner-direct endpoint:', error);
       res.status(500).json({ 
         message: 'Partner oluşturulurken hata oluştu', 
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Bilinmeyen hata'
       });
     }
   });
