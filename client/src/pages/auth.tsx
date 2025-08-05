@@ -213,10 +213,13 @@ export default function AuthPage() {
     setIsLoading(true);
     
     try {
+      const redirectUrl = `${window.location.origin}/auth`;
+      console.log('Sending magic link to:', formData.email, 'redirect URL:', redirectUrl, 'current origin:', window.location.origin);
+      
       const { error } = await supabase.auth.signInWithOtp({
         email: formData.email,
         options: {
-          emailRedirectTo: window.location.origin + '/?magic=true'
+          emailRedirectTo: redirectUrl
         }
       });
       

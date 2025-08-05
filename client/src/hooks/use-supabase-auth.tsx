@@ -46,7 +46,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Supabase auth event:', event, 'session:', session?.user?.email, 'hash:', window.location.hash, 'pathname:', window.location.pathname);
+      console.log('Supabase auth event:', event, 'session:', session?.user?.email, 'hash:', window.location.hash, 'pathname:', window.location.pathname, 'full URL:', window.location.href);
       
       // Handle auth event flows based on type
       if (event === 'PASSWORD_RECOVERY') {
@@ -62,21 +62,21 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         console.log('SIGNED_IN event - hash:', hash, 'search:', search);
         
         // Check if this is a magic link authentication (OTP)
-        if (hash.includes('type=magiclink') || hash.includes('type=signup')) {
-          console.log('Magic link or signup authentication detected');
-          
-          if (hash.includes('type=magiclink')) {
-            console.log('Redirecting for magic link success');
-            window.location.href = '/?magic=true';
-            return;
-          }
-          
-          if (hash.includes('type=signup') && session?.user?.email_confirmed_at) {
-            console.log('Redirecting for email confirmation success');
-            localStorage.setItem('email_confirmed_shown', 'true');
-            window.location.href = '/?confirmed=true';
-            return;
-          }
+        if (hash.includes('type=magiclink')) {
+          console.log('Magic link authentication detected, redirecting to home');
+          // Clean up URL and redirect to home with magic parameter
+          window.history.replaceState({}, '', '/');
+          window.location.href = '/?magic=true';
+          return;
+        }
+        
+        // Handle email confirmation from signup
+        if (hash.includes('type=signup') && session?.user?.email_confirmed_at) {
+          console.log('Email confirmation detected, redirecting to home');
+          localStorage.setItem('email_confirmed_shown', 'true');
+          window.history.replaceState({}, '', '/');
+          window.location.href = '/?confirmed=true';
+          return;
         }
         
         // Check for manual magic link parameter
