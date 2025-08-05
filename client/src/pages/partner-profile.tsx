@@ -1288,13 +1288,12 @@ function PartnerMarketsDisplay({ partnerId }: { partnerId: number }) {
   const [selectedMarketName, setSelectedMarketName] = useState('');
 
   // Fetch partner's selected markets
-  const { data: partnerMarkets = [] } = useQuery<Array<{ id: number; name: string; nameEn?: string; region?: string }>>({
+  const { data: partnerMarkets = [] } = useQuery({
     queryKey: ['/api/partners', partnerId, 'markets'],
     queryFn: async () => {
-      const res = await apiRequest('GET', `/api/partners/${partnerId}/markets`);
-      return res.json();
+      return await apiRequest('GET', `/api/partners/${partnerId}/markets`);
     }
-  });
+  }) as { data: Array<{ id: number; name: string; nameEn?: string; region?: string }> };
 
   // Handle market click to show all partners in this market
   const handleMarketClick = async (marketName: string) => {

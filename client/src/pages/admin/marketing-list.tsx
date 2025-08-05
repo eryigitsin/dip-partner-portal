@@ -57,17 +57,15 @@ export default function MarketingListPage() {
   // Fetch marketing contacts
   const { data: contacts = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/admin/marketing-contacts'],
-  });
+  }) as { data: MarketingContact[], isLoading: boolean, refetch: () => void };
 
   // Sync contacts mutation
   const syncContactsMutation = useMutation({
-    mutationFn: () => apiRequest('/api/admin/sync-marketing-contacts', { 
-      method: 'POST' 
-    }),
-    onSuccess: (data) => {
+    mutationFn: () => apiRequest('POST', '/api/admin/sync-marketing-contacts'),
+    onSuccess: (data: any) => {
       toast({
         title: "Başarılı!",
-        description: data.message || 'Pazarlama listesi başarıyla senkronize edildi',
+        description: data?.message || 'Pazarlama listesi başarıyla senkronize edildi',
       });
       refetch();
     },

@@ -7,7 +7,7 @@ export function createAdminRoutes(storage: IStorage): Router {
 
   // Middleware to check admin access
   const requireAdmin: RequestHandler = (req, res, next) => {
-    const user = req.user;
+    const user = req.user as any;
     if (!user || !["master_admin", "editor_admin"].includes(user.userType)) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -17,7 +17,7 @@ export function createAdminRoutes(storage: IStorage): Router {
   // Get all quote requests with partner information
   router.get('/quote-requests', requireAdmin, async (req, res) => {
     try {
-      const requests = await storage.getAllQuoteRequestsWithPartners();
+      const requests = await (storage as any).getAllQuoteRequestsWithPartners();
       res.json(requests);
     } catch (error) {
       console.error('Error fetching quote requests:', error);

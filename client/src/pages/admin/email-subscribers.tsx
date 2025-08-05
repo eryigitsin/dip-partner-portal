@@ -17,14 +17,14 @@ export default function EmailSubscribers() {
   // Get all email subscribers
   const { data: subscribers, isLoading } = useQuery({
     queryKey: ["/api/admin/email-subscribers"],
-  });
+  }) as { data: EmailSubscriber[], isLoading: boolean };
 
   const exportSubscribers = () => {
     if (!subscribers) return;
     
     const csvContent = [
       ['E-posta', 'Durum', 'Abone Olma Tarihi', 'Abonelik İptal Tarihi'].join(','),
-      ...subscribers.map((sub: EmailSubscriber) => [
+      ...(subscribers || []).map((sub: EmailSubscriber) => [
         sub.email,
         sub.isActive ? 'Aktif' : 'İptal Edilmiş',
         new Date(sub.subscribedAt).toLocaleDateString('tr-TR'),

@@ -65,7 +65,7 @@ export const SendbirdProvider: React.FC<SendbirdProviderProps> = ({ children }) 
 
         // Connect user
         const connectedUser = await sendbirdChat.connect(user.id.toString(), {
-          nickname: `${user.firstName} ${user.lastName}`.trim() || user.email,
+          nickname: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
           profileUrl: '',
           metadata: {
             email: user.email,

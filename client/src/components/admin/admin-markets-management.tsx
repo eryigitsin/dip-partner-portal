@@ -202,7 +202,7 @@ export function AdminMarketsManagement({ partnerId }: AdminMarketsManagementProp
           {/* Partner's Current Markets */}
           <div>
             <h4 className="text-sm font-medium mb-2 text-gray-700">
-              Seçili Pazarlar ({partnerMarkets.length})
+              Seçili Pazarlar ({(partnerMarkets as any[])?.length || 0})
             </h4>
             <div className="flex flex-wrap gap-2 min-h-[2.5rem] p-3 border rounded-md bg-gray-50">
               {filteredPartnerMarkets.length === 0 ? (

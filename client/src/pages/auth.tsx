@@ -33,7 +33,7 @@ export default function AuthPage() {
   // Fetch categories to get dynamic count
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/categories"],
-  });
+  }) as { data: any[] };
 
   // Show auth warning message when coming from quote request or partner application
   useEffect(() => {

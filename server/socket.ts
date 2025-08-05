@@ -190,7 +190,7 @@ class SocketChatManager {
         for (const [userId, user] of this.connectedUsers.entries()) {
           if (user.socketId === socket.id) {
             this.connectedUsers.delete(userId);
-            console.log(`User ${user.userName} (${userId}) disconnected`);
+            console.log(`User ${user.userName || user.email} (${userId}) disconnected`);
             break;
           }
         }

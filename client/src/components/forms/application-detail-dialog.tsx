@@ -46,7 +46,7 @@ export function ApplicationDetailDialog({
     queryKey: [`/api/partner-applications/${applicationId}/details`],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!applicationId && open,
-  });
+  }) as { data: any, isLoading: boolean };
 
   const handleDownloadDocument = (documentId: number, fileName: string) => {
     window.open(`/api/partner-applications/${applicationId}/documents/${documentId}/download`, '_blank');

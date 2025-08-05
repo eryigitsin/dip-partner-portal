@@ -3,6 +3,12 @@
 ## Overview
 This is a Turkish-English bilingual partner management system for DİP (Digital Export Platform). Its purpose is to connect businesses with service partners, enable partners to manage profiles and requests, and provide administrative tools for platform management. The vision is to be a central hub for B2B collaboration, facilitating digital exports through verified service partners.
 
+## Recent Changes (August 2025)
+- Auth page: Dynamic category counter implemented using real-time API data instead of static "16" 
+- Comprehensive error fixing: Resolved 91 TypeScript and LSP diagnostic errors across 16 files
+- Type safety improvements: Added proper type assertions and API response handling
+- Code quality: Enhanced error handling and type consistency throughout the application
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 

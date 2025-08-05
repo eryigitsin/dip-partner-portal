@@ -167,7 +167,7 @@ export function QuoteRequestDetailModal({
                 <div>
                   <span className="font-medium">Talep Tarihi:</span>
                   <p className="text-gray-600">
-                    {new Date(quoteRequest.createdAt).toLocaleDateString('tr-TR', {
+                    {new Date(quoteRequest.createdAt as string).toLocaleDateString('tr-TR', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
@@ -179,7 +179,7 @@ export function QuoteRequestDetailModal({
                 <div>
                   <span className="font-medium">Son Güncelleme:</span>
                   <p className="text-gray-600">
-                    {new Date(quoteRequest.updatedAt).toLocaleDateString('tr-TR', {
+                    {new Date(quoteRequest.updatedAt as string).toLocaleDateString('tr-TR', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',

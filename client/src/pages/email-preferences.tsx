@@ -27,13 +27,13 @@ export default function EmailPreferences() {
   });
 
   // Get current user
-  const { data: user } = useQuery({ queryKey: ["/api/user"] });
+  const { data: user } = useQuery({ queryKey: ["/api/user"] }) as { data: any };
 
   // Get user's email preferences
   const { data: userPreferences, isLoading } = useQuery({
     queryKey: ["/api/email-preferences"],
     enabled: !!user?.id,
-  });
+  }) as { data: any, isLoading: boolean };
 
   // Update preferences when data loads
   useEffect(() => {
@@ -56,11 +56,7 @@ export default function EmailPreferences() {
   // Save preferences mutation
   const updatePreferencesMutation = useMutation({
     mutationFn: async (newPreferences: EmailPreferences) => {
-      const response = await apiRequest("POST", "/api/email-preferences", newPreferences);
-      if (!response.ok) {
-        throw new Error("Failed to update preferences");
-      }
-      return response.json();
+      return await apiRequest("POST", "/api/email-preferences", newPreferences);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/email-preferences"] });

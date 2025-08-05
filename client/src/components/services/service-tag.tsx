@@ -57,8 +57,8 @@ export function ServiceTag({ serviceName, serviceId, variant = 'default', size =
               <div className="col-span-full text-center py-8 text-gray-500">
                 Yükleniyor...
               </div>
-            ) : serviceProviders?.length > 0 ? (
-              serviceProviders.map((partner: any) => (
+            ) : (serviceProviders as any[])?.length > 0 ? (
+              (serviceProviders as any[]).map((partner: any) => (
                 <Card key={partner.id} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
