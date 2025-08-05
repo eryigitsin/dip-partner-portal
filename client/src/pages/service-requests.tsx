@@ -438,7 +438,7 @@ export default function ServiceRequests() {
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY'
-    }).format(amount / 100); // Convert from cents
+    }).format(amount); // Data is already in correct format
   };
 
   if (!user) {
@@ -832,7 +832,7 @@ export default function ServiceRequests() {
                   <span className="font-semibold">{formatCurrency(selectedQuoteResponse.subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-lg">
-                  <span>KDV ({selectedQuoteResponse.taxRate / 100}%):</span>
+                  <span>KDV ({selectedQuoteResponse.taxRate}%):</span>
                   <span className="font-semibold">{formatCurrency(selectedQuoteResponse.taxAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xl font-bold border-t pt-2 mt-2">
@@ -997,7 +997,7 @@ export default function ServiceRequests() {
                     <div>
                       <Label className="text-sm font-medium">Toplam Fiyat</Label>
                       <p className="text-lg font-bold text-green-600 mt-1">
-                        {formatCurrency(Math.round((item.requestedTotalPrice || 0) * 100))}
+                        {formatCurrency(item.requestedTotalPrice || 0)}
                       </p>
                     </div>
                   </div>
