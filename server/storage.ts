@@ -405,15 +405,20 @@ export class DatabaseStorage implements IStorage {
     category?: string; 
     search?: string; 
     approved?: boolean; 
+    visible?: boolean;
     limit?: number; 
     offset?: number 
   } = {}): Promise<Partner[]> {
-    const { category, search, approved = true, limit = 20, offset = 0 } = options;
+    const { category, search, approved = true, visible = true, limit = 20, offset = 0 } = options;
     
     const conditions = [];
     
     if (approved !== undefined) {
       conditions.push(eq(partners.isApproved, approved));
+    }
+    
+    if (visible !== undefined) {
+      conditions.push(eq(partners.isVisible, visible));
     }
     
     if (category) {

@@ -479,10 +479,17 @@ export function registerRoutes(app: Express): Server {
   // Partners
   app.get("/api/partners", async (req, res) => {
     try {
-      const { category, search, limit, offset } = req.query;
+      const { category, search, limit, offset, admin } = req.query;
+      
+      // Admin can see all partners (including invisible ones), others see only visible partners
+      const isAdmin = req.isAuthenticated() && 
+        (req.user.userType === 'master_admin' || req.user.userType === 'editor_admin');
+      const showHidden = admin === 'true' && isAdmin;
+      
       const partners = await storage.getPartners({
         category: category as string,
         search: search as string,
+        visible: showHidden ? undefined : true, // Show all if admin viewing admin panel, otherwise only visible
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
       });
@@ -2081,6 +2088,18 @@ export function registerRoutes(app: Express): Server {
       if (req.body.description !== undefined) {
         updates.description = req.body.description;
         console.log('Setting description:', updates.description);
+      }
+      
+      // Handle admin-only fields
+      if (isAdmin) {
+        if (req.body.isActive !== undefined) {
+          updates.isActive = req.body.isActive === 'true' || req.body.isActive === true;
+          console.log('Setting isActive:', updates.isActive);
+        }
+        if (req.body.isVisible !== undefined) {
+          updates.isVisible = req.body.isVisible === 'true' || req.body.isVisible === true;
+          console.log('Setting isVisible:', updates.isVisible);
+        }
       }
 
       console.log('Final updates to apply:', updates);

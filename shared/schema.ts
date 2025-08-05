@@ -68,6 +68,7 @@ export const partners = pgTable("partners", {
   socialMedia: jsonb("social_media"), // {linkedin, twitter, facebook, instagram}
   isApproved: boolean("is_approved").default(false),
   isActive: boolean("is_active").default(true),
+  isVisible: boolean("is_visible").default(true), // Partner visibility in catalog and search
   followersCount: integer("followers_count").default(0),
   profileViews: integer("profile_views").default(0),
   username: text("username").unique(),

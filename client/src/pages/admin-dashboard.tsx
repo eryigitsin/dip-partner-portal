@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -73,9 +74,9 @@ export default function AdminDashboard() {
   });
 
   const { data: partners = [] } = useQuery<Partner[]>({
-    queryKey: ["/api/partners", { approved: undefined }],
+    queryKey: ["/api/partners", { approved: undefined, admin: true }],
     queryFn: async () => {
-      const response = await fetch("/api/partners?approved=");
+      const response = await fetch("/api/partners?approved=&admin=true");
       if (!response.ok) throw new Error("Failed to fetch partners");
       return response.json();
     },
@@ -416,6 +417,10 @@ export default function AdminDashboard() {
 
   const togglePartnerStatus = (partnerId: number, isActive: boolean) => {
     updatePartnerMutation.mutate({ id: partnerId, isActive });
+  };
+
+  const togglePartnerVisibility = (partnerId: number, isVisible: boolean) => {
+    updatePartnerMutation.mutate({ id: partnerId, isVisible });
   };
 
   const getStatusColor = (status: string) => {
@@ -797,9 +802,24 @@ export default function AdminDashboard() {
                           <TableCell>{partner.followersCount}</TableCell>
                           <TableCell>{partner.profileViews}</TableCell>
                           <TableCell>
-                            <Badge variant={partner.isApproved ? "default" : "secondary"}>
-                              {partner.isApproved ? "Aktif" : "Beklemede"}
-                            </Badge>
+                            <div className="flex items-center space-x-2">
+                              <Badge variant={partner.isApproved ? "default" : "secondary"}>
+                                {partner.isApproved ? "Aktif" : "Beklemede"}
+                              </Badge>
+                              {partner.isApproved && (
+                                <div className="flex items-center space-x-1">
+                                  <span className="text-xs text-gray-600">
+                                    {partner.isVisible ?? true ? "Görünür" : "Gizli"}
+                                  </span>
+                                  <Switch
+                                    checked={partner.isVisible ?? true}
+                                    onCheckedChange={(checked) => togglePartnerVisibility(partner.id, checked)}
+                                    data-testid={`toggle-visibility-${partner.id}`}
+                                    className="h-4 w-6"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {partner.createdAt ? new Date(partner.createdAt).toLocaleDateString('tr-TR') : 'Tarih belirtilmemiş'}
