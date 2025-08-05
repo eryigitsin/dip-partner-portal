@@ -360,7 +360,7 @@ export default function Chat() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)]">
             {/* Channels List */}
-            <Card className={`lg:col-span-1 flex flex-col ${selectedConversation ? 'hidden lg:flex' : 'col-span-1'}`}>
+            <Card className={`lg:col-span-1 flex flex-col h-[500px] sm:h-[600px] lg:h-[calc(100vh-200px)] ${selectedConversation ? 'hidden lg:flex' : 'col-span-1'}`}>
               <CardContent className="p-0 flex-1 flex flex-col">
                 <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
@@ -428,8 +428,8 @@ export default function Chat() {
             </Card>
 
             {/* Chat Area */}
-            <Card className={`lg:col-span-2 flex flex-col ${selectedConversation ? 'col-span-1 lg:col-span-2' : 'hidden lg:flex lg:col-span-2'}`}>
-              <CardContent className="p-0 flex-1 flex flex-col">
+            <Card className={`lg:col-span-2 flex flex-col h-[500px] sm:h-[600px] lg:h-[calc(100vh-200px)] ${selectedConversation ? 'col-span-1 lg:col-span-2' : 'hidden lg:flex lg:col-span-2'}`}>
+              <CardContent className="p-0 flex-1 flex flex-col h-full">
                 {selectedConversation ? (
                   <div className="flex flex-col h-full">
                     {/* Chat Header */}
@@ -461,7 +461,7 @@ export default function Chat() {
                     </div>
 
                     {/* Messages */}
-                    <ScrollArea className="flex-1 p-3 sm:p-4">
+                    <ScrollArea className="flex-1 p-3 sm:p-4 h-[300px] sm:h-[400px] lg:h-[calc(100vh-400px)]">
                       <div className="space-y-3 sm:space-y-4">
                         {messages.map((message) => {
                           const isFromUser = message.senderId === user?.id;
