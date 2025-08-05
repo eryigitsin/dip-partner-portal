@@ -167,7 +167,7 @@ export default function PasswordResetHTML() {
             </button>
             
             <div id="successMessage" className="success" style={{display: 'none', textAlign: 'center', marginTop: '1rem'}}>
-              Şifreniz başarıyla güncellendi! Giriş sayfasına yönlendiriliyorsunuz...
+              Şifreniz başarıyla değiştirildi. Lütfen yeniden giriş yapın.
             </div>
           </form>
 

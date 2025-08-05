@@ -54,10 +54,15 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && 
-          window.location.hash.includes('type=signup')) {
-        window.location.href = '/?confirmed=true';
-        return;
+      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+        // Check if this is email confirmation from signup
+        if (window.location.hash.includes('type=signup') || 
+            window.location.hash.includes('type=email_change') ||
+            !localStorage.getItem('email_confirmed_shown')) {
+          localStorage.setItem('email_confirmed_shown', 'true');
+          window.location.href = '/?confirmed=true';
+          return;
+        }
       }
       
       setSession(session);
