@@ -807,15 +807,15 @@ export default function AdminDashboard() {
                                 {partner.isApproved ? "Aktif" : "Beklemede"}
                               </Badge>
                               {partner.isApproved && (
-                                <div className="flex items-center space-x-1">
-                                  <span className="text-xs text-gray-600">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs text-gray-600 min-w-[40px]">
                                     {partner.isVisible ?? true ? "Görünür" : "Gizli"}
                                   </span>
                                   <Switch
                                     checked={partner.isVisible ?? true}
                                     onCheckedChange={(checked) => togglePartnerVisibility(partner.id, checked)}
                                     data-testid={`toggle-visibility-${partner.id}`}
-                                    className="h-4 w-6"
+                                    className="scale-75"
                                   />
                                 </div>
                               )}
