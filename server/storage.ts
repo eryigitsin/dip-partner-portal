@@ -2032,15 +2032,55 @@ export class DatabaseStorage implements IStorage {
       .where(or(eq(messages.senderId, userId), eq(messages.receiverId, userId)))
       .orderBy(desc(messages.createdAt));
 
-    // Group by conversation and get partners
+    // Check if current user is a partner
+    const [currentUserPartner] = await db.select().from(partners).where(eq(partners.userId, userId));
+    const isPartner = !!currentUserPartner;
+
+    // Group by conversation and get partner/user info
     const conversationMap = new Map();
     
     for (const message of conversationsQuery) {
-      const partnerId = message.senderId === userId ? message.receiverId : message.senderId;
-      const conversationId = `${Math.min(userId, partnerId)}-${Math.max(userId, partnerId)}`;
+      const otherUserId = message.senderId === userId ? message.receiverId : message.senderId;
+      const conversationId = `${Math.min(userId, otherUserId)}-${Math.max(userId, otherUserId)}`;
       
       if (!conversationMap.has(conversationId)) {
-        const [partner] = await db.select().from(partners).where(eq(partners.userId, partnerId));
+        let partner = null;
+        let partnerId = otherUserId;
+
+        if (isPartner) {
+          // Current user is a partner, so the other user should be a regular user
+          // Look up if the other user has any partner data (for display purposes)
+          const [otherUserData] = await db.select().from(users).where(eq(users.id, otherUserId));
+          if (otherUserData) {
+            // Create a pseudo-partner object for regular users
+            partner = {
+              id: 0,
+              userId: otherUserId,
+              companyName: otherUserData.firstName && otherUserData.lastName 
+                ? `${otherUserData.firstName} ${otherUserData.lastName}`
+                : otherUserData.email || 'Kullanıcı',
+              logo: null,
+              // Add other required partner fields with defaults
+              services: [],
+              description: '',
+              website: '',
+              phone: '',
+              email: otherUserData.email,
+              address: '',
+              city: '',
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+          }
+        } else {
+          // Current user is a regular user, look for partners
+          const [partnerData] = await db.select().from(partners).where(eq(partners.userId, otherUserId));
+          if (partnerData) {
+            partner = partnerData;
+          }
+        }
+
         if (partner) {
           conversationMap.set(conversationId, {
             partnerId,

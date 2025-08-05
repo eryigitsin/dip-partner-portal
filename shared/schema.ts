@@ -309,6 +309,8 @@ export const messages = pgTable("messages", {
   subject: text("subject"),
   message: text("message").notNull(),
   attachments: jsonb("attachments"),
+  fileUrl: text("file_url"), // URL for uploaded file attachments
+  fileName: text("file_name"), // Original filename for display
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });

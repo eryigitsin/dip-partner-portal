@@ -14,8 +14,11 @@ import {
   Minimize2, 
   Send, 
   Users,
-  ChevronDown
+  ChevronDown,
+  Download,
+  File
 } from 'lucide-react';
+import { FileUploader } from '@/components/FileUploader';
 
 interface Partner {
   id: number;
@@ -29,6 +32,8 @@ interface ChatMessage {
   senderId: number;
   receiverId: number;
   message: string;
+  fileUrl?: string;
+  fileName?: string;
   createdAt: string;
   isRead: boolean;
 }
@@ -53,6 +58,7 @@ export function ChatPopup() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [showPartnerList, setShowPartnerList] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<{fileName: string, fileUrl: string} | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -109,11 +115,18 @@ export function ChatPopup() {
   }, []);
 
   const sendMessage = useMutation({
-    mutationFn: async (data: { message: string; conversationId: string; recipientId: number }) => {
+    mutationFn: async (data: { 
+      message: string; 
+      conversationId: string; 
+      recipientId: number;
+      fileUrl?: string;
+      fileName?: string;
+    }) => {
       return apiRequest('POST', '/api/messages', data);
     },
     onSuccess: () => {
       setNewMessage('');
+      setSelectedFile(null);
       // Refresh conversations and messages
       queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
       if (selectedConversation && user) {
@@ -127,14 +140,16 @@ export function ChatPopup() {
   });
 
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedConversation || !user) return;
+    if ((!newMessage.trim() && !selectedFile) || !selectedConversation || !user) return;
 
     const conversationId = `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}`;
     
     sendMessage.mutate({
-      message: newMessage.trim(),
+      message: newMessage.trim() || (selectedFile ? 'Dosya gönderildi' : ''),
       conversationId: conversationId,
-      recipientId: selectedConversation.partnerId
+      recipientId: selectedConversation.partnerId,
+      fileUrl: selectedFile?.fileUrl,
+      fileName: selectedFile?.fileName
     });
   };
 
@@ -368,6 +383,26 @@ export function ChatPopup() {
                                 } shadow-sm`}
                               >
                                 <p className="text-sm">{message.message}</p>
+                                
+                                {/* File attachment */}
+                                {message.fileUrl && message.fileName && (
+                                  <div className="mt-2 p-2 bg-white bg-opacity-20 rounded-md">
+                                    <div className="flex items-center gap-2">
+                                      <File className="w-4 h-4" />
+                                      <a 
+                                        href={message.fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm hover:underline flex-1 truncate"
+                                        data-testid="link-file-attachment"
+                                      >
+                                        {message.fileName}
+                                      </a>
+                                      <Download className="w-4 h-4" />
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 <div className="flex items-center justify-between mt-1">
                                   <p className={`text-xs ${
                                     isFromUser ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
@@ -389,7 +424,17 @@ export function ChatPopup() {
                   </ScrollArea>
 
                   {/* Message Input */}
-                  <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="p-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                    {/* File upload section */}
+                    <div className="flex items-center gap-2">
+                      <FileUploader
+                        onFileSelect={(fileUrl, fileName) => setSelectedFile({ fileUrl, fileName })}
+                        onFileRemove={() => setSelectedFile(null)}
+                        selectedFile={selectedFile}
+                        disabled={sendMessage.isPending}
+                      />
+                    </div>
+                    
                     <div className="flex gap-2">
                       <Input
                         value={newMessage}
@@ -402,7 +447,7 @@ export function ChatPopup() {
                       />
                       <Button
                         onClick={handleSendMessage}
-                        disabled={!newMessage.trim() || sendMessage.isPending}
+                        disabled={(!newMessage.trim() && !selectedFile) || sendMessage.isPending}
                         size="sm"
                         data-testid="button-send-chat-message"
                       >

@@ -1300,13 +1300,25 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { recipientId, message, conversationId } = req.body;
+      const { recipientId, message, conversationId, fileUrl, fileName } = req.body;
       const senderId = req.user.id;
+      
+      // Check if sender is a partner and trying to initiate new conversation
+      const [senderPartner] = await db.select().from(partners).where(eq(partners.userId, senderId));
+      if (senderPartner) {
+        // Partner can only reply to existing conversations, not initiate new ones
+        const existingMessages = await storage.getConversationMessages(conversationId);
+        if (existingMessages.length === 0) {
+          return res.status(403).json({ error: 'Partners cannot initiate new conversations' });
+        }
+      }
       
       const newMessage = await storage.createMessage({
         senderId,
         receiverId: recipientId,
         message: message,
+        fileUrl: fileUrl || null,
+        fileName: fileName || null
       });
 
       // Send real-time notification to receiver via Socket.IO
@@ -1345,6 +1357,37 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error marking messages as read:', error);
       res.status(500).json({ message: "Failed to mark messages as read" });
+    }
+  });
+
+  // File upload endpoints for messaging
+  app.post("/api/messages/upload", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ObjectStorageService } = require('./objectStorage');
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error('Error getting upload URL:', error);
+      res.status(500).json({ error: 'Failed to get upload URL' });
+    }
+  });
+
+  // Serve uploaded files
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { ObjectStorageService, ObjectNotFoundError } = require('./objectStorage');
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error serving file:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
