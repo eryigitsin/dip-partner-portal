@@ -200,10 +200,10 @@ export default function Chat() {
   return (
     <>
       <Header />
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 pt-16" style={{ minHeight: 'calc(100vh - 80px)' }}>
-        <div className="max-w-7xl mx-auto p-6">
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 pt-16 pb-4" style={{ minHeight: 'calc(100vh - 80px)' }}>
+        <div className="max-w-7xl mx-auto p-4 sm:p-6">
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
                   <MessageSquare className="h-8 w-8 text-blue-600 dark:text-blue-300" />
@@ -263,14 +263,14 @@ export default function Chat() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6" style={{ height: 'calc(100vh - 220px)' }}>
             {/* Channels List */}
             <Card className="lg:col-span-1">
               <CardContent className="p-0">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
                 </div>
-                <ScrollArea className="h-[calc(100vh-300px)]">
+                <ScrollArea style={{ height: 'calc(100vh - 320px)' }}>
                   {conversations.length === 0 ? (
                     <div className="p-6 text-center">
                       <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />

@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSocket } from './SocketProvider';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -25,35 +24,33 @@ interface Partner {
   logo?: string;
 }
 
-interface Message {
-  id: string;
+interface ChatMessage {
+  id: number;
   senderId: number;
-  recipientId: number;
+  receiverId: number;
   message: string;
-  timestamp: string;
+  createdAt: string;
   isRead: boolean;
-  conversationId: string;
 }
 
-interface Conversation {
-  roomId: string;
+interface ConversationData {
   partnerId: number;
+  partner: Partner;
+  lastMessage: ChatMessage;
   unreadCount: number;
-  lastActivity: Date;
-  lastMessage?: Message;
+  messages: ChatMessage[];
 }
 
 export function ChatPopup() {
   const { user } = useAuth();
   const isAuthenticated = !!user;
-  const { socket, isConnected } = useSocket();
   const queryClient = useQueryClient();
   
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<ConversationData | null>(null);
+  const [conversations, setConversations] = useState<ConversationData[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [showPartnerList, setShowPartnerList] = useState(false);
   
@@ -65,54 +62,44 @@ export function ChatPopup() {
     enabled: isAuthenticated
   });
 
+  // Fetch user conversations
+  const { data: conversationsData = [] } = useQuery<ConversationData[]>({
+    queryKey: ['/api/user/conversations'],
+    enabled: isAuthenticated,
+    refetchInterval: 3000, // Refresh every 3 seconds for real-time effect
+  });
+
+  // Fetch messages for selected conversation
+  const conversationId = selectedConversation?.partnerId && user?.id ? 
+    `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}` : 
+    null;
+    
+  const { data: conversationMessages = [] } = useQuery<ChatMessage[]>({
+    queryKey: ['/api/conversations', conversationId, 'messages'],
+    enabled: !!selectedConversation && !!user && !!conversationId,
+    refetchInterval: 2000, // Refresh every 2 seconds for real-time effect
+  });
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [conversationMessages]);
 
-  // Socket.IO event handlers
+  // Show notification for new messages
   useEffect(() => {
-    if (!socket || !isAuthenticated) return;
-
-    socket.on('newMessage', (message: Message) => {
-      setMessages(prev => [...prev, message]);
-      
-      // Update conversation last message and unread count
-      setConversations(prev => prev.map(conv => {
-        if (conv.roomId === message.conversationId) {
-          return {
-            ...conv,
-            lastMessage: message,
-            lastActivity: new Date(),
-            unreadCount: message.senderId !== user?.id ? conv.unreadCount + 1 : conv.unreadCount
-          };
-        }
-        return conv;
-      }));
-
-      // Show notification if message is not from current user
-      if (message.senderId !== user?.id && 'Notification' in window) {
-        if (Notification.permission === 'granted') {
-          const partner = partners.find(p => p.userId === message.senderId);
-          new Notification(`${partner?.companyName || 'Partner'} mesaj gönderdi`, {
-            body: message.message,
-            icon: partner?.logo
-          });
-        }
+    if (!conversationMessages.length || !user) return;
+    
+    const latestMessage = conversationMessages[conversationMessages.length - 1];
+    if (latestMessage && latestMessage.senderId !== user.id && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        const partner = partners.find(p => p.userId === latestMessage.senderId);
+        new Notification(`${partner?.companyName || 'Partner'} mesaj gönderdi`, {
+          body: latestMessage.message,
+          icon: partner?.logo
+        });
       }
-    });
-
-    socket.on('messageRead', (data: { messageId: string }) => {
-      setMessages(prev => prev.map(msg => 
-        msg.id === data.messageId ? { ...msg, isRead: true } : msg
-      ));
-    });
-
-    return () => {
-      socket.off('newMessage');
-      socket.off('messageRead');
-    };
-  }, [socket, isAuthenticated, user?.id, partners]);
+    }
+  }, [conversationMessages, user?.id, partners]);
 
   // Request notification permission
   useEffect(() => {
@@ -127,19 +114,27 @@ export function ChatPopup() {
     },
     onSuccess: () => {
       setNewMessage('');
+      // Refresh conversations and messages
+      queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
+      if (selectedConversation && user) {
+        const conversationId = `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}`;
+        queryClient.invalidateQueries({ queryKey: ['/api/conversations', conversationId, 'messages'] });
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to send message:', error);
     }
   });
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
-    const partner = partners.find(p => p.userId === selectedConversation.partnerId);
-    if (!partner) return;
-
+    const conversationId = `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}`;
+    
     sendMessage.mutate({
       message: newMessage.trim(),
-      conversationId: selectedConversation.roomId,
-      recipientId: partner.userId
+      conversationId: conversationId,
+      recipientId: selectedConversation.partnerId
     });
   };
 
@@ -151,25 +146,30 @@ export function ChatPopup() {
   };
 
   const createConversationWithPartner = (partner: Partner) => {
-    const roomId = `conversation_${Math.min(user!.id, partner.userId)}_${Math.max(user!.id, partner.userId)}`;
-    
     // Check if conversation already exists
-    const existingConversation = conversations.find(conv => conv.roomId === roomId);
+    const existingConversation = conversationsData.find(conv => conv.partnerId === partner.userId);
     if (existingConversation) {
       setSelectedConversation(existingConversation);
       setShowPartnerList(false);
       return;
     }
 
-    // Create new conversation
-    const newConversation: Conversation = {
-      roomId,
+    // Create new conversation data structure
+    const newConversation: ConversationData = {
       partnerId: partner.userId,
+      partner: partner,
+      lastMessage: {
+        id: 0,
+        senderId: user!.id,
+        receiverId: partner.userId,
+        message: '',
+        createdAt: new Date().toISOString(),
+        isRead: false
+      },
       unreadCount: 0,
-      lastActivity: new Date(),
+      messages: []
     };
 
-    setConversations(prev => [newConversation, ...prev]);
     setSelectedConversation(newConversation);
     setShowPartnerList(false);
   };
@@ -285,36 +285,35 @@ export function ChatPopup() {
                   )}
 
                   <ScrollArea className="flex-1">
-                    {conversations.length === 0 ? (
+                    {conversationsData.length === 0 ? (
                       <div className="p-6 text-center">
                         <MessageSquare className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-500 dark:text-gray-400">Henüz konuşmanız yok</p>
                       </div>
                     ) : (
                       <div>
-                        {conversations.map((conversation) => {
-                          const partner = partners.find(p => p.userId === conversation.partnerId);
+                        {conversationsData.map((conversation) => {
                           return (
                             <div
-                              key={conversation.roomId}
+                              key={conversation.partnerId}
                               className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-600"
                               onClick={() => setSelectedConversation(conversation)}
                             >
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10">
-                                  <AvatarImage src={partner?.logo} />
+                                  <AvatarImage src={conversation.partner?.logo} />
                                   <AvatarFallback>
-                                    {(partner?.companyName || 'Partner').charAt(0).toUpperCase()}
+                                    {(conversation.partner?.companyName || 'Partner').charAt(0).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between">
                                     <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                      {partner?.companyName || 'Partner'}
+                                      {conversation.partner?.companyName || 'Partner'}
                                     </h4>
                                     {conversation.lastMessage && (
                                       <span className="text-xs text-gray-500">
-                                        {formatTime(conversation.lastMessage.timestamp)}
+                                        {formatTime(conversation.lastMessage.createdAt)}
                                       </span>
                                     )}
                                   </div>
@@ -354,9 +353,7 @@ export function ChatPopup() {
                   {/* Messages */}
                   <ScrollArea className="flex-1 p-3">
                     <div className="space-y-3">
-                      {messages
-                        .filter(msg => msg.conversationId === selectedConversation.roomId)
-                        .map((message) => {
+                      {conversationMessages.map((message) => {
                           const isFromUser = message.senderId === user?.id;
                           return (
                             <div
@@ -375,7 +372,7 @@ export function ChatPopup() {
                                   <p className={`text-xs ${
                                     isFromUser ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                                   }`}>
-                                    {formatTime(message.timestamp)}
+                                    {formatTime(message.createdAt)}
                                   </p>
                                   {isFromUser && (
                                     <span className="text-xs text-blue-100 ml-2">
