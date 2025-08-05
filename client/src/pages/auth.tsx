@@ -288,7 +288,7 @@ export default function AuthPage() {
               </Button>
               
               <p className="text-xs text-gray-500 text-center leading-tight">
-                E-postanıza gelecek sihirli bir bağlantı ile tek tıkla giriş yapın.
+                Alttaki forma e-posta adresinizi yazıp tıklayın, e-postanıza gelecek sihirli bir bağlantı ile tek tıkla giriş yapın.
               </p>
               
               {magicLinkSent && (
