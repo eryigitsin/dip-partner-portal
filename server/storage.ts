@@ -2051,6 +2051,7 @@ export class DatabaseStorage implements IStorage {
           // Current user is a partner, so the other user should be a regular user
           // Look up if the other user has any partner data (for display purposes)
           const [otherUserData] = await db.select().from(users).where(eq(users.id, otherUserId));
+          const [otherUserProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, otherUserId));
           if (otherUserData) {
             // Create a pseudo-partner object for regular users
             partner = {
@@ -2059,7 +2060,7 @@ export class DatabaseStorage implements IStorage {
               companyName: otherUserData.firstName && otherUserData.lastName 
                 ? `${otherUserData.firstName} ${otherUserData.lastName}`
                 : otherUserData.email || 'Kullanıcı',
-              logo: null,
+              logo: otherUserProfile?.profileImage || null, // Use profile photo as logo
               // Add other required partner fields with defaults
               services: [],
               description: '',

@@ -242,7 +242,7 @@ export default function Chat() {
                           >
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10">
-                                <AvatarImage src={partner.logo} />
+                                <AvatarImage src={partner.logo || undefined} />
                                 <AvatarFallback>
                                   {partner.companyName.charAt(0).toUpperCase()}
                                 </AvatarFallback>
@@ -282,8 +282,9 @@ export default function Chat() {
                   ) : (
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
                       {conversations.map((conversation) => {
-                        const partner = partners.find(p => p.userId === conversation.partnerId);
-                        const partnerName = partner?.companyName || 'Partner';
+                        // Use the partner data from conversation which contains the actual user/partner info
+                        const conversationPartner = conversation.partner;
+                        const displayName = conversationPartner?.companyName || 'Kullanıcı';
                         const isSelected = selectedConversation?.partnerId === conversation.partnerId;
                         
                         return (
@@ -296,15 +297,15 @@ export default function Chat() {
                           >
                             <div className="flex items-center gap-3">
                               <Avatar className="h-12 w-12">
-                                <AvatarImage src={partner?.logo} />
+                                <AvatarImage src={conversationPartner?.logo || undefined} />
                                 <AvatarFallback>
-                                  {partnerName.charAt(0).toUpperCase()}
+                                  {displayName.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-1">
                                   <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                    {partnerName}
+                                    {displayName}
                                   </h3>
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
                                     {conversation.lastMessage?.createdAt ? formatTime(conversation.lastMessage.createdAt) : ''}
@@ -348,14 +349,14 @@ export default function Chat() {
                           <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={partners.find(p => p.userId === selectedConversation.partnerId)?.logo} />
+                          <AvatarImage src={selectedConversation.partner?.logo || undefined} />
                           <AvatarFallback>
-                            {(partners.find(p => p.userId === selectedConversation.partnerId)?.companyName || 'Partner').charAt(0).toUpperCase()}
+                            {(selectedConversation.partner?.companyName || 'Kullanıcı').charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <h3 className="font-medium text-gray-900 dark:text-white">
-                            {partners.find(p => p.userId === selectedConversation.partnerId)?.companyName || 'Partner'}
+                            {selectedConversation.partner?.companyName || 'Kullanıcı'}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             Aktif

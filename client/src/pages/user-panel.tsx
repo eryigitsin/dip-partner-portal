@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save, Handshake, Briefcase, MessageSquare } from 'lucide-react';
+import { User, Building, CreditCard, Heart, Settings, Lock, Trash2, Save, Handshake, Briefcase, MessageSquare, Camera } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserProfile, CompanyBillingInfo, Partner } from '@shared/schema';
@@ -290,6 +292,92 @@ export default function UserPanel() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleProfileSubmit} className="space-y-4">
+                  {/* Profile Photo Upload */}
+                  <div className="mb-6">
+                    <Label>Profil Fotoğrafı</Label>
+                    <div className="flex items-center gap-4 mt-2">
+                      <Avatar className="h-20 w-20">
+                        <AvatarImage src={userProfile?.profileImage || undefined} />
+                        <AvatarFallback className="text-lg">
+                          {user.firstName.charAt(0).toUpperCase()}{user.lastName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          style={{ display: 'none' }}
+                          ref={(input) => {
+                            if (input) {
+                              input.addEventListener('change', async (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0];
+                                if (!file) return;
+                                
+                                if (file.size > 5242880) {
+                                  toast({
+                                    title: "Dosya çok büyük",
+                                    description: "Maksimum 5MB boyutunda dosya yükleyebilirsiniz",
+                                    variant: "destructive"
+                                  });
+                                  return;
+                                }
+                                
+                                try {
+                                  // Get upload URL
+                                  const response = await fetch('/api/objects/upload', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' }
+                                  });
+                                  const data = await response.json();
+                                  
+                                  // Upload file
+                                  const uploadResponse = await fetch(data.uploadURL, {
+                                    method: 'PUT',
+                                    body: file,
+                                    headers: { 'Content-Type': file.type }
+                                  });
+                                  
+                                  if (uploadResponse.ok) {
+                                    // Update profile image
+                                    await fetch('/api/user/profile-image', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ profileImageURL: data.uploadURL })
+                                    });
+                                    
+                                    queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
+                                    toast({
+                                      title: "Başarılı",
+                                      description: "Profil fotoğrafınız güncellendi",
+                                    });
+                                  }
+                                } catch (error) {
+                                  console.error('Error:', error);
+                                  toast({
+                                    title: "Hata",
+                                    description: "Fotoğraf yüklenirken bir hata oluştu",
+                                    variant: "destructive"
+                                  });
+                                }
+                              });
+                            }
+                          }}
+                        />
+                        <Button 
+                          onClick={() => {
+                            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                            fileInput?.click();
+                          }}
+                          className="w-full"
+                        >
+                          <Camera className="h-4 w-4 mr-2" />
+                          Fotoğraf Yükle
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-1">Maksimum 5MB. JPG, PNG desteklenir.</p>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="firstName">Ad</Label>

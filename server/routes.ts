@@ -19,6 +19,7 @@ import { supabaseAdmin } from "./supabase";
 import { db } from "./db";
 import { quoteResponses, partners } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { ObjectStorageService } from "./objectStorage";
 
 // Email templates and functionality
 const emailTemplates = {
@@ -1285,6 +1286,24 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Profile image route
+  app.post("/api/user/profile-image", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const { profileImageURL } = req.body;
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(profileImageURL);
+      
+      // Update user profile with the image path
+      await storage.updateUserProfile(req.user.id, { profileImage: objectPath });
+      
+      res.json({ success: true, objectPath });
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+      res.status(500).json({ error: "Failed to update profile image" });
+    }
+  });
+
   // Messages routes
   app.get("/api/user/conversations", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -1364,7 +1383,6 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/messages/upload", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { ObjectStorageService } = require('./objectStorage');
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       res.json({ uploadURL });
@@ -1374,20 +1392,28 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Serve uploaded files
-  app.get("/objects/:objectPath(*)", async (req, res) => {
+  // Objects upload route for profile photos
+  app.post("/api/objects/upload", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { ObjectStorageService, ObjectNotFoundError } = require('./objectStorage');
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Serve uploaded files
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    try {
       const objectStorageService = new ObjectStorageService();
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
       objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
       console.error("Error serving file:", error);
-      if (error instanceof ObjectNotFoundError) {
-        return res.sendStatus(404);
-      }
-      return res.sendStatus(500);
+      return res.status(404).json({ error: "File not found" });
     }
   });
 
