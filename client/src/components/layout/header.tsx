@@ -18,6 +18,7 @@ import { t } from '@/lib/i18n';
 import { Menu, X, User, Settings, MessageCircle, MessageSquare, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2, Bell } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
+import { NotificationsDropdown } from '@/components/notifications-dropdown';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -157,22 +158,8 @@ export function Header() {
               <div className="flex items-center space-x-3">
                 {/* Notification and Message buttons for all logged-in users */}
                 <div className="flex items-center space-x-2">
-                  {/* Notification Bell */}
-                  <Link href="/notifications">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="relative p-2"
-                      data-testid="button-notifications"
-                    >
-                      <Bell className="h-5 w-5 text-gray-600 hover:text-gray-900" />
-                      {unreadCount && unreadCount.count > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                          {unreadCount.count > 99 ? '99+' : unreadCount.count}
-                        </span>
-                      )}
-                    </Button>
-                  </Link>
+                  {/* Notification Dropdown */}
+                  <NotificationsDropdown unreadCount={unreadCount} />
 
                   {/* Message Button */}
                   <Link href="/messages">

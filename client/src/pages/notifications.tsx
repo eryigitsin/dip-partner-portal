@@ -12,6 +12,7 @@ import { tr } from 'date-fns/locale';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import Footer from '@/components/layout/footer';
+import { Header } from '@/components/layout/header';
 
 interface Notification {
   id: number;
@@ -97,9 +98,7 @@ export default function NotificationsPage() {
 
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
-      await apiRequest(`/api/notifications/${notificationId}/read`, {
-        method: 'PATCH',
-      });
+      return await apiRequest(`/api/notifications/${notificationId}/read`, 'PATCH');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
@@ -109,9 +108,7 @@ export default function NotificationsPage() {
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('/api/notifications/mark-all-read', {
-        method: 'PATCH',
-      });
+      return await apiRequest('/api/notifications/mark-all-read', 'PATCH');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
@@ -147,6 +144,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
