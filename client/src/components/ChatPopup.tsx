@@ -123,7 +123,7 @@ export function ChatPopup() {
 
   const sendMessage = useMutation({
     mutationFn: async (data: { message: string; conversationId: string; recipientId: number }) => {
-      return apiRequest('/api/messages', 'POST', data);
+      return apiRequest('POST', '/api/messages', data);
     },
     onSuccess: () => {
       setNewMessage('');
