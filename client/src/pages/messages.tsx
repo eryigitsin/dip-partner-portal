@@ -6,8 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, ArrowLeft, User } from "lucide-react";
-import { Link } from "wouter";
+import { MessageSquare, Send, Plus, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -40,6 +42,7 @@ export default function MessagesPage() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -126,6 +129,12 @@ export default function MessagesPage() {
     enabled: !!selectedConversation && !!user,
   });
 
+  // Fetch all partners for new message dialog
+  const { data: partners = [] } = useQuery<Partner[]>({
+    queryKey: ["/api/partners"],
+    enabled: newMessageDialogOpen,
+  });
+
   // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -185,6 +194,13 @@ export default function MessagesPage() {
     }
   };
 
+  const handleNewMessageToPartner = (partner: Partner) => {
+    if (!user) return;
+    const conversationId = `${Math.min(partner.userId, user.id)}-${Math.max(partner.userId, user.id)}`;
+    setSelectedConversation(conversationId);
+    setNewMessageDialogOpen(false);
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -205,33 +221,84 @@ export default function MessagesPage() {
 
   if (conversationsLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg text-gray-600 dark:text-gray-400">Mesajlar yükleniyor...</div>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-lg text-gray-600 dark:text-gray-400">Mesajlar yükleniyor...</div>
+            </div>
           </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Link href="/user-dashboard" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-              <ArrowLeft className="h-6 w-6" />
-            </Link>
-            <MessageSquare className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Mesajlar</h1>
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <MessageSquare className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Mesajlar</h1>
+              </div>
+              <Dialog open={newMessageDialogOpen} onOpenChange={setNewMessageDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Yeni Mesaj Yaz
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Yeni Mesaj</DialogTitle>
+                    <DialogDescription>
+                      Mesaj göndermek istediğiniz partneri seçin
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="grid gap-3 max-h-60 overflow-y-auto">
+                      {partners.length === 0 ? (
+                        <div className="text-center py-4 text-gray-500">
+                          <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                          <p>Henüz aktif partner bulunmuyor</p>
+                        </div>
+                      ) : (
+                        partners.map((partner) => (
+                          <div
+                            key={partner.id}
+                            className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                            onClick={() => handleNewMessageToPartner(partner)}
+                          >
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={partner.logo} />
+                              <AvatarFallback>
+                                {partner.companyName.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {partner.companyName}
+                              </h3>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400">İş ortaklarınızla mesajlaşın</p>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">İş ortaklarınızla mesajlaşın</p>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-          {/* Conversations List */}
-          <Card className="lg:col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+            {/* Conversations List */}
+            <Card className="lg:col-span-1">
             <CardContent className="p-0">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
@@ -421,8 +488,10 @@ export default function MessagesPage() {
               )}
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }
