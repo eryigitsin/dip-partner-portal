@@ -107,11 +107,6 @@ export default function MessagesPage() {
     };
   }, [user, queryClient, selectedConversation]);
 
-  // Auto-scroll to latest message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   // Request notification permission
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -120,16 +115,21 @@ export default function MessagesPage() {
   }, []);
 
   // Fetch user's conversations
-  const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
+  const { data: conversations = [], isLoading: conversationsLoading } = useQuery<ConversationWithPartner[]>({
     queryKey: ["/api/user/conversations"],
     enabled: !!user,
   });
 
   // Fetch messages for selected conversation
-  const { data: messages = [], isLoading: messagesLoading } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/conversations", selectedConversation, "messages"],
     enabled: !!selectedConversation && !!user,
   });
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Send message mutation
   const sendMessageMutation = useMutation({
@@ -162,7 +162,7 @@ export default function MessagesPage() {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
     
-    const conversation = conversations.find(c => 
+    const conversation = conversations.find((c: ConversationWithPartner) => 
       `${Math.min(c.partnerId, user.id)}-${Math.max(c.partnerId, user.id)}` === selectedConversation
     );
     
@@ -174,7 +174,7 @@ export default function MessagesPage() {
     }
   };
 
-  const handleConversationSelect = (conversation: Conversation) => {
+  const handleConversationSelect = (conversation: ConversationWithPartner) => {
     if (!user) return;
     const conversationId = `${Math.min(conversation.partnerId, user.id)}-${Math.max(conversation.partnerId, user.id)}`;
     setSelectedConversation(conversationId);
@@ -247,7 +247,7 @@ export default function MessagesPage() {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {conversations.map((conversation) => {
+                    {conversations.map((conversation: ConversationWithPartner) => {
                       if (!user) return null;
                       const conversationId = `${Math.min(conversation.partnerId, user.id)}-${Math.max(conversation.partnerId, user.id)}`;
                       const isSelected = selectedConversation === conversationId;
@@ -306,7 +306,7 @@ export default function MessagesPage() {
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                     {(() => {
                       if (!user) return null;
-                      const conversation = conversations.find(c => 
+                      const conversation = conversations.find((c: ConversationWithPartner) => 
                         `${Math.min(c.partnerId, user.id)}-${Math.max(c.partnerId, user.id)}` === selectedConversation
                       );
                       return conversation ? (
@@ -341,7 +341,7 @@ export default function MessagesPage() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {messages.map((message) => {
+                        {messages.map((message: Message) => {
                           if (!user) return null;
                           const isOwn = message.senderId === user.id;
                           return (
