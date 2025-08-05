@@ -200,25 +200,26 @@ export default function Chat() {
   return (
     <>
       <Header />
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 pt-16 pb-4" style={{ minHeight: 'calc(100vh - 80px)' }}>
-        <div className="max-w-7xl mx-auto p-4 sm:p-6">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-20">
           <div className="mb-4 sm:mb-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
-                  <MessageSquare className="h-8 w-8 text-blue-600 dark:text-blue-300" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
+                  <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-300" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                     Mesajlar
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-400">İş ortaklarınızla mesajlaşın</p>
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">İş ortaklarınızla mesajlaşın</p>
                 </div>
               </div>
               {user?.userType !== 'partner' && (
-                <Button onClick={() => setNewMessageDialogOpen(true)} className="flex items-center gap-2">
+                <Button onClick={() => setNewMessageDialogOpen(true)} className="flex items-center gap-2 text-sm sm:text-base">
                   <Plus className="h-4 w-4" />
-                  Yeni Mesaj Yaz
+                  <span className="hidden sm:inline">Yeni Mesaj Yaz</span>
+                  <span className="sm:hidden">Yeni</span>
                 </Button>
               )}
 
@@ -265,14 +266,14 @@ export default function Chat() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6" style={{ height: 'calc(100vh - 220px)' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 h-[calc(100vh-200px)] sm:h-[calc(100vh-220px)]">
             {/* Channels List */}
-            <Card className="lg:col-span-1">
-              <CardContent className="p-0">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
+            <Card className={`lg:col-span-1 flex flex-col ${selectedConversation ? 'hidden lg:flex' : 'col-span-1'}`}>
+              <CardContent className="p-0 flex-1 flex flex-col">
+                <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
                 </div>
-                <ScrollArea style={{ height: 'calc(100vh - 320px)' }}>
+                <ScrollArea className="flex-1 h-[250px] sm:h-[calc(100vh-320px)]">
                   {conversations.length === 0 ? (
                     <div className="p-6 text-center">
                       <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -292,13 +293,13 @@ export default function Chat() {
                         return (
                           <div
                             key={conversation.partnerId}
-                            className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                            className={`p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                               isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
                             }`}
                             onClick={() => setSelectedConversation(conversation)}
                           >
                             <div className="flex items-center gap-3">
-                              <Avatar className="h-12 w-12">
+                              <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
                                 <AvatarImage src={conversationPartner?.logo || undefined} />
                                 <AvatarFallback>
                                   {displayName.charAt(0).toUpperCase()}
@@ -314,12 +315,12 @@ export default function Chat() {
                                   </span>
                                 </div>
                                 {conversation.lastMessage && (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
                                     {conversation.lastMessage.message || 'Medya mesajı'}
                                   </p>
                                 )}
                                 {conversation.unreadCount > 0 && (
-                                  <Badge variant="destructive" className="mt-1">
+                                  <Badge variant="destructive" className="mt-1 text-xs">
                                     {conversation.unreadCount}
                                   </Badge>
                                 )}
@@ -335,12 +336,12 @@ export default function Chat() {
             </Card>
 
             {/* Chat Area */}
-            <Card className="lg:col-span-2">
-              <CardContent className="p-0 h-full">
+            <Card className={`lg:col-span-2 flex flex-col ${selectedConversation ? 'col-span-1 lg:col-span-2' : 'hidden lg:flex lg:col-span-2'}`}>
+              <CardContent className="p-0 flex-1 flex flex-col">
                 {selectedConversation ? (
                   <div className="flex flex-col h-full">
                     {/* Chat Header */}
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-3">
                         <Button
                           variant="ghost"
@@ -350,17 +351,17 @@ export default function Chat() {
                         >
                           <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <Avatar className="h-10 w-10">
+                        <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                           <AvatarImage src={selectedConversation.partner?.logo || undefined} />
                           <AvatarFallback>
                             {(selectedConversation.partner?.companyName || 'Kullanıcı').charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h3 className="font-medium text-gray-900 dark:text-white">
+                          <h3 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
                             {selectedConversation.partner?.companyName || 'Kullanıcı'}
                           </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                             Aktif
                           </p>
                         </div>
@@ -368,8 +369,8 @@ export default function Chat() {
                     </div>
 
                     {/* Messages */}
-                    <ScrollArea className="flex-1 p-4">
-                      <div className="space-y-4">
+                    <ScrollArea className="flex-1 p-3 sm:p-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {messages.map((message) => {
                           const isFromUser = message.senderId === user?.id;
                           return (
@@ -378,7 +379,7 @@ export default function Chat() {
                               className={`flex ${isFromUser ? 'justify-end' : 'justify-start'}`}
                             >
                               <div
-                                className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                                className={`max-w-[80%] sm:max-w-[70%] rounded-2xl px-3 py-2 sm:px-4 ${
                                   isFromUser
                                     ? 'bg-blue-500 text-white rounded-br-md'
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-md'
@@ -406,7 +407,7 @@ export default function Chat() {
                     </ScrollArea>
 
                     {/* Message Input */}
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex gap-2">
                         <Input
                           value={newMessage}
@@ -414,12 +415,13 @@ export default function Chat() {
                           onKeyDown={handleKeyDown}
                           placeholder="Mesajınızı yazın..."
                           disabled={sendMessage.isPending}
-                          className="flex-1"
+                          className="flex-1 text-sm sm:text-base"
                           data-testid="input-message"
                         />
                         <Button
                           onClick={handleSendMessage}
                           disabled={!newMessage.trim() || sendMessage.isPending}
+                          size="sm"
                           data-testid="button-send-message"
                         >
                           <Send className="h-4 w-4" />

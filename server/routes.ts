@@ -1319,6 +1319,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get unread messages count
+  app.get("/api/messages/unread-count", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const count = await storage.getUnreadMessagesCount(req.user.id);
+      res.json({ count });
+    } catch (error) {
+      console.error('Error fetching unread messages count:', error);
+      res.json({ count: 0 });
+    }
+  });
+
   app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {

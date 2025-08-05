@@ -48,6 +48,13 @@ export function Header() {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
+  // Get unread messages count
+  const { data: unreadMessagesCount } = useQuery<{ count: number }>({
+    queryKey: ['/api/messages/unread-count'],
+    enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
   // Check if user has multiple account types available - include current type + available types
   const allUserTypes = user ? [user.userType, ...(user.availableUserTypes || [])] : [];
   const uniqueUserTypes = Array.from(new Set(allUserTypes));
@@ -166,10 +173,15 @@ export function Header() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="p-2"
+                      className="relative p-2"
                       data-testid="button-messages"
                     >
                       <MessageSquare className="h-5 w-5 text-gray-600 hover:text-gray-900" />
+                      {unreadMessagesCount && unreadMessagesCount.count > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {unreadMessagesCount.count > 99 ? '99+' : unreadMessagesCount.count}
+                        </span>
+                      )}
                     </Button>
                   </Link>
                 </div>
