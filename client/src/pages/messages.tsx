@@ -49,10 +49,18 @@ export default function MessagesPage() {
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    console.log('Attempting WebSocket connection to:', wsUrl);
+    console.log('Current location details:', {
+      protocol: window.location.protocol,
+      hostname: window.location.hostname,
+      host: window.location.host,
+      port: window.location.port
+    });
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connected successfully');
       // Authenticate user
       socket.send(JSON.stringify({
         type: 'auth',
@@ -96,7 +104,8 @@ export default function MessagesPage() {
     };
 
     socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('WebSocket connection error:', error);
+      console.log('Failed WebSocket URL was:', wsUrl);
     };
 
     return () => {
