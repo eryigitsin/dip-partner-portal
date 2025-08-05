@@ -411,5 +411,72 @@ export function createAdminRoutes(storage: IStorage): Router {
     }
   });
 
+  // Assign user to partner as manager
+  router.patch('/users/:userId/assign-partner', requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { partnerId } = req.body;
+
+      if (!partnerId) {
+        return res.status(400).json({ message: 'Partner ID is required' });
+      }
+
+      // Get user and partner
+      const user = await storage.getUser(userId);
+      const partner = await storage.getPartner(partnerId);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      if (!partner) {
+        return res.status(404).json({ message: 'Partner not found' });
+      }
+
+      // Update user to partner type if not already
+      if (!user.availableUserTypes?.includes('partner')) {
+        const newAvailableTypes = [...(user.availableUserTypes || []), 'partner'];
+        await storage.updateUser(userId, { 
+          availableUserTypes: newAvailableTypes,
+          activeUserType: 'partner',
+          userType: 'partner'
+        });
+      } else if (user.activeUserType !== 'partner') {
+        await storage.updateUser(userId, { 
+          activeUserType: 'partner',
+          userType: 'partner'
+        });
+      }
+
+      // Update partner to be managed by this user and set as contact person
+      await storage.updatePartner(partnerId, {
+        managedBy: userId,
+        contactPerson: `${user.firstName} ${user.lastName}`
+      });
+
+      res.json({
+        success: true,
+        message: 'User assigned to partner as manager',
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email
+        },
+        partner: {
+          id: partner.id,
+          companyName: partner.companyName
+        }
+      });
+
+    } catch (error) {
+      console.error('Error assigning user to partner:', error);
+      res.status(500).json({ 
+        message: 'Partner ataması yapılırken hata oluştu',
+        error: error instanceof Error ? error.message : 'Bilinmeyen hata'
+      });
+    }
+  });
+
   return router;
 }

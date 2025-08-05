@@ -825,6 +825,14 @@ export default function UserManagement() {
                               <Badge variant="outline">
                                 {user.language === 'tr' ? 'Türkçe' : 'English'}
                               </Badge>
+                              {(() => {
+                                const managedPartner = partners.find(p => p.managedBy === user.id);
+                                return managedPartner && (
+                                  <Badge variant="secondary" className="text-blue-600">
+                                    Yönettiği Partner: {managedPartner.companyName}
+                                  </Badge>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -846,9 +854,9 @@ export default function UserManagement() {
                               <SelectValue placeholder="Partner'e Ata" />
                             </SelectTrigger>
                             <SelectContent>
-                              {partners.map((partner) => (
+                              {partners.filter(p => !p.managedBy || p.managedBy === user.id).map((partner) => (
                                 <SelectItem key={partner.id} value={partner.id.toString()}>
-                                  {partner.companyName}
+                                  {partner.companyName} {partner.managedBy === user.id ? '(Yönetiyor)' : ''}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -895,6 +903,15 @@ export default function UserManagement() {
                                 <p className="text-sm text-gray-500 flex items-center gap-2">
                                   <Mail className="h-3 w-3" />
                                   {partnerUser.email}
+                                </p>
+                              )}
+                              {partner.managedBy && (
+                                <p className="text-sm text-blue-600 flex items-center gap-2">
+                                  <Users className="h-3 w-3" />
+                                  Yönetici: {(() => {
+                                    const manager = regularUsers.concat(partnerUsers).concat(editorUsers).find(u => u.id === partner.managedBy);
+                                    return manager ? `${manager.firstName} ${manager.lastName}` : 'Bilinmiyor';
+                                  })()}
                                 </p>
                               )}
                               <div className="flex items-center gap-2 mt-1">

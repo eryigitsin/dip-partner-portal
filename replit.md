@@ -8,6 +8,9 @@ This is a Turkish-English bilingual partner management system for DİP (Digital 
 - Comprehensive error fixing: Resolved 91 TypeScript and LSP diagnostic errors across 16 files
 - Type safety improvements: Added proper type assertions and API response handling
 - Code quality: Enhanced error handling and type consistency throughout the application
+- Partner management enhancement: Users assigned to partners become partner managers with contact person updates
+- Admin partner creation: Simplified "Yeni Partner" form with streamlined service and market entry fields
+- Database schema: Added managedBy field to partners table for tracking partner managers
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -28,7 +31,7 @@ Preferred communication style: Simple, everyday language.
 - **Session Storage**: PostgreSQL sessions with `connect-pg-simple`.
 - **User Management**: Multi-role support (regular users, partners, master admins, editor admins).
 - **Partner Management**: Application system with KVKK consent, 16 service categories, detailed profiles, quote request system.
-- **Administrative Features**: Two-tier admin system for application review, partner management (enable/disable, statistics), user management.
+- **Administrative Features**: Two-tier admin system for application review, partner management (enable/disable, statistics), user management, partner assignment system for managing partner accounts.
 - **Service Catalog**: Searchable directory with filters, partner cards, DİP member benefits.
 - **PDF Generation**: Direct PDF download for quotes using PDFKit (Turkish character support, professional templates).
 - **Email Notifications**: Integration with Resend for transactional emails (quote responses, welcome, approval).

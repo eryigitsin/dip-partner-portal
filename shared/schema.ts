@@ -60,6 +60,7 @@ export const partners = pgTable("partners", {
   sectorExperience: text("sector_experience"),
   targetMarkets: text("target_markets"),
   contactPerson: text("contact_person"),
+  managedBy: integer("managed_by").references(() => users.id), // Partner yöneticisi
   website: text("website"),
   linkedinProfile: text("linkedin_profile"),
   twitterProfile: text("twitter_profile"),
