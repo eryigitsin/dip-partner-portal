@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ export default function MessagesPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // WebSocket connection for real-time messaging
   useEffect(() => {
@@ -50,17 +51,11 @@ export default function MessagesPage() {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     
-    console.log('Attempting WebSocket connection to:', wsUrl);
-    console.log('Current location details:', {
-      protocol: window.location.protocol,
-      hostname: window.location.hostname,
-      host: window.location.host,
-      port: window.location.port
-    });
+    console.log('WebSocket connecting...');
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-      console.log('WebSocket connected successfully');
+      console.log('WebSocket connected');
       // Authenticate user
       socket.send(JSON.stringify({
         type: 'auth',
@@ -104,14 +99,18 @@ export default function MessagesPage() {
     };
 
     socket.onerror = (error) => {
-      console.error('WebSocket connection error:', error);
-      console.log('Failed WebSocket URL was:', wsUrl);
+      console.error('WebSocket error:', error);
     };
 
     return () => {
       socket.close();
     };
   }, [user, queryClient, selectedConversation]);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Request notification permission
   useEffect(() => {
@@ -371,6 +370,7 @@ export default function MessagesPage() {
                             </div>
                           );
                         })}
+                        <div ref={messagesEndRef} />
                       </div>
                     )}
                   </ScrollArea>
