@@ -47,10 +47,29 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Supabase auth event:', event);
+      
+      // Handle password reset and email confirmation redirects
+      if (event === 'PASSWORD_RECOVERY') {
+        window.location.href = '/password-reset';
+        return;
+      }
+      
+      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && 
+          window.location.hash.includes('type=signup')) {
+        window.location.href = '/email-confirmed';
+        return;
+      }
+      
       setSession(session);
       setSupabaseUser(session?.user ?? null);
       
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        // Skip auto-sync for password reset and email confirmation flows
+        if (window.location.pathname === '/password-reset' || 
+            window.location.pathname === '/email-confirmed') {
+          return;
+        }
+        
         try {
           await syncWithBackend(session.user);
           sessionStorage.removeItem('sync_error_count'); // Reset error count on success

@@ -54,7 +54,10 @@ export default function AuthPage() {
   }, [toast]);
 
   if (localUser) {
-    window.location.href = '/';
+    // Check for redirect parameter
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get('redirect') || '/';
+    window.location.href = redirectTo;
     return null;
   }
 

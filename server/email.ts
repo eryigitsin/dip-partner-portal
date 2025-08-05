@@ -56,7 +56,7 @@ export const emailTemplates = {
               <p><strong>Telefon:</strong> ${phone}</p>
             </div>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.REPLIT_DEV_DOMAIN || 'https://dip-partner-portal.replit.app'}/admin-dashboard" 
+              <a href="${process.env.REPLIT_DEV_DOMAIN || 'https://dip-partner-portal.replit.app'}/auth?redirect=/admin-dashboard" 
                  style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
                 Başvuruyu İncele
               </a>
@@ -140,7 +140,7 @@ export const emailTemplates = {
               <p><strong>Açıklama:</strong> ${description}</p>
             </div>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/partner-dashboard" 
+              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/auth?redirect=/partner-dashboard" 
                  style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
                 TALEBİ YÖNET
               </a>
@@ -163,7 +163,7 @@ export const emailTemplates = {
             <p style="color: #666; line-height: 1.6;">Sayın ${userName},</p>
             <p style="color: #666; line-height: 1.6;">${partnerName} firması "${serviceName}" hizmet talebiniz için bir teklif gönderdi.</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/user-panel?tab=service-requests" 
+              <a href="${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://dip-partner-portal.replit.app'}/auth?redirect=/user-panel?tab=service-requests" 
                  style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
                 Teklifi İncele
               </a>

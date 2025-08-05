@@ -12,6 +12,8 @@ import { SeoHead } from "@/components/seo-head";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home";
 import AuthPage from "@/pages/auth";
+import PasswordResetPage from "@/pages/password-reset";
+import EmailConfirmedPage from "@/pages/email-confirmed";
 import PartnerDashboard from "@/pages/partner-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import MarketingListPage from "@/pages/admin/marketing-list";
@@ -84,6 +86,8 @@ function Router() {
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/password-reset" component={PasswordResetPage} />
+      <Route path="/email-confirmed" component={EmailConfirmedPage} />
       <ProtectedRoute path="/partner-dashboard" component={PartnerDashboard} />
 
 
