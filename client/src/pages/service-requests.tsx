@@ -434,11 +434,20 @@ export default function ServiceRequests() {
     });
   };
 
+  // Format currency for individual item prices (already in correct format)
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY'
-    }).format(amount); // Data is already in correct format
+    }).format(amount);
+  };
+
+  // Format currency for totals stored in cents (subtotal, taxAmount, totalAmount)
+  const formatCurrencyFromCents = (amount: number) => {
+    return new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY'
+    }).format(amount / 100);
   };
 
   if (!user) {
@@ -545,7 +554,7 @@ export default function ServiceRequests() {
                                   </div>
                                   <div className="text-right">
                                     <div className="text-lg font-bold text-green-600">
-                                      {formatCurrency(response.totalAmount)}
+                                      {formatCurrencyFromCents(response.totalAmount)}
                                     </div>
                                     {response.validUntil && (
                                       <div className="text-sm text-gray-500">
@@ -829,15 +838,15 @@ export default function ServiceRequests() {
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center text-lg">
                   <span>Ara Toplam:</span>
-                  <span className="font-semibold">{formatCurrency(selectedQuoteResponse.subtotal)}</span>
+                  <span className="font-semibold">{formatCurrencyFromCents(selectedQuoteResponse.subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-lg">
-                  <span>KDV ({selectedQuoteResponse.taxRate}%):</span>
-                  <span className="font-semibold">{formatCurrency(selectedQuoteResponse.taxAmount)}</span>
+                  <span>KDV ({selectedQuoteResponse.taxRate / 100}%):</span>
+                  <span className="font-semibold">{formatCurrencyFromCents(selectedQuoteResponse.taxAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xl font-bold border-t pt-2 mt-2">
                   <span>Genel Toplam:</span>
-                  <span className="text-green-600">{formatCurrency(selectedQuoteResponse.totalAmount)}</span>
+                  <span className="text-green-600">{formatCurrencyFromCents(selectedQuoteResponse.totalAmount)}</span>
                 </div>
               </div>
 
@@ -1122,7 +1131,7 @@ export default function ServiceRequests() {
                       <div className="bg-gray-50 border rounded-lg p-4 mb-4">
                         <h4 className="font-medium text-gray-800 mb-2">Tutar Bilgisi</h4>
                         <p className="text-xl font-bold text-green-600">
-                          Toplam Tutar: {formatCurrency(selectedQuoteResponse.totalAmount)}
+                          Toplam Tutar: {formatCurrencyFromCents(selectedQuoteResponse.totalAmount)}
                         </p>
                       </div>
 
