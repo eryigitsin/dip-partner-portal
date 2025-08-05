@@ -32,6 +32,7 @@ import SystemSettings from "@/pages/system-settings";
 import EmailPreferences from "@/pages/email-preferences";
 import EmailSubscribers from "@/pages/admin/email-subscribers";
 import PartnerProfile from "@/pages/partner-profile";
+import NotificationsPage from "@/pages/notifications";
 
 
 
@@ -111,6 +112,7 @@ function Router() {
       <ProtectedRoute path="/marketing-list" component={MarketingListPage} />
       <ProtectedRoute path="/admin/partner-inspection/:partnerId" component={PartnerInspectionPage} />
       <ProtectedRoute path="/admin/quote-requests" component={QuoteRequestsPage} />
+      <ProtectedRoute path="/notifications" component={NotificationsPage} />
       <Route path="/application-status/:id" component={ApplicationStatus} />
       <Route path="/partner/:username" component={PartnerProfile} />
 

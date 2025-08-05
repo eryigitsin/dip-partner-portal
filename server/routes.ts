@@ -4113,6 +4113,13 @@ export function registerRoutes(app: Express): Server {
     app.use("/api/admin", adminRoutes);
   })();
 
+  // Register notification API routes
+  (async () => {
+    const notificationModule = await import('./routes/notifications.js');
+    const notificationRoutes = notificationModule.default;
+    app.use("/api/notifications", notificationRoutes);
+  })();
+
   const httpServer = createServer(app);
 
   // Initialize Socket.IO for real-time messaging

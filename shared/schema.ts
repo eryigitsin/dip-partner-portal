@@ -823,6 +823,40 @@ export const insertPartnerProfileVisitSchema = createInsertSchema(partnerProfile
   visitedAt: true,
 });
 
+// Notifications table - LinkedIn style notification system
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(), // quote_request, quote_response, partner_application, follower, project_update, feedback, newsletter_subscriber, system_status, partner_post, campaign
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  relatedEntityType: text("related_entity_type"), // quote_request, partner, project, etc.
+  relatedEntityId: integer("related_entity_id"), // ID of the related entity
+  actionUrl: text("action_url"), // URL to navigate when clicked
+  isRead: boolean("is_read").default(false),
+  isEmailSent: boolean("is_email_sent").default(false), // Track if email notification was sent
+  metadata: jsonb("metadata"), // Additional data for the notification
+  createdAt: timestamp("created_at").defaultNow(),
+  readAt: timestamp("read_at"),
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  readAt: true,
+});
+
+// Select types
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
 export const insertUserPartnerInteractionSchema = createInsertSchema(userPartnerInteractions).omit({
   id: true,
   createdAt: true,

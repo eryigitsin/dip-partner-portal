@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Partner } from '@shared/schema';
 import { AccountTypeSelector } from '@/components/account-type-selector';
 import { t } from '@/lib/i18n';
-import { Menu, X, User, Settings, MessageCircle, MessageSquare, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2 } from 'lucide-react';
+import { Menu, X, User, Settings, MessageCircle, MessageSquare, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2, Bell } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 
@@ -38,6 +38,13 @@ export function Header() {
       return partners.find((p: Partner) => p.userId === user.id) || null;
     },
     enabled: !!user && ((user.activeUserType === "partner") || (user.userType === "partner")),
+  });
+
+  // Get unread notification count
+  const { data: unreadCount } = useQuery<{ count: number }>({
+    queryKey: ['/api/notifications/unread-count'],
+    enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Check if user has multiple account types available - include current type + available types
@@ -148,6 +155,38 @@ export function Header() {
 
             {user ? (
               <div className="flex items-center space-x-3">
+                {/* Notification and Message buttons for all logged-in users */}
+                <div className="flex items-center space-x-2">
+                  {/* Notification Bell */}
+                  <Link href="/notifications">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="relative p-2"
+                      data-testid="button-notifications"
+                    >
+                      <Bell className="h-5 w-5 text-gray-600 hover:text-gray-900" />
+                      {unreadCount && unreadCount.count > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {unreadCount.count > 99 ? '99+' : unreadCount.count}
+                        </span>
+                      )}
+                    </Button>
+                  </Link>
+
+                  {/* Message Button */}
+                  <Link href="/messages">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2"
+                      data-testid="button-messages"
+                    >
+                      <MessageSquare className="h-5 w-5 text-gray-600 hover:text-gray-900" />
+                    </Button>
+                  </Link>
+                </div>
+
                 {/* Dropdown menu for regular users */}
                 {(user.activeUserType || user.userType) === 'user' && (
                   <DropdownMenu>
