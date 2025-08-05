@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useSocket } from '@/components/SocketProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,32 +10,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { MessageSquare, Plus, Send, ArrowLeft } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import type { Partner } from '@shared/schema';
 
 interface ChatMessage {
-  id: string;
+  id: number;
   senderId: number;
   receiverId: number;
   message: string;
-  timestamp: Date;
+  createdAt: string;
   isRead: boolean;
 }
 
-interface Conversation {
-  roomId: string;
+interface ConversationData {
   partnerId: number;
-  lastMessage?: ChatMessage;
+  partner: Partner;
+  lastMessage: ChatMessage;
   unreadCount: number;
-  lastActivity: Date;
+  messages: ChatMessage[];
 }
 
 export default function Chat() {
   const { user } = useAuth();
   const isAuthenticated = !!user;
-  const { socket, isConnected, error } = useSocket();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const queryClient = useQueryClient();
+  const [conversations, setConversations] = useState<ConversationData[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<ConversationData | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
@@ -49,66 +49,52 @@ export default function Chat() {
     enabled: isAuthenticated,
   });
 
-  // Initialize Socket.IO connection when authenticated
+  // Fetch user conversations
+  const { data: conversationsData = [] } = useQuery<ConversationData[]>({
+    queryKey: ['/api/user/conversations'],
+    enabled: isAuthenticated,
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
+  // Update conversations state when data changes
   useEffect(() => {
-    if (!socket || !isConnected || !user) return;
+    setConversations(conversationsData);
+  }, [conversationsData]);
 
-    // Authenticate user with socket
-    socket.emit('user:authenticate', {
-      userId: user.id,
-      userName: `${user.firstName} ${user.lastName}`.trim() || user.email,
-      userEmail: user.email,
-    });
+  // Fetch messages for selected conversation
+  const { data: conversationMessages = [] } = useQuery<ChatMessage[]>({
+    queryKey: ['/api/conversations', selectedConversation?.partnerId && user?.id ? 
+      `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}` : 
+      null, 'messages'],
+    enabled: !!selectedConversation && !!user,
+    refetchInterval: 2000, // Refresh every 2 seconds for real-time effect
+  });
 
-    // Listen for conversation list
-    socket.on('conversations:list', (data: Conversation[]) => {
-      setConversations(data);
-    });
+  // Update messages when conversation messages change
+  useEffect(() => {
+    if (conversationMessages) {
+      setMessages(conversationMessages);
+    }
+  }, [conversationMessages]);
 
-    // Listen for authentication confirmation
-    socket.on('user:authenticated', (data: { success: boolean }) => {
-      if (data.success) {
-        console.log('Socket.IO user authenticated successfully');
+  // Send message mutation
+  const sendMessage = useMutation({
+    mutationFn: async (data: { message: string; conversationId: string; recipientId: number }) => {
+      return apiRequest('POST', '/api/messages', data);
+    },
+    onSuccess: () => {
+      setNewMessage('');
+      // Refresh conversations and messages
+      queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
+      if (selectedConversation && user) {
+        const conversationId = `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}`;
+        queryClient.invalidateQueries({ queryKey: ['/api/conversations', conversationId, 'messages'] });
       }
-    });
-
-    return () => {
-      socket.off('conversations:list');
-      socket.off('user:authenticated');
-    };
-  }, [socket, isConnected, user]);
-
-  // Handle conversation selection and message loading
-  useEffect(() => {
-    if (!selectedConversation || !socket) return;
-
-    // Join conversation room
-    socket.emit('conversation:create', { partnerId: selectedConversation.partnerId });
-
-    // Listen for conversation created and messages
-    socket.on('conversation:created', (data: { roomId: string; partnerId: number; messages: ChatMessage[] }) => {
-      setMessages(data.messages);
-    });
-
-    // Listen for new messages
-    socket.on('message:received', (message: ChatMessage) => {
-      setMessages(prev => [...prev, message]);
-      scrollToBottom();
-    });
-
-    // Listen for message read updates
-    socket.on('message:read_updated', (data: { messageId: string; isRead: boolean }) => {
-      setMessages(prev => prev.map(msg => 
-        msg.id === data.messageId ? { ...msg, isRead: data.isRead } : msg
-      ));
-    });
-
-    return () => {
-      socket.off('conversation:created');
-      socket.off('message:received');
-      socket.off('message:read_updated');
-    };
-  }, [selectedConversation, socket]);
+    },
+    onError: (error) => {
+      console.error('Failed to send message:', error);
+    }
+  });
 
   // Auto scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -120,23 +106,15 @@ export default function Chat() {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!selectedConversation || !newMessage.trim() || !socket) return;
+    if (!selectedConversation || !newMessage.trim() || !user) return;
 
-    try {
-      setLoading(true);
-      
-      socket.emit('message:send', {
-        roomId: selectedConversation.roomId,
-        message: newMessage.trim(),
-        receiverId: selectedConversation.partnerId,
-      });
-
-      setNewMessage('');
-    } catch (err) {
-      console.error('Failed to send message:', err);
-    } finally {
-      setLoading(false);
-    }
+    const conversationId = `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}`;
+    
+    sendMessage.mutate({
+      message: newMessage.trim(),
+      conversationId: conversationId,
+      recipientId: selectedConversation.partnerId
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -147,13 +125,10 @@ export default function Chat() {
   };
 
   const createConversationWithPartner = async (partner: Partner) => {
-    if (!socket || !user) return;
+    if (!user) return;
 
     try {
       setLoading(true);
-      
-      // Generate room ID for this conversation
-      const roomId = `room:${Math.min(user.id, partner.userId)}:${Math.max(user.id, partner.userId)}`;
       
       // Check if conversation already exists
       const existingConversation = conversations.find(conv => conv.partnerId === partner.userId);
@@ -163,15 +138,15 @@ export default function Chat() {
         return;
       }
 
-      // Create new conversation
-      const newConversation: Conversation = {
-        roomId,
+      // Create new conversation data
+      const newConversation: ConversationData = {
         partnerId: partner.userId,
+        partner: partner,
+        lastMessage: {} as ChatMessage, // Empty initially
         unreadCount: 0,
-        lastActivity: new Date(),
+        messages: []
       };
 
-      setConversations(prev => [newConversation, ...prev]);
       setSelectedConversation(newConversation);
       setNewMessageDialogOpen(false);
     } catch (err) {
@@ -181,7 +156,7 @@ export default function Chat() {
     }
   };
 
-  const formatTime = (timestamp: number) => {
+  const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
@@ -220,52 +195,12 @@ export default function Chat() {
     );
   }
 
-  if (error) {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 pt-16 pb-20">
-          <div className="max-w-7xl mx-auto p-6">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-red-600 mb-4">
-                Bağlantı Hatası
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Mesajlaşma servisiyle bağlantı kurulamadı: {error}
-              </p>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
 
-  if (!isConnected) {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 pt-16 pb-20">
-          <div className="max-w-7xl mx-auto p-6">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Bağlanıyor...
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Mesajlaşma servisine bağlanılıyor.
-              </p>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
 
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 pt-16 pb-20">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 pt-16" style={{ minHeight: 'calc(100vh - 80px)' }}>
         <div className="max-w-7xl mx-auto p-6">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -328,14 +263,14 @@ export default function Chat() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
             {/* Channels List */}
             <Card className="lg:col-span-1">
               <CardContent className="p-0">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Konuşmalar</h2>
                 </div>
-                <ScrollArea className="h-[calc(100vh-380px)]">
+                <ScrollArea className="h-[calc(100vh-300px)]">
                   {conversations.length === 0 ? (
                     <div className="p-6 text-center">
                       <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -349,11 +284,11 @@ export default function Chat() {
                       {conversations.map((conversation) => {
                         const partner = partners.find(p => p.userId === conversation.partnerId);
                         const partnerName = partner?.companyName || 'Partner';
-                        const isSelected = selectedConversation?.roomId === conversation.roomId;
+                        const isSelected = selectedConversation?.partnerId === conversation.partnerId;
                         
                         return (
                           <div
-                            key={conversation.roomId}
+                            key={conversation.partnerId}
                             className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                               isSelected ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
                             }`}
@@ -372,7 +307,7 @@ export default function Chat() {
                                     {partnerName}
                                   </h3>
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatTime(new Date(conversation.lastActivity).getTime())}
+                                    {conversation.lastMessage?.createdAt ? formatTime(conversation.lastMessage.createdAt) : ''}
                                   </span>
                                 </div>
                                 {conversation.lastMessage && (
@@ -423,7 +358,7 @@ export default function Chat() {
                             {partners.find(p => p.userId === selectedConversation.partnerId)?.companyName || 'Partner'}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {isConnected ? 'Çevrimiçi' : 'Çevrimdışı'}
+                            Aktif
                           </p>
                         </div>
                       </div>
@@ -451,7 +386,7 @@ export default function Chat() {
                                   <p className={`text-xs ${
                                     isFromUser ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                                   }`}>
-                                    {formatTime(new Date(message.timestamp).getTime())}
+                                    {formatTime(message.createdAt)}
                                   </p>
                                   {isFromUser && (
                                     <span className="text-xs text-blue-100 ml-2">
@@ -475,13 +410,13 @@ export default function Chat() {
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyDown={handleKeyDown}
                           placeholder="Mesajınızı yazın..."
-                          disabled={loading}
+                          disabled={sendMessage.isPending}
                           className="flex-1"
                           data-testid="input-message"
                         />
                         <Button
                           onClick={handleSendMessage}
-                          disabled={!newMessage.trim() || loading}
+                          disabled={!newMessage.trim() || sendMessage.isPending}
                           data-testid="button-send-message"
                         >
                           <Send className="h-4 w-4" />
