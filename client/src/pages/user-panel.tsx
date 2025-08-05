@@ -339,11 +339,15 @@ export default function UserPanel() {
                                   
                                   if (uploadResponse.ok) {
                                     // Update profile image
-                                    await fetch('/api/user/profile-image', {
+                                    const response = await fetch('/api/user/profile-image', {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ profileImageURL: data.uploadURL })
                                     });
+                                    
+                                    if (!response.ok) {
+                                      throw new Error('Failed to update profile image');
+                                    }
                                     
                                     queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
                                     toast({

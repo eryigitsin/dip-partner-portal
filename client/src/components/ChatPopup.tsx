@@ -265,14 +265,16 @@ export function ChatPopup() {
                 // Conversations List
                 <div className="flex-1 flex flex-col">
                   <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                    <Button
-                      onClick={() => setShowPartnerList(!showPartnerList)}
-                      className="w-full text-sm"
-                      variant="outline"
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      Yeni Konuşma Başlat
-                    </Button>
+                    {user?.userType !== 'partner' && (
+                      <Button
+                        onClick={() => setShowPartnerList(!showPartnerList)}
+                        className="w-full text-sm"
+                        variant="outline"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Yeni Konuşma Başlat
+                      </Button>
+                    )}
                   </div>
 
                   {showPartnerList && (

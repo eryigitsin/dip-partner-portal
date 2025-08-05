@@ -215,10 +215,12 @@ export default function Chat() {
                   <p className="text-gray-600 dark:text-gray-400">İş ortaklarınızla mesajlaşın</p>
                 </div>
               </div>
-              <Button onClick={() => setNewMessageDialogOpen(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Yeni Mesaj Yaz
-              </Button>
+              {user?.userType !== 'partner' && (
+                <Button onClick={() => setNewMessageDialogOpen(true)} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Yeni Mesaj Yaz
+                </Button>
+              )}
 
               {/* New Message Dialog */}
               <Dialog open={newMessageDialogOpen} onOpenChange={setNewMessageDialogOpen}>

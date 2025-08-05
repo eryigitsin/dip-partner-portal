@@ -1767,9 +1767,7 @@ export function registerRoutes(app: Express): Server {
             // Send to partner
             const partnerTemplate = emailTemplates.quoteStatus.approved.toPartner(
               partner.companyName,
-              `${user.firstName} ${user.lastName}`,
-              quoteRequest.serviceNeeded || "Hizmet",
-              userCompanyInfo
+              `${user.firstName} ${user.lastName}`
             );
             
             await sendEmail({
@@ -1781,8 +1779,7 @@ export function registerRoutes(app: Express): Server {
             // Send to user
             const userTemplate = emailTemplates.quoteStatus.approved.toUser(
               `${user.firstName} ${user.lastName}`,
-              partner.companyName,
-              quoteRequest.serviceNeeded || "Hizmet"
+              partner.companyName
             );
             
             await sendEmail({
@@ -1793,9 +1790,7 @@ export function registerRoutes(app: Express): Server {
           } else if (status === 'rejected') {
             const rejectionTemplate = emailTemplates.quoteStatus.rejected.toPartner(
               partner.companyName,
-              `${user.firstName} ${user.lastName}`,
-              quoteRequest.serviceNeeded || "Hizmet",
-              reason
+              `${user.firstName} ${user.lastName}`
             );
             
             await sendEmail({
@@ -2936,9 +2931,7 @@ export function registerRoutes(app: Express): Server {
           // Send email to partner
           const partnerEmailTemplate = emailTemplates.quoteStatus.approved.toPartner(
             partner.companyName,
-            `${requestUser.firstName} ${requestUser.lastName}`,
-            quoteRequest.serviceNeeded || "Hizmet",
-            userCompanyInfo
+            `${requestUser.firstName} ${requestUser.lastName}`
           );
           await resendService.sendEmail({
             to: partnerUser.email,
@@ -2949,8 +2942,7 @@ export function registerRoutes(app: Express): Server {
           // Send email to user
           const userEmailTemplate = emailTemplates.quoteStatus.approved.toUser(
             `${requestUser.firstName} ${requestUser.lastName}`,
-            partner.companyName,
-            quoteRequest.serviceNeeded || "Hizmet"
+            partner.companyName
           );
           await resendService.sendEmail({
             to: requestUser.email,
@@ -2961,9 +2953,7 @@ export function registerRoutes(app: Express): Server {
           // Send email to partner
           const rejectionTemplate = emailTemplates.quoteStatus.rejected.toPartner(
             partner.companyName,
-            `${requestUser.firstName} ${requestUser.lastName}`,
-            quoteRequest.serviceNeeded || "Hizmet",
-            reason
+            `${requestUser.firstName} ${requestUser.lastName}`
           );
           await resendService.sendEmail({
             to: partnerUser.email,

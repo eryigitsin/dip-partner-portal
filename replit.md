@@ -86,6 +86,15 @@ Preferred communication style: Simple, everyday language.
   - **Real-time Socket Integration**: Maintained all Socket.IO real-time messaging functionality within new popup interface
   - **Notification Integration**: Preserved desktop notification system for new messages when popup is closed or minimized
   - **Responsive Design**: Optimized popup size (396px width, 500px height) for desktop use with proper mobile considerations
+- **Profile Photo Upload System**: Implemented comprehensive profile photo upload functionality with proper error handling
+  - **Object Storage Integration**: Added missing `/api/objects/upload` endpoint for profile photo uploads with authentication
+  - **Upload Error Fix**: Resolved "Unexpected end of JSON input" error by improving response handling in profile photo upload workflow
+  - **User Identification Enhancement**: Updated chat interfaces to display actual user names and profile photos instead of generic "Partner" labels
+  - **Backend API Support**: Added profile image storage endpoints with proper object storage integration
+- **Partner UI Restrictions**: Enhanced user experience by customizing interface based on user roles
+  - **New Conversation Button Removal**: Hidden "Yeni Konuşma Başlat" button for partner users in both chat page and ChatPopup component
+  - **Role-Based UI**: Implemented `user.userType !== 'partner'` checks to prevent partners from initiating new conversations
+  - **Consistent Experience**: Applied restrictions across all messaging interfaces for proper workflow management
 
 ### August 4, 2025
 - **Complete Payment Dialog System**: Implemented comprehensive payment dialog with three tabs (Kredi/Banka Kartı, Havale/EFT, Diğer Yöntemler) accessible from multiple "Ödeme Yap" buttons throughout the interface
