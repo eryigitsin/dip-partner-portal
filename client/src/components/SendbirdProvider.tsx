@@ -53,9 +53,13 @@ export const SendbirdProvider: React.FC<SendbirdProviderProps> = ({ children }) 
       try {
         setError(null);
         
-        // Initialize Sendbird
+        // Initialize Sendbird with the correct App ID from environment
+        if (!import.meta.env.VITE_SENDBIRD_APP_ID) {
+          throw new Error('VITE_SENDBIRD_APP_ID environment variable is required');
+        }
+        
         const sendbirdChat = SendbirdChat.init({
-          appId: import.meta.env.VITE_SENDBIRD_APP_ID || 'BC823AD85-6A73-4006-8B32-4597A7530647',
+          appId: import.meta.env.VITE_SENDBIRD_APP_ID,
           modules: [new GroupChannelModule()],
         });
 

@@ -16,7 +16,7 @@ import { GroupChannel } from '@sendbird/chat/groupChannel';
 import type { BaseMessage, UserMessage } from '@sendbird/chat/message';
 import type { Partner } from '@shared/schema';
 
-export default function SendbirdMessages() {
+export default function Chat() {
   const { user } = useAuth();
   const isAuthenticated = !!user;
   const { sb, currentUser, isConnected, error } = useSendbird();

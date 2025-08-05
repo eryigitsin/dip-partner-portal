@@ -18,8 +18,7 @@ import PartnerInspectionPage from "@/pages/admin/partner-inspection";
 import QuoteRequestsPage from "@/pages/admin/quote-requests";
 import UserPanel from "@/pages/user-panel";
 import ServiceRequests from "@/pages/service-requests";
-import Messages from "@/pages/messages";
-import SendbirdMessages from "@/pages/sendbird-messages";
+import Chat from "@/pages/chat";
 import ApplicationStatus from "@/pages/application-status";
 import UserManagement from "@/pages/user-management";
 import Statistics from "@/pages/statistics";
@@ -90,8 +89,8 @@ function Router() {
       <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} />
       <ProtectedRoute path="/user-panel" component={UserPanel} />
       <ProtectedRoute path="/service-requests" component={ServiceRequests} />
-      <ProtectedRoute path="/messages" component={Messages} />
-      <ProtectedRoute path="/sendbird-messages" component={SendbirdMessages} />
+      <ProtectedRoute path="/messages" component={Chat} />
+      <ProtectedRoute path="/chat" component={Chat} />
       <ProtectedRoute path="/user-management" component={UserManagement} />
       <ProtectedRoute path="/statistics" component={Statistics} />
       <ProtectedRoute path="/system-status" component={SystemStatus} />
