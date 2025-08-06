@@ -162,11 +162,11 @@ export default function TemplateManagement() {
   const [emailPreview, setEmailPreview] = useState<EmailPreview | null>(null);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
-  const [showEmailBuilder, setShowEmailBuilder] = useState(false);
+
   const [showNotificationCreator, setShowNotificationCreator] = useState(false);
   const [showSmsCreator, setShowSmsCreator] = useState(false);
   const [templateCreatorType, setTemplateCreatorType] = useState<'email' | 'notification' | 'sms'>('email');
-  const [emailBuilderWindow, setEmailBuilderWindow] = useState<Window | null>(null);
+
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -253,60 +253,7 @@ export default function TemplateManagement() {
     }
   });
 
-  // Email builder functions
-  const openEmailBuilder = () => {
-    const popup = window.open('/email-builder', 'emailBuilder', 'width=1400,height=900,scrollbars=yes,resizable=yes');
-    
-    // Listen for messages from the popup
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      
-      if (event.data.type === 'emailTemplate') {
-        const { template } = event.data;
-        // Save the template to the server
-        saveEmailTemplate(template);
-        window.removeEventListener('message', handleMessage);
-      }
-    };
-    
-    window.addEventListener('message', handleMessage);
-    
-    // Cleanup if popup is closed
-    const checkClosed = setInterval(() => {
-      if (popup?.closed) {
-        window.removeEventListener('message', handleMessage);
-        clearInterval(checkClosed);
-      }
-    }, 1000);
-  };
 
-  const saveEmailTemplate = async (template: { name: string, subject: string, htmlContent: string }) => {
-    try {
-      const response = await apiRequest('POST', '/api/admin/email-templates', {
-        type: template.name.toLowerCase().replace(/\s+/g, '_'),
-        name: template.name,
-        subject: template.subject,
-        htmlContent: template.htmlContent,
-        isActive: true
-      });
-
-      if (response) {
-        toast({
-          title: "Başarılı",
-          description: "Email şablonu başarıyla kaydedildi",
-        });
-        // Refresh email templates
-        queryClient.invalidateQueries({ queryKey: ['/api/admin/email-templates'] });
-      }
-    } catch (error) {
-      console.error('Error saving email template:', error);
-      toast({
-        title: "Hata",
-        description: "Email şablonu kaydedilirken hata oluştu",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Add unsubscribe footer to email templates
   const addUnsubscribeFooter = (htmlContent: string) => {
@@ -352,35 +299,6 @@ export default function TemplateManagement() {
           <div className="lg:col-span-2">
             <div className="flex flex-wrap gap-4 mb-6">
               <Button
-                onClick={openEmailBuilder}
-                className="flex items-center gap-2"
-                data-testid="button-create-email-template"
-              >
-                <Mail className="h-4 w-4" />
-                Yeni E-Posta Şablonu
-              </Button>
-
-              <Button
-                onClick={() => { setShowTemplateCreator(true); setTemplateCreatorType('notification'); }}
-                variant="outline"
-                className="flex items-center gap-2"
-                data-testid="button-create-notification-template"
-              >
-                <Bell className="h-4 w-4" />
-                Yeni Bildirim Şablonu
-              </Button>
-
-              <Button
-                onClick={() => { setShowTemplateCreator(true); setTemplateCreatorType('sms'); }}
-                variant="outline"
-                className="flex items-center gap-2"
-                data-testid="button-create-sms-template"
-              >
-                <MessageSquare className="h-4 w-4" />
-                Yeni SMS Şablonu
-              </Button>
-
-              <Button
                 onClick={() => setShowTemplateLibrary(true)}
                 variant="outline"
                 className="flex items-center gap-2"
@@ -392,31 +310,7 @@ export default function TemplateManagement() {
             </div>
           </div>
           
-          <div className="lg:col-span-1">
-            <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">Email Builder İpuçları</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Şablon adını ve konusunu belirtmeyi unutmayın</li>
-                  <li>• Otomatik zorunlu footer eklenecektir</li>
-                  <li>• Parametreler {`{{parametre}}`} formatında kullanılabilir</li>
-                </ul>
-              </div>
-              
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <h4 className="text-sm font-medium text-yellow-900 mb-2">Gerekli URL Parametreleri</h4>
-                <div className="text-sm text-yellow-800 space-y-2">
-                  <div>
-                    <strong>Unsubscribe URL:</strong>
-                    <code className="block mt-1 p-2 bg-yellow-100 rounded text-xs">
-                      {`{{unsubscribeUrl}}`} → /api/unsubscribe/{`{{email}}`}
-                    </code>
-                  </div>
-                  <p className="text-xs">Bu parametreler tüm email şablonlarında otomatik olarak footer'a eklenir.</p>
-                </div>
-              </div>
-            </div>
-          </div>
+
         </div>
 
       <Tabs defaultValue="emails" className="w-full">
@@ -861,6 +755,20 @@ export default function TemplateManagement() {
           </DialogHeader>
           
           <div className="space-y-6">
+            {/* URL Parameters Info */}
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <h4 className="text-sm font-medium text-yellow-900 mb-2">Gerekli URL Parametreleri</h4>
+              <div className="text-sm text-yellow-800 space-y-2">
+                <div>
+                  <strong>Unsubscribe URL:</strong>
+                  <code className="block mt-1 p-2 bg-yellow-100 rounded text-xs">
+                    {`{{unsubscribeUrl}}`} → /api/unsubscribe/{`{{email}}`}
+                  </code>
+                </div>
+                <p className="text-xs">Bu parametreler tüm email şablonlarında otomatik olarak footer'a eklenir.</p>
+              </div>
+            </div>
+            
             <Tabs defaultValue="email" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="email">E-Posta Şablonları</TabsTrigger>
@@ -872,19 +780,12 @@ export default function TemplateManagement() {
                 <div className="grid gap-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium">E-Posta Şablonları</h3>
-                    <Button 
-                      onClick={() => setShowEmailBuilder(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Yeni E-Posta Şablonu
-                    </Button>
                   </div>
                   
                   <div className="text-center py-8 text-muted-foreground">
                     <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Henüz özel e-posta şablonu oluşturmamışsınız</p>
-                    <p className="text-sm">Yukarıdaki butonu kullanarak görsel editör ile şablon oluşturabilirsiniz</p>
+                    <p>E-posta şablonları ana sayfa üzerinden yönetilmektedir</p>
+                    <p className="text-sm">Template Management ana sayfasındaki E-Postalar sekmesinden şablonları yönetebilirsiniz</p>
                   </div>
                 </div>
               </TabsContent>
@@ -941,46 +842,7 @@ export default function TemplateManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Email Builder Dialog */}
-      <Dialog open={showEmailBuilder} onOpenChange={setShowEmailBuilder}>
-        <DialogContent className="max-w-7xl max-h-[95vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              E-Posta Şablonu Oluşturucu
-            </DialogTitle>
-            <DialogDescription>
-              Sürükle-bırak editörü ile profesyonel e-posta şablonları oluşturun
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 min-h-[500px] bg-gray-50 dark:bg-gray-900">
-              <div className="text-center text-muted-foreground">
-                <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">Email Builder entegrasyonu yakında eklenecek</p>
-                <p className="text-xs mt-2">email-builder-js paketi yüklendi</p>
-              </div>
-            </div>
-            
-            <div className="flex justify-between pt-4 border-t">
-              <Button variant="outline" onClick={() => setShowEmailBuilder(false)}>
-                İptal
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="outline">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Önizle
-                </Button>
-                <Button>
-                  <Save className="h-4 w-4 mr-2" />
-                  Şablonu Kaydet
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Notification Creator Dialog */}
       <Dialog open={showNotificationCreator} onOpenChange={setShowNotificationCreator}>
