@@ -40,13 +40,13 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
     hasMore: boolean;
   }>({
     queryKey: ['/api/notifications', 1, 10], // page, limit
-    queryFn: () => apiRequest('/api/notifications?page=1&limit=10', 'GET'),
+    queryFn: () => apiRequest('GET', '/api/notifications?page=1&limit=10'),
     enabled: isOpen,
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: number) =>
-      apiRequest(`/api/notifications/${notificationId}/read`, 'PATCH'),
+      apiRequest('PATCH', `/api/notifications/${notificationId}/read`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
@@ -55,7 +55,7 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
 
   const markAllAsReadMutation = useMutation({
     mutationFn: () =>
-      apiRequest('/api/notifications/mark-all-read', 'PATCH'),
+      apiRequest('PATCH', '/api/notifications/mark-all-read'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
