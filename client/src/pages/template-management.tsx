@@ -161,7 +161,7 @@ export default function TemplateManagement() {
   const [currentSmsTemplate, setCurrentSmsTemplate] = useState<any | null>(null);
   const [emailPreview, setEmailPreview] = useState<EmailPreview | null>(null);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
-  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+
 
   const [showNotificationCreator, setShowNotificationCreator] = useState(false);
   const [showSmsCreator, setShowSmsCreator] = useState(false);
@@ -297,16 +297,14 @@ export default function TemplateManagement() {
         {/* Action Buttons */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <div className="flex flex-wrap gap-4 mb-6">
-              <Button
-                onClick={() => setShowTemplateLibrary(true)}
-                variant="outline"
-                className="flex items-center gap-2"
-                data-testid="button-template-library"
-              >
-                <Layout className="h-4 w-4" />
-                Şablon Kütüphanesi
-              </Button>
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Layout className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-900">Kampanya Şablonları</span>
+              </div>
+              <p className="text-sm text-blue-800">
+                Kampanya şablonları artık <strong>Marketing List</strong> sayfasının "Toplu Kampanya Gönderimi" sekmesinde yönetilmektedir.
+              </p>
             </div>
           </div>
           
@@ -741,106 +739,7 @@ export default function TemplateManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Template Library Dialog */}
-      <Dialog open={showTemplateLibrary} onOpenChange={setShowTemplateLibrary}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Layout className="h-5 w-5" />
-              Şablon Kütüphanesi
-            </DialogTitle>
-            <DialogDescription>
-              E-posta, SMS ve bildirim şablonlarını oluşturun ve yönetin
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* URL Parameters Info */}
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <h4 className="text-sm font-medium text-yellow-900 mb-2">Gerekli URL Parametreleri</h4>
-              <div className="text-sm text-yellow-800 space-y-2">
-                <div>
-                  <strong>Unsubscribe URL:</strong>
-                  <code className="block mt-1 p-2 bg-yellow-100 rounded text-xs">
-                    {`{{unsubscribeUrl}}`} → /api/unsubscribe/{`{{email}}`}
-                  </code>
-                </div>
-                <p className="text-xs">Bu parametreler tüm email şablonlarında otomatik olarak footer'a eklenir.</p>
-              </div>
-            </div>
-            
-            <Tabs defaultValue="email" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="email">E-Posta Şablonları</TabsTrigger>
-                <TabsTrigger value="notification">Bildirim Şablonları</TabsTrigger>
-                <TabsTrigger value="sms">SMS Şablonları</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="email" className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">E-Posta Şablonları</h3>
-                  </div>
-                  
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>E-posta şablonları ana sayfa üzerinden yönetilmektedir</p>
-                    <p className="text-sm">Template Management ana sayfasındaki E-Postalar sekmesinden şablonları yönetebilirsiniz</p>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="notification" className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Bildirim Şablonları</h3>
-                    <Button 
-                      onClick={() => setShowNotificationCreator(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Yeni Bildirim Şablonu
-                    </Button>
-                  </div>
-                  
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Henüz özel bildirim şablonu oluşturmamışsınız</p>
-                    <p className="text-sm">Yukarıdaki butonu kullanarak text-based editör ile şablon oluşturabilirsiniz</p>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="sms" className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">SMS Şablonları</h3>
-                    <Button 
-                      onClick={() => setShowSmsCreator(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Yeni SMS Şablonu
-                    </Button>
-                  </div>
-                  
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Henüz özel SMS şablonu oluşturmamışsınız</p>
-                    <p className="text-sm">Yukarıdaki butonu kullanarak text-based editör ile şablon oluşturabilirsiniz</p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button variant="outline" onClick={() => setShowTemplateLibrary(false)}>
-              Kapat
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
 
 

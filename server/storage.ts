@@ -30,6 +30,9 @@ import {
   emailTemplates,
   notificationTemplates,
   smsTemplates,
+  campaignEmailTemplates,
+  campaignSmsTemplates,
+  campaignNotificationTemplates,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -95,6 +98,12 @@ import {
   type InsertNotificationTemplate,
   type SmsTemplate,
   type InsertSmsTemplate,
+  type CampaignEmailTemplate,
+  type InsertCampaignEmailTemplate,
+  type CampaignSmsTemplate,
+  type InsertCampaignSmsTemplate,
+  type CampaignNotificationTemplate,
+  type InsertCampaignNotificationTemplate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
@@ -353,6 +362,25 @@ export interface IStorage {
   getSmsTemplate(type: string): Promise<SmsTemplate | undefined>;
   updateSmsTemplate(type: string, template: Partial<InsertSmsTemplate>): Promise<SmsTemplate | undefined>;
   createSmsTemplate(template: InsertSmsTemplate): Promise<SmsTemplate>;
+
+  // Campaign Template methods
+  getAllCampaignEmailTemplates(): Promise<CampaignEmailTemplate[]>;
+  getCampaignEmailTemplate(id: number): Promise<CampaignEmailTemplate | undefined>;
+  createCampaignEmailTemplate(template: InsertCampaignEmailTemplate): Promise<CampaignEmailTemplate>;
+  updateCampaignEmailTemplate(id: number, template: Partial<InsertCampaignEmailTemplate>): Promise<CampaignEmailTemplate | undefined>;
+  deleteCampaignEmailTemplate(id: number): Promise<boolean>;
+
+  getAllCampaignSmsTemplates(): Promise<CampaignSmsTemplate[]>;
+  getCampaignSmsTemplate(id: number): Promise<CampaignSmsTemplate | undefined>;
+  createCampaignSmsTemplate(template: InsertCampaignSmsTemplate): Promise<CampaignSmsTemplate>;
+  updateCampaignSmsTemplate(id: number, template: Partial<InsertCampaignSmsTemplate>): Promise<CampaignSmsTemplate | undefined>;
+  deleteCampaignSmsTemplate(id: number): Promise<boolean>;
+
+  getAllCampaignNotificationTemplates(): Promise<CampaignNotificationTemplate[]>;
+  getCampaignNotificationTemplate(id: number): Promise<CampaignNotificationTemplate | undefined>;
+  createCampaignNotificationTemplate(template: InsertCampaignNotificationTemplate): Promise<CampaignNotificationTemplate>;
+  updateCampaignNotificationTemplate(id: number, template: Partial<InsertCampaignNotificationTemplate>): Promise<CampaignNotificationTemplate | undefined>;
+  deleteCampaignNotificationTemplate(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2742,6 +2770,129 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(smsTemplates)
       .where(eq(smsTemplates.type, type));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Campaign Email Template methods
+  async getAllCampaignEmailTemplates(): Promise<CampaignEmailTemplate[]> {
+    return await db
+      .select()
+      .from(campaignEmailTemplates)
+      .where(eq(campaignEmailTemplates.isActive, true))
+      .orderBy(asc(campaignEmailTemplates.name));
+  }
+
+  async getCampaignEmailTemplate(id: number): Promise<CampaignEmailTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(campaignEmailTemplates)
+      .where(eq(campaignEmailTemplates.id, id));
+    return template;
+  }
+
+  async createCampaignEmailTemplate(template: InsertCampaignEmailTemplate): Promise<CampaignEmailTemplate> {
+    const [created] = await db
+      .insert(campaignEmailTemplates)
+      .values(template)
+      .returning();
+    return created;
+  }
+
+  async updateCampaignEmailTemplate(id: number, template: Partial<InsertCampaignEmailTemplate>): Promise<CampaignEmailTemplate | undefined> {
+    const [updated] = await db
+      .update(campaignEmailTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(campaignEmailTemplates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCampaignEmailTemplate(id: number): Promise<boolean> {
+    const result = await db
+      .delete(campaignEmailTemplates)
+      .where(eq(campaignEmailTemplates.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Campaign SMS Template methods
+  async getAllCampaignSmsTemplates(): Promise<CampaignSmsTemplate[]> {
+    return await db
+      .select()
+      .from(campaignSmsTemplates)
+      .where(eq(campaignSmsTemplates.isActive, true))
+      .orderBy(asc(campaignSmsTemplates.name));
+  }
+
+  async getCampaignSmsTemplate(id: number): Promise<CampaignSmsTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(campaignSmsTemplates)
+      .where(eq(campaignSmsTemplates.id, id));
+    return template;
+  }
+
+  async createCampaignSmsTemplate(template: InsertCampaignSmsTemplate): Promise<CampaignSmsTemplate> {
+    const [created] = await db
+      .insert(campaignSmsTemplates)
+      .values(template)
+      .returning();
+    return created;
+  }
+
+  async updateCampaignSmsTemplate(id: number, template: Partial<InsertCampaignSmsTemplate>): Promise<CampaignSmsTemplate | undefined> {
+    const [updated] = await db
+      .update(campaignSmsTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(campaignSmsTemplates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCampaignSmsTemplate(id: number): Promise<boolean> {
+    const result = await db
+      .delete(campaignSmsTemplates)
+      .where(eq(campaignSmsTemplates.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Campaign Notification Template methods
+  async getAllCampaignNotificationTemplates(): Promise<CampaignNotificationTemplate[]> {
+    return await db
+      .select()
+      .from(campaignNotificationTemplates)
+      .where(eq(campaignNotificationTemplates.isActive, true))
+      .orderBy(asc(campaignNotificationTemplates.name));
+  }
+
+  async getCampaignNotificationTemplate(id: number): Promise<CampaignNotificationTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(campaignNotificationTemplates)
+      .where(eq(campaignNotificationTemplates.id, id));
+    return template;
+  }
+
+  async createCampaignNotificationTemplate(template: InsertCampaignNotificationTemplate): Promise<CampaignNotificationTemplate> {
+    const [created] = await db
+      .insert(campaignNotificationTemplates)
+      .values(template)
+      .returning();
+    return created;
+  }
+
+  async updateCampaignNotificationTemplate(id: number, template: Partial<InsertCampaignNotificationTemplate>): Promise<CampaignNotificationTemplate | undefined> {
+    const [updated] = await db
+      .update(campaignNotificationTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(campaignNotificationTemplates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCampaignNotificationTemplate(id: number): Promise<boolean> {
+    const result = await db
+      .delete(campaignNotificationTemplates)
+      .where(eq(campaignNotificationTemplates.id, id));
     return (result.rowCount || 0) > 0;
   }
 

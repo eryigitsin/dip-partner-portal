@@ -823,6 +823,8 @@ export const insertPartnerProfileVisitSchema = createInsertSchema(partnerProfile
   visitedAt: true,
 });
 
+
+
 // Email Templates - Template management for system emails
 export const emailTemplates = pgTable("email_templates", {
   id: serial("id").primaryKey(),
@@ -856,6 +858,36 @@ export const smsTemplates = pgTable("sms_templates", {
   name: text("name").notNull(), // Human readable name
   description: text("description"), // Description of when this template is used
   content: text("content").notNull(), // SMS content with variables like {{code}}, {{name}}, {{company}}
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Campaign Templates - Custom templates for marketing campaigns
+export const campaignEmailTemplates = pgTable("campaign_email_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // User-defined template name
+  subject: text("subject").notNull(),
+  htmlContent: text("html_content").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const campaignSmsTemplates = pgTable("campaign_sms_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // User-defined template name
+  content: text("content").notNull(), // SMS content with variables
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const campaignNotificationTemplates = pgTable("campaign_notification_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // User-defined template name
+  title: text("title").notNull(),
+  content: text("content").notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -963,6 +995,33 @@ export type InsertPartnerOfferedService = z.infer<typeof insertPartnerOfferedSer
 // Types for markets system
 export type Market = typeof markets.$inferSelect;
 export type InsertMarket = z.infer<typeof insertMarketSchema>;
+
+// Campaign template schemas - moved to end to avoid initialization issues
+export const insertCampaignEmailTemplateSchema = createInsertSchema(campaignEmailTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCampaignSmsTemplateSchema = createInsertSchema(campaignSmsTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCampaignNotificationTemplateSchema = createInsertSchema(campaignNotificationTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Campaign template types
+export type CampaignEmailTemplate = typeof campaignEmailTemplates.$inferSelect;
+export type InsertCampaignEmailTemplate = z.infer<typeof insertCampaignEmailTemplateSchema>;
+export type CampaignSmsTemplate = typeof campaignSmsTemplates.$inferSelect;
+export type InsertCampaignSmsTemplate = z.infer<typeof insertCampaignSmsTemplateSchema>;
+export type CampaignNotificationTemplate = typeof campaignNotificationTemplates.$inferSelect;
+export type InsertCampaignNotificationTemplate = z.infer<typeof insertCampaignNotificationTemplateSchema>;
 export type PartnerSelectedMarket = typeof partnerSelectedMarkets.$inferSelect;
 export type InsertPartnerSelectedMarket = z.infer<typeof insertPartnerSelectedMarketSchema>;
 

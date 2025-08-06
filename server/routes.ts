@@ -3093,6 +3093,254 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Campaign Email Templates Routes (Admin only)
+  app.get("/api/admin/campaign-email-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const templates = await storage.getAllCampaignEmailTemplates();
+      res.json(templates);
+    } catch (error: any) {
+      console.error("Error fetching campaign email templates:", error);
+      res.status(500).json({ error: "Failed to fetch campaign email templates" });
+    }
+  });
+
+  app.post("/api/admin/campaign-email-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { name, subject, htmlContent } = req.body;
+      
+      if (!name || !subject || !htmlContent) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const template = await storage.createCampaignEmailTemplate({
+        name,
+        subject,
+        htmlContent,
+        isActive: true
+      });
+
+      res.json(template);
+    } catch (error: any) {
+      console.error("Error creating campaign email template:", error);
+      res.status(500).json({ error: "Failed to create campaign email template" });
+    }
+  });
+
+  app.put("/api/admin/campaign-email-templates/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const template = await storage.updateCampaignEmailTemplate(id, updates);
+      
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      res.json(template);
+    } catch (error: any) {
+      console.error("Error updating campaign email template:", error);
+      res.status(500).json({ error: "Failed to update campaign email template" });
+    }
+  });
+
+  app.delete("/api/admin/campaign-email-templates/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCampaignEmailTemplate(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting campaign email template:", error);
+      res.status(500).json({ error: "Failed to delete campaign email template" });
+    }
+  });
+
+  // Campaign SMS Templates Routes (Admin only)
+  app.get("/api/admin/campaign-sms-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const templates = await storage.getAllCampaignSmsTemplates();
+      res.json(templates);
+    } catch (error: any) {
+      console.error("Error fetching campaign SMS templates:", error);
+      res.status(500).json({ error: "Failed to fetch campaign SMS templates" });
+    }
+  });
+
+  app.post("/api/admin/campaign-sms-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { name, content } = req.body;
+      
+      if (!name || !content) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const template = await storage.createCampaignSmsTemplate({
+        name,
+        content,
+        isActive: true
+      });
+
+      res.json(template);
+    } catch (error: any) {
+      console.error("Error creating campaign SMS template:", error);
+      res.status(500).json({ error: "Failed to create campaign SMS template" });
+    }
+  });
+
+  app.put("/api/admin/campaign-sms-templates/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const template = await storage.updateCampaignSmsTemplate(id, updates);
+      
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      res.json(template);
+    } catch (error: any) {
+      console.error("Error updating campaign SMS template:", error);
+      res.status(500).json({ error: "Failed to update campaign SMS template" });
+    }
+  });
+
+  app.delete("/api/admin/campaign-sms-templates/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCampaignSmsTemplate(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting campaign SMS template:", error);
+      res.status(500).json({ error: "Failed to delete campaign SMS template" });
+    }
+  });
+
+  // Campaign Notification Templates Routes (Admin only)
+  app.get("/api/admin/campaign-notification-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const templates = await storage.getAllCampaignNotificationTemplates();
+      res.json(templates);
+    } catch (error: any) {
+      console.error("Error fetching campaign notification templates:", error);
+      res.status(500).json({ error: "Failed to fetch campaign notification templates" });
+    }
+  });
+
+  app.post("/api/admin/campaign-notification-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { name, title, content } = req.body;
+      
+      if (!name || !title || !content) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const template = await storage.createCampaignNotificationTemplate({
+        name,
+        title,
+        content,
+        isActive: true
+      });
+
+      res.json(template);
+    } catch (error: any) {
+      console.error("Error creating campaign notification template:", error);
+      res.status(500).json({ error: "Failed to create campaign notification template" });
+    }
+  });
+
+  app.put("/api/admin/campaign-notification-templates/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const template = await storage.updateCampaignNotificationTemplate(id, updates);
+      
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      res.json(template);
+    } catch (error: any) {
+      console.error("Error updating campaign notification template:", error);
+      res.status(500).json({ error: "Failed to update campaign notification template" });
+    }
+  });
+
+  app.delete("/api/admin/campaign-notification-templates/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCampaignNotificationTemplate(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting campaign notification template:", error);
+      res.status(500).json({ error: "Failed to delete campaign notification template" });
+    }
+  });
+
   // Quote Response Management Routes
   app.post('/api/quote-responses', async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
   Table, 
   TableBody, 
@@ -33,7 +34,13 @@ import {
   RotateCcw,
   Send,
   Eye,
-  X
+  X,
+  Plus,
+  Edit,
+  Trash2,
+  Layout,
+  MessageSquare,
+  Bell
 } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -56,6 +63,35 @@ interface MarketingContact {
   updatedAt: string;
 }
 
+interface CampaignEmailTemplate {
+  id: number;
+  name: string;
+  subject: string;
+  htmlContent: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CampaignSmsTemplate {
+  id: number;
+  name: string;
+  content: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CampaignNotificationTemplate {
+  id: number;
+  name: string;
+  title: string;
+  content: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function MarketingListPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
@@ -73,7 +109,29 @@ export default function MarketingListPage() {
   const [smsContent, setSmsContent] = useState('');
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationContent, setNotificationContent] = useState('');
+
+  // Campaign template management states
+  const [showTemplateCreator, setShowTemplateCreator] = useState(false);
+  const [templateType, setTemplateType] = useState<'email' | 'sms' | 'notification'>('email');
+  const [templateName, setTemplateName] = useState('');
+  const [templateSubject, setTemplateSubject] = useState('');
+  const [templateContent, setTemplateContent] = useState('');
+  const [templateTitle, setTemplateTitle] = useState('');
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const { toast } = useToast();
+
+  // Campaign template queries
+  const { data: campaignEmailTemplates } = useQuery({
+    queryKey: ["/api/admin/campaign-email-templates"],
+  });
+
+  const { data: campaignSmsTemplates } = useQuery({
+    queryKey: ["/api/admin/campaign-sms-templates"],
+  });
+
+  const { data: campaignNotificationTemplates } = useQuery({
+    queryKey: ["/api/admin/campaign-notification-templates"],
+  });
 
   // Fetch marketing contacts
   const { data: contacts = [], isLoading, refetch } = useQuery({
@@ -172,6 +230,132 @@ export default function MarketingListPage() {
       });
     },
   });
+
+  // Campaign template mutations
+  const createEmailTemplateMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/admin/campaign-email-templates', data),
+    onSuccess: () => {
+      toast({ title: "E-posta şablonu oluşturuldu", description: "Şablon başarıyla kaydedildi" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-email-templates"] });
+      resetTemplateForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon oluşturulamadı", variant: "destructive" });
+    },
+  });
+
+  const createSmsTemplateMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/admin/campaign-sms-templates', data),
+    onSuccess: () => {
+      toast({ title: "SMS şablonu oluşturuldu", description: "Şablon başarıyla kaydedildi" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-sms-templates"] });
+      resetTemplateForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon oluşturulamadı", variant: "destructive" });
+    },
+  });
+
+  const createNotificationTemplateMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/admin/campaign-notification-templates', data),
+    onSuccess: () => {
+      toast({ title: "Bildirim şablonu oluşturuldu", description: "Şablon başarıyla kaydedildi" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-notification-templates"] });
+      resetTemplateForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon oluşturulamadı", variant: "destructive" });
+    },
+  });
+
+  const deleteEmailTemplateMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/admin/campaign-email-templates/${id}`),
+    onSuccess: () => {
+      toast({ title: "E-posta şablonu silindi", description: "Şablon kaldırıldı" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-email-templates"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon silinemedi", variant: "destructive" });
+    },
+  });
+
+  const deleteSmsTemplateMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/admin/campaign-sms-templates/${id}`),
+    onSuccess: () => {
+      toast({ title: "SMS şablonu silindi", description: "Şablon kaldırıldı" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-sms-templates"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon silinemedi", variant: "destructive" });
+    },
+  });
+
+  const deleteNotificationTemplateMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/admin/campaign-notification-templates/${id}`),
+    onSuccess: () => {
+      toast({ title: "Bildirim şablonu silindi", description: "Şablon kaldırıldı" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-notification-templates"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon silinemedi", variant: "destructive" });
+    },
+  });
+
+  // Helper functions
+  const resetTemplateForm = () => {
+    setTemplateName('');
+    setTemplateSubject('');
+    setTemplateContent('');
+    setTemplateTitle('');
+    setEditingTemplate(null);
+    setShowTemplateCreator(false);
+  };
+
+  const handleCreateTemplate = () => {
+    if (!templateName || !templateContent) {
+      toast({ title: "Hata", description: "Şablon adı ve içerik gereklidir", variant: "destructive" });
+      return;
+    }
+
+    const baseData = {
+      name: templateName,
+      content: templateContent
+    };
+
+    if (templateType === 'email') {
+      if (!templateSubject) {
+        toast({ title: "Hata", description: "E-posta konusu gereklidir", variant: "destructive" });
+        return;
+      }
+      createEmailTemplateMutation.mutate({
+        ...baseData,
+        subject: templateSubject,
+        htmlContent: templateContent
+      });
+    } else if (templateType === 'sms') {
+      createSmsTemplateMutation.mutate(baseData);
+    } else if (templateType === 'notification') {
+      if (!templateTitle) {
+        toast({ title: "Hata", description: "Bildirim başlığı gereklidir", variant: "destructive" });
+        return;
+      }
+      createNotificationTemplateMutation.mutate({
+        name: templateName,
+        title: templateTitle,
+        content: templateContent
+      });
+    }
+  };
+
+  const handleDeleteTemplate = (template: any, type: 'email' | 'sms' | 'notification') => {
+    if (type === 'email') {
+      deleteEmailTemplateMutation.mutate(template.id);
+    } else if (type === 'sms') {
+      deleteSmsTemplateMutation.mutate(template.id);
+    } else if (type === 'notification') {
+      deleteNotificationTemplateMutation.mutate(template.id);
+    }
+  };
 
   // Combine contacts and subscribers for display
   const allData = [...contacts, ...subscribers.map((sub: any) => ({
@@ -390,16 +574,16 @@ export default function MarketingListPage() {
   // Template selection handlers
   const handleEmailTemplateSelect = (templateId: string) => {
     setEmailTemplate(templateId);
-    const template = emailTemplates.find((t: any) => t.id.toString() === templateId);
+    const template = campaignEmailTemplates?.find((t: CampaignEmailTemplate) => t.id.toString() === templateId);
     if (template) {
       setCampaignSubject(template.subject || '');
-      setCampaignContent(template.content || '');
+      setCampaignContent(template.htmlContent || '');
     }
   };
 
   const handleSmsTemplateSelect = (templateId: string) => {
     setSmsTemplate(templateId);
-    const template = smsTemplates.find((t: any) => t.id.toString() === templateId);
+    const template = campaignSmsTemplates?.find((t: CampaignSmsTemplate) => t.id.toString() === templateId);
     if (template) {
       setSmsContent(template.content || '');
     }
@@ -407,7 +591,7 @@ export default function MarketingListPage() {
 
   const handleNotificationTemplateSelect = (templateId: string) => {
     setNotificationTemplate(templateId);
-    const template = notificationTemplates.find((t: any) => t.id.toString() === templateId);
+    const template = campaignNotificationTemplates?.find((t: CampaignNotificationTemplate) => t.id.toString() === templateId);
     if (template) {
       setNotificationTitle(template.title || '');
       setNotificationContent(template.content || '');
@@ -557,9 +741,10 @@ export default function MarketingListPage() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="contacts" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="contacts">İletişim Listesi</TabsTrigger>
           <TabsTrigger value="campaign">Toplu Kampanya Gönderimi</TabsTrigger>
+          <TabsTrigger value="templates">Şablon Kütüphanesi</TabsTrigger>
         </TabsList>
 
         {/* Contacts Tab */}
@@ -846,9 +1031,9 @@ export default function MarketingListPage() {
                         <SelectValue placeholder="E-posta şablonu seçin" />
                       </SelectTrigger>
                       <SelectContent>
-                        {emailTemplates.map((template: any) => (
+                        {campaignEmailTemplates && campaignEmailTemplates.map((template: CampaignEmailTemplate) => (
                           <SelectItem key={template.id} value={template.id.toString()}>
-                            {template.name || template.type} - {template.subject}
+                            {template.name} - {template.subject}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -893,9 +1078,9 @@ export default function MarketingListPage() {
                         <SelectValue placeholder="SMS şablonu seçin" />
                       </SelectTrigger>
                       <SelectContent>
-                        {smsTemplates.map((template: any) => (
+                        {campaignSmsTemplates && campaignSmsTemplates.map((template: CampaignSmsTemplate) => (
                           <SelectItem key={template.id} value={template.id.toString()}>
-                            {template.name || template.type}
+                            {template.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -932,9 +1117,9 @@ export default function MarketingListPage() {
                         <SelectValue placeholder="Bildirim şablonu seçin" />
                       </SelectTrigger>
                       <SelectContent>
-                        {notificationTemplates.map((template: any) => (
+                        {campaignNotificationTemplates && campaignNotificationTemplates.map((template: CampaignNotificationTemplate) => (
                           <SelectItem key={template.id} value={template.id.toString()}>
-                            {template.name || template.type} - {template.title}
+                            {template.name} - {template.title}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -986,6 +1171,212 @@ export default function MarketingListPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Templates Tab */}
+        <TabsContent value="templates" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layout className="h-5 w-5" />
+                    Şablon Kütüphanesi
+                  </CardTitle>
+                  <CardDescription>
+                    Kampanya şablonlarınızı oluşturun ve yönetin
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setShowTemplateCreator(true)} data-testid="button-create-template">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Yeni Şablon
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="email" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    E-posta Şablonları
+                  </TabsTrigger>
+                  <TabsTrigger value="sms" className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    SMS Şablonları
+                  </TabsTrigger>
+                  <TabsTrigger value="notification" className="flex items-center gap-2">
+                    <Bell className="h-4 w-4" />
+                    Bildirim Şablonları
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Email Templates */}
+                <TabsContent value="email" className="space-y-4">
+                  <div className="grid gap-4">
+                    {campaignEmailTemplates && campaignEmailTemplates.length > 0 ? (
+                      campaignEmailTemplates.map((template: CampaignEmailTemplate) => (
+                        <Card key={template.id} className="relative">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg">{template.name}</h3>
+                                <p className="text-sm text-gray-600 mb-2">{template.subject}</p>
+                                <div 
+                                  className="text-sm text-gray-500 line-clamp-2"
+                                  dangerouslySetInnerHTML={{ 
+                                    __html: template.htmlContent.substring(0, 150) + '...' 
+                                  }}
+                                />
+                              </div>
+                              <div className="flex gap-2 ml-4">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingTemplate(template);
+                                    setTemplateType('email');
+                                    setTemplateName(template.name);
+                                    setTemplateSubject(template.subject);
+                                    setTemplateContent(template.htmlContent);
+                                    setShowTemplateCreator(true);
+                                  }}
+                                  data-testid={`button-edit-email-${template.id}`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteTemplate(template, 'email')}
+                                  data-testid={`button-delete-email-${template.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Henüz e-posta şablonu bulunmuyor</p>
+                        <p className="text-sm">Yeni şablon oluşturmak için yukarıdaki butonu kullanın</p>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* SMS Templates */}
+                <TabsContent value="sms" className="space-y-4">
+                  <div className="grid gap-4">
+                    {campaignSmsTemplates && campaignSmsTemplates.length > 0 ? (
+                      campaignSmsTemplates.map((template: CampaignSmsTemplate) => (
+                        <Card key={template.id} className="relative">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg">{template.name}</h3>
+                                <p className="text-sm text-gray-500 mt-2">
+                                  {template.content.substring(0, 100)}
+                                  {template.content.length > 100 ? '...' : ''}
+                                </p>
+                              </div>
+                              <div className="flex gap-2 ml-4">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingTemplate(template);
+                                    setTemplateType('sms');
+                                    setTemplateName(template.name);
+                                    setTemplateContent(template.content);
+                                    setShowTemplateCreator(true);
+                                  }}
+                                  data-testid={`button-edit-sms-${template.id}`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteTemplate(template, 'sms')}
+                                  data-testid={`button-delete-sms-${template.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Henüz SMS şablonu bulunmuyor</p>
+                        <p className="text-sm">Yeni şablon oluşturmak için yukarıdaki butonu kullanın</p>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Notification Templates */}
+                <TabsContent value="notification" className="space-y-4">
+                  <div className="grid gap-4">
+                    {campaignNotificationTemplates && campaignNotificationTemplates.length > 0 ? (
+                      campaignNotificationTemplates.map((template: CampaignNotificationTemplate) => (
+                        <Card key={template.id} className="relative">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg">{template.name}</h3>
+                                <p className="font-medium text-sm text-gray-700 mb-1">{template.title}</p>
+                                <p className="text-sm text-gray-500">
+                                  {template.content.substring(0, 100)}
+                                  {template.content.length > 100 ? '...' : ''}
+                                </p>
+                              </div>
+                              <div className="flex gap-2 ml-4">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingTemplate(template);
+                                    setTemplateType('notification');
+                                    setTemplateName(template.name);
+                                    setTemplateTitle(template.title);
+                                    setTemplateContent(template.content);
+                                    setShowTemplateCreator(true);
+                                  }}
+                                  data-testid={`button-edit-notification-${template.id}`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteTemplate(template, 'notification')}
+                                  data-testid={`button-delete-notification-${template.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Henüz bildirim şablonu bulunmuyor</p>
+                        <p className="text-sm">Yeni şablon oluşturmak için yukarıdaki butonu kullanın</p>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
       </div>
       
@@ -1013,6 +1404,143 @@ export default function MarketingListPage() {
           </div>
         </div>
       )}
+
+      {/* Template Creator Dialog */}
+      <Dialog open={showTemplateCreator} onOpenChange={setShowTemplateCreator}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingTemplate ? 'Şablonu Düzenle' : 'Yeni Şablon Oluştur'}
+            </DialogTitle>
+            <DialogDescription>
+              {templateType === 'email' && 'E-posta kampanyası için şablon oluşturun'}
+              {templateType === 'sms' && 'SMS kampanyası için şablon oluşturun'}
+              {templateType === 'notification' && 'Bildirim kampanyası için şablon oluşturun'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Template Type Selection */}
+            {!editingTemplate && (
+              <div className="space-y-2">
+                <Label>Şablon Tipi</Label>
+                <Select value={templateType} onValueChange={(value: 'email' | 'sms' | 'notification') => setTemplateType(value)}>
+                  <SelectTrigger data-testid="select-template-type">
+                    <SelectValue placeholder="Şablon tipi seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="email">E-posta</SelectItem>
+                    <SelectItem value="sms">SMS</SelectItem>
+                    <SelectItem value="notification">Bildirim</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Template Name */}
+            <div className="space-y-2">
+              <Label htmlFor="template-name">Şablon Adı</Label>
+              <Input
+                id="template-name"
+                placeholder="Şablon adı girin"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                data-testid="input-template-name"
+              />
+            </div>
+
+            {/* Email Subject */}
+            {templateType === 'email' && (
+              <div className="space-y-2">
+                <Label htmlFor="template-subject">E-posta Konusu</Label>
+                <Input
+                  id="template-subject"
+                  placeholder="E-posta konusu girin"
+                  value={templateSubject}
+                  onChange={(e) => setTemplateSubject(e.target.value)}
+                  data-testid="input-template-subject"
+                />
+              </div>
+            )}
+
+            {/* Notification Title */}
+            {templateType === 'notification' && (
+              <div className="space-y-2">
+                <Label htmlFor="template-title">Bildirim Başlığı</Label>
+                <Input
+                  id="template-title"
+                  placeholder="Bildirim başlığı girin"
+                  value={templateTitle}
+                  onChange={(e) => setTemplateTitle(e.target.value)}
+                  data-testid="input-template-title"
+                />
+              </div>
+            )}
+
+            {/* Template Content */}
+            <div className="space-y-2">
+              <Label htmlFor="template-content">
+                {templateType === 'email' && 'E-posta İçeriği (HTML desteklenir)'}
+                {templateType === 'sms' && 'SMS İçeriği'}
+                {templateType === 'notification' && 'Bildirim İçeriği'}
+              </Label>
+              <Textarea
+                id="template-content"
+                placeholder={
+                  templateType === 'email' 
+                    ? 'E-posta içeriğini girin (HTML kullanabilirsiniz)' 
+                    : templateType === 'sms'
+                    ? 'SMS mesajını girin (160 karakter önerilir)'
+                    : 'Bildirim mesajını girin'
+                }
+                value={templateContent}
+                onChange={(e) => setTemplateContent(e.target.value)}
+                rows={templateType === 'email' ? 8 : 4}
+                maxLength={templateType === 'sms' ? 160 : undefined}
+                data-testid="textarea-template-content"
+              />
+              {templateType === 'sms' && (
+                <p className="text-sm text-gray-500">{templateContent.length}/160 karakter</p>
+              )}
+            </div>
+
+            {/* Mandatory Footer Notice */}
+            {templateType === 'email' && (
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+                <div className="flex">
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Önemli:</strong> E-posta şablonlarına otomatik olarak abonelik iptali bağlantısı eklenecektir.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={resetTemplateForm}
+                data-testid="button-cancel-template"
+              >
+                İptal
+              </Button>
+              <Button
+                onClick={handleCreateTemplate}
+                disabled={
+                  createEmailTemplateMutation.isPending ||
+                  createSmsTemplateMutation.isPending ||
+                  createNotificationTemplateMutation.isPending
+                }
+                data-testid="button-save-template"
+              >
+                {editingTemplate ? 'Güncelle' : 'Oluştur'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
