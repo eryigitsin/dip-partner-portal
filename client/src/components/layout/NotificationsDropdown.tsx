@@ -40,7 +40,7 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
     hasMore: boolean;
   }>({
     queryKey: ['/api/notifications', 1, 10], // page, limit
-    queryFn: () => apiRequest('/api/notifications?page=1&limit=10'),
+    queryFn: () => apiRequest('/api/notifications?page=1&limit=10', 'GET'),
     enabled: isOpen,
   });
 
