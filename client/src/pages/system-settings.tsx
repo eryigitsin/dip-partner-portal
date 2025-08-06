@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
-import { Trash2, Plus, Edit2, Save, X, Upload, Settings, Mail, MessageSquare, Shield, Database, Video, Eye } from 'lucide-react';
+import { Trash2, Plus, Edit2, Save, X, Upload, Settings, Mail, MessageSquare, Shield, Database, Video, Eye, HardDrive, FileText, Image as ImageIcon } from 'lucide-react';
 import { EmailPreviewDialog } from '@/components/email-preview-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -404,21 +404,9 @@ export default function SystemSettings() {
     },
   });
 
-  const saveMediaSettingsMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/admin/system-config', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mediaSettings),
-      });
-      if (!response.ok) throw new Error('Failed to update media settings');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/system-config'] });
-      toast({ title: 'Medya ayarları kaydedildi' });
-    },
-  });
+
+
+
 
   const handleCategoryEdit = (category: Category) => {
     setEditingCategory({ ...category });

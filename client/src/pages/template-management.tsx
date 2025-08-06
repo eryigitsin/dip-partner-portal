@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Eye, Mail, Bell, Plus, Send, Layout, MessageSquare, Type, Palette, Users, Image } from "lucide-react";
+import { Save, Eye, Mail, Bell, Plus, Send, Layout, MessageSquare, Type, Palette, Users, Image, Edit, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { EmailTemplate, NotificationTemplate } from "@shared/schema";
@@ -158,7 +158,7 @@ export default function TemplateManagement() {
   const [currentSmsTemplate, setCurrentSmsTemplate] = useState<any | null>(null);
   const [emailPreview, setEmailPreview] = useState<EmailPreview | null>(null);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
-  const [showCampaignSender, setShowCampaignSender] = useState(false);
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [templateCreatorType, setTemplateCreatorType] = useState<'email' | 'notification' | 'sms'>('email');
   
   const queryClient = useQueryClient();
@@ -258,15 +258,16 @@ export default function TemplateManagement() {
             Yeni Şablon Oluştur
           </Button>
           <Button
-            onClick={() => setShowCampaignSender(true)}
+            onClick={() => window.location.href = '/admin/marketing-crm'}
             variant="outline"
             className="flex items-center gap-2"
             data-testid="button-send-campaign"
           >
             <Send className="h-4 w-4" />
-            Toplu Kampanya Gönder
+            Pazarlama & CRM'e Git
           </Button>
           <Button
+            onClick={() => setShowTemplateLibrary(true)}
             variant="outline"
             className="flex items-center gap-2"
             data-testid="button-template-library"
@@ -321,7 +322,7 @@ export default function TemplateManagement() {
                 </div>
               </div>
 
-              {selectedEmailTemplate && currentEmailTemplate && (
+              {selectedEmailTemplate && (
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="emailSubject">Konu</Label>
@@ -329,8 +330,11 @@ export default function TemplateManagement() {
                       id="emailSubject"
                       data-testid="input-email-subject"
                       placeholder="Email konusu"
-                      value={currentEmailTemplate.subject}
-                      onChange={(e) => setCurrentEmailTemplate(prev => prev ? { ...prev, subject: e.target.value } : null)}
+                      value={currentEmailTemplate?.subject || ""}
+                      onChange={(e) => setCurrentEmailTemplate(prev => 
+                        prev ? { ...prev, subject: e.target.value } : 
+                        { id: 0, name: selectedEmailTemplate, type: selectedEmailTemplate, subject: e.target.value, htmlContent: "", isActive: true, createdAt: new Date(), updatedAt: new Date() }
+                      )}
                     />
                   </div>
                   <div>
@@ -340,8 +344,11 @@ export default function TemplateManagement() {
                       data-testid="textarea-email-content"
                       className="min-h-[300px] font-mono"
                       placeholder="HTML email içeriği..."
-                      value={currentEmailTemplate.htmlContent}
-                      onChange={(e) => setCurrentEmailTemplate(prev => prev ? { ...prev, htmlContent: e.target.value } : null)}
+                      value={currentEmailTemplate?.htmlContent || ""}
+                      onChange={(e) => setCurrentEmailTemplate(prev => 
+                        prev ? { ...prev, htmlContent: e.target.value } : 
+                        { id: 0, name: selectedEmailTemplate, type: selectedEmailTemplate, subject: "", htmlContent: e.target.value, isActive: true, createdAt: new Date(), updatedAt: new Date() }
+                      )}
                     />
                   </div>
                   
@@ -366,8 +373,8 @@ export default function TemplateManagement() {
                       size="sm"
                       data-testid="button-preview-email"
                       onClick={() => setEmailPreview({
-                        subject: currentEmailTemplate.subject,
-                        content: currentEmailTemplate.htmlContent.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+                        subject: currentEmailTemplate?.subject || "",
+                        content: (currentEmailTemplate?.htmlContent || "").replace(/\{\{(\w+)\}\}/g, (match, key) => {
                           const mockData: Record<string, string> = {
                             partnerName: 'Test Partner',
                             companyName: 'Test Şirketi',
@@ -430,7 +437,7 @@ export default function TemplateManagement() {
                 </div>
               </div>
 
-              {selectedNotificationTemplate && currentNotificationTemplate && (
+              {selectedNotificationTemplate && (
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="notificationTitle">Başlık</Label>
@@ -438,8 +445,11 @@ export default function TemplateManagement() {
                       id="notificationTitle"
                       data-testid="input-notification-title"
                       placeholder="Bildirim başlığı"
-                      value={currentNotificationTemplate.title}
-                      onChange={(e) => setCurrentNotificationTemplate(prev => prev ? { ...prev, title: e.target.value } : null)}
+                      value={currentNotificationTemplate?.title || ""}
+                      onChange={(e) => setCurrentNotificationTemplate(prev => 
+                        prev ? { ...prev, title: e.target.value } : 
+                        { id: 0, type: selectedNotificationTemplate, title: e.target.value, content: "", userId: null, isRead: false, createdAt: new Date(), updatedAt: new Date() }
+                      )}
                     />
                   </div>
                   <div>
@@ -449,8 +459,11 @@ export default function TemplateManagement() {
                       data-testid="textarea-notification-message"
                       className="min-h-[150px]"
                       placeholder="Bildirim mesajı..."
-                      value={currentNotificationTemplate.message}
-                      onChange={(e) => setCurrentNotificationTemplate(prev => prev ? { ...prev, message: e.target.value } : null)}
+                      value={currentNotificationTemplate?.content || ""}
+                      onChange={(e) => setCurrentNotificationTemplate(prev => 
+                        prev ? { ...prev, content: e.target.value } : 
+                        { id: 0, type: selectedNotificationTemplate, title: "", content: e.target.value, userId: null, isRead: false, createdAt: new Date(), updatedAt: new Date() }
+                      )}
                     />
                   </div>
                   
@@ -519,7 +532,7 @@ export default function TemplateManagement() {
                 </div>
               </div>
 
-              {selectedSmsTemplate && currentSmsTemplate && (
+              {selectedSmsTemplate && (
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="smsContent">SMS İçeriği</Label>
@@ -528,12 +541,15 @@ export default function TemplateManagement() {
                       data-testid="textarea-sms-content"
                       className="min-h-[120px]"
                       placeholder="SMS içeriği... (160 karakter limitine dikkat edin)"
-                      value={currentSmsTemplate.content}
-                      onChange={(e) => setCurrentSmsTemplate((prev: any) => prev ? { ...prev, content: e.target.value } : null)}
+                      value={currentSmsTemplate?.content || ""}
+                      onChange={(e) => setCurrentSmsTemplate((prev: any) => 
+                        prev ? { ...prev, content: e.target.value } : 
+                        { id: 0, type: selectedSmsTemplate, content: e.target.value, isActive: true, createdAt: new Date(), updatedAt: new Date() }
+                      )}
                       maxLength={160}
                     />
                     <div className="text-xs text-muted-foreground mt-1">
-                      {currentSmsTemplate.content?.length || 0}/160 karakter
+                      {currentSmsTemplate?.content?.length || 0}/160 karakter
                     </div>
                   </div>
                   
@@ -557,7 +573,7 @@ export default function TemplateManagement() {
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        const preview = currentSmsTemplate.content.replace(/\{\{(\w+)\}\}/g, (match: string, key: string) => {
+                        const preview = (currentSmsTemplate?.content || "").replace(/\{\{(\w+)\}\}/g, (match: string, key: string) => {
                           const mockData = {
                             code: '123456',
                             name: 'Test Kullanıcı',
@@ -688,98 +704,80 @@ export default function TemplateManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Campaign Sender Dialog */}
-      <Dialog open={showCampaignSender} onOpenChange={setShowCampaignSender}>
+      {/* Template Library Dialog */}
+      <Dialog open={showTemplateLibrary} onOpenChange={setShowTemplateLibrary}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5" />
-              Toplu Kampanya Gönderici
+              <Layout className="h-5 w-5" />
+              Şablon Kütüphanesi
             </DialogTitle>
             <DialogDescription>
-              Seçili kullanıcı gruplarına toplu email/SMS kampanyası gönderin
+              Oluşturduğunuz özel şablonları görüntüleyin ve yönetin
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Kampanya Türü</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Kampanya türü seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="email">Email Kampanyası</SelectItem>
-                    <SelectItem value="sms">SMS Kampanyası</SelectItem>
-                    <SelectItem value="both">Email + SMS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Hedef Grup</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Hedef grup seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all_users">Tüm Kullanıcılar</SelectItem>
-                    <SelectItem value="partners">Tüm Partnerler</SelectItem>
-                    <SelectItem value="active_users">Aktif Kullanıcılar</SelectItem>
-                    <SelectItem value="newsletter_subscribers">Newsletter Aboneleri</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label>Kampanya Başlığı</Label>
-                <Input placeholder="Kampanya başlığını girin" />
-              </div>
-              <div>
-                <Label>Şablon Seç</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Kullanılacak şablonu seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="campaign">Kampanya Şablonu</SelectItem>
-                    <SelectItem value="announcement">Duyuru Şablonu</SelectItem>
-                    <SelectItem value="newsletter">Newsletter Şablonu</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-              <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-                <Users className="h-4 w-4" />
-                <span className="font-medium">Gönderim Özeti</span>
-              </div>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                Bu kampanya yaklaşık <strong>1,250 kullanıcıya</strong> gönderilecek
-              </p>
-            </div>
+            <Tabs defaultValue="email" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="email">E-Posta Şablonları</TabsTrigger>
+                <TabsTrigger value="notification">Bildirim Şablonları</TabsTrigger>
+                <TabsTrigger value="sms">SMS Şablonları</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="email" className="space-y-4">
+                <div className="grid gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">Örnek Email Şablonu</h4>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Düzenle
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Sil
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Özel olarak oluşturulan email şablonu</p>
+                  </div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Henüz özel şablon oluşturmamışsınız</p>
+                    <p className="text-sm">Yeni şablon oluşturmak için "Yeni Şablon Oluştur" butonunu kullanın</p>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="notification" className="space-y-4">
+                <div className="text-center py-8 text-muted-foreground">
+                  <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Henüz özel bildirim şablonu oluşturmamışsınız</p>
+                  <p className="text-sm">Yeni şablon oluşturmak için "Yeni Şablon Oluştur" butonunu kullanın</p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="sms" className="space-y-4">
+                <div className="text-center py-8 text-muted-foreground">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Henüz özel SMS şablonu oluşturmamışsınız</p>
+                  <p className="text-sm">Yeni şablon oluşturmak için "Yeni Şablon Oluştur" butonunu kullanın</p>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
-          <div className="flex justify-between pt-4 border-t">
-            <Button variant="outline" onClick={() => setShowCampaignSender(false)}>
-              İptal
+          <div className="flex justify-end pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowTemplateLibrary(false)}>
+              Kapat
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline">
-                <Eye className="h-4 w-4 mr-2" />
-                Önizle
-              </Button>
-              <Button>
-                <Send className="h-4 w-4 mr-2" />
-                Kampanyayı Gönder
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
+
+
 
       {/* Email Preview Dialog */}
       {emailPreview && (
