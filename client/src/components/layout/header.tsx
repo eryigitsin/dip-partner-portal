@@ -355,6 +355,12 @@ export function Header() {
                           <span>Sistem Ayarları</span>
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/template-management" className="flex items-center">
+                          <Mail className="mr-2 h-4 w-4" />
+                          <span>Şablon Yönetimi</span>
+                        </Link>
+                      </DropdownMenuItem>
                       
                       {showAccountTypeSwitching && (
                         <>

@@ -823,6 +823,32 @@ export const insertPartnerProfileVisitSchema = createInsertSchema(partnerProfile
   visitedAt: true,
 });
 
+// Email Templates - Template management for system emails
+export const emailTemplates = pgTable("email_templates", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull().unique(), // partner_welcome, quote_received, quote_approved, quote_rejected, password_reset, email_verification, payment_confirmation, project_reminder
+  name: text("name").notNull(), // Human readable name
+  description: text("description"), // Description of when this template is used
+  subject: text("subject").notNull(),
+  htmlContent: text("html_content").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Notification Templates - Template management for system notifications
+export const notificationTemplates = pgTable("notification_templates", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull().unique(), // quote_request, quote_response, partner_application, follower, project_update, feedback, newsletter_subscriber, system_status, partner_post, campaign
+  name: text("name").notNull(), // Human readable name
+  description: text("description"), // Description of when this template is used
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Notifications table - LinkedIn style notification system
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
@@ -847,6 +873,18 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNotificationTemplateSchema = createInsertSchema(notificationTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
   createdAt: true,
@@ -854,6 +892,10 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 });
 
 // Select types
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type NotificationTemplate = typeof notificationTemplates.$inferSelect;
+export type InsertNotificationTemplate = z.infer<typeof insertNotificationTemplateSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 

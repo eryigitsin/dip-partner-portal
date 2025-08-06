@@ -27,6 +27,8 @@ import {
   userPartnerInteractions,
   dismissedInfoCards,
   recipientAccounts,
+  emailTemplates,
+  notificationTemplates,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -86,6 +88,10 @@ import {
   type InsertProjectPayment,
   companyBillingInfo,
   type CompanyBillingInfo,
+  type EmailTemplate,
+  type InsertEmailTemplate,
+  type NotificationTemplate,
+  type InsertNotificationTemplate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
@@ -321,6 +327,18 @@ export interface IStorage {
   createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment>;
   getProjectPayments(projectId: number): Promise<ProjectPayment[]>;
   updateProjectPayment(id: number, updates: Partial<InsertProjectPayment>): Promise<ProjectPayment>;
+
+  // Email Template methods
+  getAllEmailTemplates(): Promise<EmailTemplate[]>;
+  getEmailTemplate(type: string): Promise<EmailTemplate | undefined>;
+  updateEmailTemplate(type: string, template: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+
+  // Notification Template methods
+  getAllNotificationTemplates(): Promise<NotificationTemplate[]>;
+  getNotificationTemplate(type: string): Promise<NotificationTemplate | undefined>;
+  updateNotificationTemplate(type: string, template: Partial<InsertNotificationTemplate>): Promise<NotificationTemplate | undefined>;
+  createNotificationTemplate(template: InsertNotificationTemplate): Promise<NotificationTemplate>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2624,6 +2642,72 @@ export class DatabaseStorage implements IStorage {
       success: true,
       message: "Newsletter aboneliğiniz başarıyla iptal edildi"
     };
+  }
+
+  // Email Template methods
+  async getAllEmailTemplates(): Promise<EmailTemplate[]> {
+    return await db
+      .select()
+      .from(emailTemplates)
+      .orderBy(asc(emailTemplates.name));
+  }
+
+  async getEmailTemplate(type: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(emailTemplates)
+      .where(eq(emailTemplates.type, type));
+    return template;
+  }
+
+  async updateEmailTemplate(type: string, template: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined> {
+    const [updated] = await db
+      .update(emailTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(emailTemplates.type, type))
+      .returning();
+    return updated;
+  }
+
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [created] = await db
+      .insert(emailTemplates)
+      .values(template)
+      .returning();
+    return created;
+  }
+
+  // Notification Template methods
+  async getAllNotificationTemplates(): Promise<NotificationTemplate[]> {
+    return await db
+      .select()
+      .from(notificationTemplates)
+      .orderBy(asc(notificationTemplates.name));
+  }
+
+  async getNotificationTemplate(type: string): Promise<NotificationTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(notificationTemplates)
+      .where(eq(notificationTemplates.type, type));
+    return template;
+  }
+
+  async updateNotificationTemplate(type: string, template: Partial<InsertNotificationTemplate>): Promise<NotificationTemplate | undefined> {
+    const [updated] = await db
+      .update(notificationTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(notificationTemplates.type, type))
+      .returning();
+    return updated;
+  }
+
+  async createNotificationTemplate(template: InsertNotificationTemplate): Promise<NotificationTemplate> {
+    const [created] = await db
+      .insert(notificationTemplates)
+      .values(template)
+      .returning();
+    return created;
   }
 
 }

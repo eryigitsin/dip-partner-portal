@@ -5808,5 +5808,145 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Email Template Management Routes
+  app.get("/api/admin/email-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const templates = await storage.getAllEmailTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching email templates:', error);
+      res.status(500).json({ message: "Failed to fetch email templates" });
+    }
+  });
+
+  app.get("/api/admin/email-templates/:type", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const template = await storage.getEmailTemplate(req.params.type);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching email template:', error);
+      res.status(500).json({ message: "Failed to fetch email template" });
+    }
+  });
+
+  app.put("/api/admin/email-templates/:type", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const { subject, htmlContent } = req.body;
+      const updated = await storage.updateEmailTemplate(req.params.type, {
+        subject,
+        htmlContent
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating email template:', error);
+      res.status(500).json({ message: "Failed to update email template" });
+    }
+  });
+
+  // Notification Template Management Routes
+  app.get("/api/admin/notification-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const templates = await storage.getAllNotificationTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching notification templates:', error);
+      res.status(500).json({ message: "Failed to fetch notification templates" });
+    }
+  });
+
+  app.get("/api/admin/notification-templates/:type", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const template = await storage.getNotificationTemplate(req.params.type);
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching notification template:', error);
+      res.status(500).json({ message: "Failed to fetch notification template" });
+    }
+  });
+
+  app.put("/api/admin/notification-templates/:type", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const { title, message } = req.body;
+      const updated = await storage.updateNotificationTemplate(req.params.type, {
+        title,
+        message
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating notification template:', error);
+      res.status(500).json({ message: "Failed to update notification template" });
+    }
+  });
+
   return httpServer;
 }
