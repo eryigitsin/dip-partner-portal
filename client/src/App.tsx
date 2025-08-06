@@ -110,7 +110,7 @@ function Router() {
       <ProtectedRoute path="/statistics" component={Statistics} />
       <ProtectedRoute path="/system-status" component={SystemStatus} />
       <ProtectedRoute path="/system-settings" component={SystemSettings} />
-      <ProtectedRoute path="/template-management" component={TemplateManagement} />
+      <AdminProtectedRoute path="/template-management" component={TemplateManagement} />
       <ProtectedRoute path="/email-preferences" component={EmailPreferences} />
       <ProtectedRoute path="/email-subscribers" component={EmailSubscribers} />
       <AdminProtectedRoute path="/marketing-list" component={MarketingListPage} />

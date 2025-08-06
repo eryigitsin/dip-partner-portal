@@ -515,10 +515,12 @@ export default function MarketingListPage() {
 
   // Handle template selection
   const handleTemplateSelect = (templateId: string) => {
-    const template = emailTemplates.find((t: any) => t.id === parseInt(templateId));
-    if (template) {
-      setCampaignSubject(template.subject);
-      setCampaignContent(template.htmlContent);
+    if (campaignEmailTemplates && Array.isArray(campaignEmailTemplates)) {
+      const template = campaignEmailTemplates.find((t: any) => t.id === parseInt(templateId));
+      if (template) {
+        setCampaignSubject(template.subject || '');
+        setCampaignContent(template.htmlContent || '');
+      }
     }
     setSelectedTemplate(templateId);
   };
@@ -658,27 +660,33 @@ export default function MarketingListPage() {
   // Template selection handlers
   const handleEmailTemplateSelect = (templateId: string) => {
     setEmailTemplate(templateId);
-    const template = campaignEmailTemplates?.find((t: CampaignEmailTemplate) => t.id.toString() === templateId);
-    if (template) {
-      setCampaignSubject(template.subject || '');
-      setCampaignContent(template.htmlContent || '');
+    if (campaignEmailTemplates && Array.isArray(campaignEmailTemplates)) {
+      const template = campaignEmailTemplates.find((t: CampaignEmailTemplate) => t.id.toString() === templateId);
+      if (template) {
+        setCampaignSubject(template.subject || '');
+        setCampaignContent(template.htmlContent || '');
+      }
     }
   };
 
   const handleSmsTemplateSelect = (templateId: string) => {
     setSmsTemplate(templateId);
-    const template = campaignSmsTemplates?.find((t: CampaignSmsTemplate) => t.id.toString() === templateId);
-    if (template) {
-      setSmsContent(template.content || '');
+    if (campaignSmsTemplates && Array.isArray(campaignSmsTemplates)) {
+      const template = campaignSmsTemplates.find((t: CampaignSmsTemplate) => t.id.toString() === templateId);
+      if (template) {
+        setSmsContent(template.content || '');
+      }
     }
   };
 
   const handleNotificationTemplateSelect = (templateId: string) => {
     setNotificationTemplate(templateId);
-    const template = campaignNotificationTemplates?.find((t: CampaignNotificationTemplate) => t.id.toString() === templateId);
-    if (template) {
-      setNotificationTitle(template.title || '');
-      setNotificationContent(template.content || '');
+    if (campaignNotificationTemplates && Array.isArray(campaignNotificationTemplates)) {
+      const template = campaignNotificationTemplates.find((t: CampaignNotificationTemplate) => t.id.toString() === templateId);
+      if (template) {
+        setNotificationTitle(template.title || '');
+        setNotificationContent(template.content || '');
+      }
     }
   };
 
@@ -967,13 +975,13 @@ export default function MarketingListPage() {
                           
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {contact.tags?.slice(0, 2).map((tag, index) => (
+                              {Array.isArray(contact.tags) && contact.tags.slice(0, 2).map((tag: any, index: number) => (
                                 <Badge key={index} variant="outline" className="text-xs">
                                   <Tag className="h-2 w-2 mr-1" />
                                   {tag}
                                 </Badge>
                               ))}
-                              {contact.tags?.length > 2 && (
+                              {Array.isArray(contact.tags) && contact.tags.length > 2 && (
                                 <Badge variant="outline" className="text-xs">
                                   +{contact.tags.length - 2}
                                 </Badge>
@@ -1115,7 +1123,7 @@ export default function MarketingListPage() {
                         <SelectValue placeholder="E-posta şablonu seçin" />
                       </SelectTrigger>
                       <SelectContent>
-                        {campaignEmailTemplates && campaignEmailTemplates.map((template: CampaignEmailTemplate) => (
+                        {campaignEmailTemplates && Array.isArray(campaignEmailTemplates) && campaignEmailTemplates.map((template: CampaignEmailTemplate) => (
                           <SelectItem key={template.id} value={template.id.toString()}>
                             {template.name} - {template.subject}
                           </SelectItem>
@@ -1162,7 +1170,7 @@ export default function MarketingListPage() {
                         <SelectValue placeholder="SMS şablonu seçin" />
                       </SelectTrigger>
                       <SelectContent>
-                        {campaignSmsTemplates && campaignSmsTemplates.map((template: CampaignSmsTemplate) => (
+                        {campaignSmsTemplates && Array.isArray(campaignSmsTemplates) && campaignSmsTemplates.map((template: CampaignSmsTemplate) => (
                           <SelectItem key={template.id} value={template.id.toString()}>
                             {template.name}
                           </SelectItem>
@@ -1201,7 +1209,7 @@ export default function MarketingListPage() {
                         <SelectValue placeholder="Bildirim şablonu seçin" />
                       </SelectTrigger>
                       <SelectContent>
-                        {campaignNotificationTemplates && campaignNotificationTemplates.map((template: CampaignNotificationTemplate) => (
+                        {campaignNotificationTemplates && Array.isArray(campaignNotificationTemplates) && campaignNotificationTemplates.map((template: CampaignNotificationTemplate) => (
                           <SelectItem key={template.id} value={template.id.toString()}>
                             {template.name} - {template.title}
                           </SelectItem>
@@ -1296,7 +1304,7 @@ export default function MarketingListPage() {
                 {/* Email Templates */}
                 <TabsContent value="email" className="space-y-4">
                   <div className="grid gap-4">
-                    {campaignEmailTemplates && campaignEmailTemplates.length > 0 ? (
+                    {campaignEmailTemplates && Array.isArray(campaignEmailTemplates) && campaignEmailTemplates.length > 0 ? (
                       campaignEmailTemplates.map((template: CampaignEmailTemplate) => (
                         <Card key={template.id} className="relative">
                           <CardContent className="p-4">
@@ -1377,7 +1385,7 @@ export default function MarketingListPage() {
                 {/* SMS Templates */}
                 <TabsContent value="sms" className="space-y-4">
                   <div className="grid gap-4">
-                    {campaignSmsTemplates && campaignSmsTemplates.length > 0 ? (
+                    {campaignSmsTemplates && Array.isArray(campaignSmsTemplates) && campaignSmsTemplates.length > 0 ? (
                       campaignSmsTemplates.map((template: CampaignSmsTemplate) => (
                         <Card key={template.id} className="relative">
                           <CardContent className="p-4">
@@ -1454,7 +1462,7 @@ export default function MarketingListPage() {
                 {/* Notification Templates */}
                 <TabsContent value="notification" className="space-y-4">
                   <div className="grid gap-4">
-                    {campaignNotificationTemplates && campaignNotificationTemplates.length > 0 ? (
+                    {campaignNotificationTemplates && Array.isArray(campaignNotificationTemplates) && campaignNotificationTemplates.length > 0 ? (
                       campaignNotificationTemplates.map((template: CampaignNotificationTemplate) => (
                         <Card key={template.id} className="relative">
                           <CardContent className="p-4">

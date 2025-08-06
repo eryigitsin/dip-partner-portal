@@ -2967,19 +2967,38 @@ export function registerRoutes(app: Express): Server {
 
         // Process email campaign
         if (channels.includes('email') && email) {
-          const emailRecipients = targetContacts.filter((c: any) => c.email).map((c: any) => c.email);
+          const emailRecipients = targetContacts.filter((c: any) => c.email);
           if (emailRecipients.length > 0) {
-            for (const emailAddr of emailRecipients) {
+            for (const recipient of emailRecipients) {
               try {
+                // Replace parameters in subject and content
+                let personalizedSubject = email.subject;
+                let personalizedContent = email.content;
+                
+                // Get user data for parameter replacement
+                const user = await storage.getUserByEmail(recipient.email);
+                if (user) {
+                  // Create full name from firstName and lastName
+                  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
+                  const userName = fullName;
+                  
+                  personalizedSubject = personalizedSubject.replace(/\{\{userName\}\}/g, userName);
+                  personalizedContent = personalizedContent.replace(/\{\{userName\}\}/g, userName);
+                  personalizedSubject = personalizedSubject.replace(/\{\{userEmail\}\}/g, user.email || '');
+                  personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
+                  personalizedSubject = personalizedSubject.replace(/\{\{fullName\}\}/g, fullName);
+                  personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
+                }
+
                 await resendService.sendEmail({
-                  to: emailAddr,
-                  subject: email.subject,
-                  html: email.content,
+                  to: recipient.email,
+                  subject: personalizedSubject,
+                  html: personalizedContent,
                 });
                 results.email.sent++;
                 totalSent++;
               } catch (error) {
-                console.error(`Failed to send email to ${emailAddr}:`, error);
+                console.error(`Failed to send email to ${recipient.email}:`, error);
                 results.email.failed++;
               }
             }
@@ -2990,15 +3009,35 @@ export function registerRoutes(app: Express): Server {
         if (channels.includes('sms') && sms) {
           const smsRecipients = targetContacts.filter((c: any) => c.phone);
           if (smsRecipients.length > 0) {
-            // Here you would integrate with NetGSM SMS service
-            // For now, simulate success
-            results.sms.sent = smsRecipients.length;
-            totalSent += smsRecipients.length;
+            const netgsm = createNetGsmService();
+            for (const recipient of smsRecipients) {
+              try {
+                // Replace parameters in SMS content
+                let personalizedContent = sms.content;
+                
+                // Get user data for parameter replacement
+                const user = await storage.getUserByEmail(recipient.email);
+                if (user) {
+                  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
+                  const userName = fullName;
+                  
+                  personalizedContent = personalizedContent.replace(/\{\{userName\}\}/g, userName);
+                  personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
+                  personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
+                }
+
+                if (netgsm) {
+                  await netgsm.sendSms(recipient.phone, personalizedContent);
+                }
+                results.sms.sent++;
+                totalSent++;
+              } catch (error) {
+                console.error(`Failed to send SMS to ${recipient.phone}:`, error);
+                results.sms.failed++;
+              }
+            }
             
-            console.log(`SMS campaign would be sent to ${smsRecipients.length} recipients:`, {
-              content: sms.content,
-              templateId: sms.templateId
-            });
+            console.log(`SMS campaign sent to ${results.sms.sent} recipients, ${results.sms.failed} failed`);
           }
         }
 
@@ -3010,11 +3049,29 @@ export function registerRoutes(app: Express): Server {
             const notificationService = storage.getNotificationService();
             for (const recipient of notificationRecipients) {
               try {
+                // Replace parameters in notification title and content
+                let personalizedTitle = notification.title;
+                let personalizedContent = notification.content;
+                
+                // Get user data for parameter replacement
+                const user = await storage.getUser(recipient.userId);
+                if (user) {
+                  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
+                  const userName = fullName;
+                  
+                  personalizedTitle = personalizedTitle.replace(/\{\{userName\}\}/g, userName);
+                  personalizedContent = personalizedContent.replace(/\{\{userName\}\}/g, userName);
+                  personalizedTitle = personalizedTitle.replace(/\{\{userEmail\}\}/g, user.email || '');
+                  personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
+                  personalizedTitle = personalizedTitle.replace(/\{\{fullName\}\}/g, fullName);
+                  personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
+                }
+
                 await notificationService.createNotification({
                   userId: recipient.userId,
                   type: 'campaign',
-                  title: notification.title,
-                  message: notification.content,
+                  title: personalizedTitle,
+                  message: personalizedContent,
                   relatedEntityType: 'campaign',
                   relatedEntityId: null,
                   actionUrl: null,
@@ -6659,8 +6716,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       const updatedTemplate = await storage.updateSmsTemplate(type, {
-        content,
-        updatedAt: new Date()
+        content
       });
 
       if (!updatedTemplate) {

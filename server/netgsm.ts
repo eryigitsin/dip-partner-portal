@@ -184,6 +184,107 @@ export class NetGsmService {
     return /^\d{6}$/.test(code);
   }
 
+  // Send general SMS using NetGSM API
+  async sendSms(phone: string, message: string): Promise<SendOtpResponse> {
+    try {
+      // Format phone number - remove country code for NetGSM API
+      let formattedPhone = phone.replace(/[\s+]/g, '');
+      
+      // Remove Turkish country code (90) if present
+      if (formattedPhone.startsWith('90') && formattedPhone.length === 12) {
+        formattedPhone = formattedPhone.substring(2); // Remove 90
+      }
+      // Remove leading 0 if present
+      if (formattedPhone.startsWith('0') && formattedPhone.length === 11) {
+        formattedPhone = formattedPhone.substring(1); // Remove leading 0
+      }
+      
+      // NetGSM resmi API dokümantasyonundaki XML formatı
+      const xmlData = `<mainbody>
+    <header>
+        <usercode>${this.config.username}</usercode>
+        <password>${this.config.password}</password>
+        <msgheader>${this.config.msgheader}</msgheader>
+    </header>
+    <body>
+        <msg>
+            <![CDATA[${message}]]>
+        </msg>
+        <no>${formattedPhone}</no>
+    </body>
+</mainbody>`;
+
+      console.log('Sending SMS to:', formattedPhone);
+      console.log('Message:', message);
+
+      // NetGSM multiple endpoint attempt
+      let response;
+      let lastError = '';
+      
+      // 1. Try XML endpoint
+      try {
+        response = await fetch(`${this.baseUrl}/sms/send/xml`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/xml; charset=UTF-8',
+          },
+          body: xmlData,
+        });
+        
+        console.log('Using XML endpoint');
+      } catch (xmlError) {
+        lastError += `XML endpoint failed: ${xmlError}; `;
+        
+        // 2. Try standard endpoint with form data
+        const formData = new URLSearchParams({
+          usercode: this.config.username,
+          password: this.config.password,
+          gsmno: formattedPhone,
+          message: message,
+          msgheader: this.config.msgheader,
+          dil: 'TR',
+        });
+        
+        response = await fetch(`${this.baseUrl}/sms/send/get`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData.toString(),
+        });
+        
+        console.log('Using standard endpoint with form data');
+      }
+
+      const responseText = await response.text();
+      console.log('NetGSM Response:', responseText);
+
+      // Parse NetGSM response
+      if (response.ok) {
+        if (responseText && (responseText.trim() === '00' || (responseText.length > 5 && !responseText.includes('ERROR') && !responseText.includes('<')))) {
+          return {
+            success: true,
+            jobId: responseText.trim(),
+            message: 'SMS sent successfully',
+          };
+        }
+      }
+
+      // Handle error responses
+      return {
+        success: false,
+        message: this.parseErrorMessage(responseText),
+      };
+
+    } catch (error) {
+      console.error('NetGSM SMS Error:', error);
+      return {
+        success: false,
+        message: 'SMS gönderim hatası',
+      };
+    }
+  }
+
   // Format Turkish phone number for database storage (with country code)
   formatPhoneNumber(phone: string): string {
     // Remove all non-digit characters
