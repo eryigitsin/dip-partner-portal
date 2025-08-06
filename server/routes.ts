@@ -3006,16 +3006,32 @@ export function registerRoutes(app: Express): Server {
         if (channels.includes('notification') && notification) {
           const notificationRecipients = targetContacts.filter((c: any) => c.userId);
           if (notificationRecipients.length > 0) {
-            // Here you would integrate with your notification system
-            // For now, simulate success
-            results.notification.sent = notificationRecipients.length;
-            totalSent += notificationRecipients.length;
+            // Send actual notifications using notification service
+            const notificationService = storage.getNotificationService();
+            for (const recipient of notificationRecipients) {
+              try {
+                await notificationService.createNotification({
+                  userId: recipient.userId,
+                  type: 'campaign',
+                  title: notification.title,
+                  message: notification.content,
+                  relatedEntityType: 'campaign',
+                  relatedEntityId: null,
+                  actionUrl: null,
+                  metadata: {
+                    campaignType: 'bulk_notification',
+                    templateId: notification.templateId
+                  }
+                });
+                results.notification.sent++;
+                totalSent++;
+              } catch (error) {
+                console.error(`Failed to send notification to user ${recipient.userId}:`, error);
+                results.notification.failed++;
+              }
+            }
             
-            console.log(`Notification campaign would be sent to ${notificationRecipients.length} recipients:`, {
-              title: notification.title,
-              content: notification.content,
-              templateId: notification.templateId
-            });
+            console.log(`Notification campaign sent to ${results.notification.sent} recipients, ${results.notification.failed} failed`);
           }
         }
 

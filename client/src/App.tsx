@@ -39,6 +39,7 @@ import EmailBuilderPage from "@/pages/email-builder";
 
 
 import { ProtectedRoute } from "./lib/protected-route";
+import { AdminProtectedRoute } from "./lib/admin-protected-route";
 import { useQuery } from "@tanstack/react-query";
 
 interface SystemConfig {
@@ -112,7 +113,7 @@ function Router() {
       <ProtectedRoute path="/template-management" component={TemplateManagement} />
       <ProtectedRoute path="/email-preferences" component={EmailPreferences} />
       <ProtectedRoute path="/email-subscribers" component={EmailSubscribers} />
-      <ProtectedRoute path="/marketing-list" component={MarketingListPage} />
+      <AdminProtectedRoute path="/marketing-list" component={MarketingListPage} />
       <ProtectedRoute path="/admin/partner-inspection/:partnerId" component={PartnerInspectionPage} />
       <ProtectedRoute path="/admin/quote-requests" component={QuoteRequestsPage} />
       <ProtectedRoute path="/notifications" component={NotificationsPage} />

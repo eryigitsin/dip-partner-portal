@@ -110,6 +110,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
+import { NotificationService } from './notification-service';
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -2921,6 +2922,11 @@ export class DatabaseStorage implements IStorage {
       .values(notification)
       .returning();
     return created;
+  }
+
+  // Get notification service instance
+  getNotificationService(): NotificationService {
+    return new NotificationService();
   }
 
 }

@@ -634,7 +634,7 @@ export default function MarketingListPage() {
       targetContacts: targetContacts.map((c: any) => ({ 
         email: c.email, 
         phone: c.phone,
-        userId: c.userId || c.id 
+        userId: c.userId || (c.userType === 'user' || c.userType === 'partner' || c.userType === 'admin' ? c.id : null)
       })),
       email: selectedChannels.includes('email') ? {
         subject: campaignSubject,
