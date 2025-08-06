@@ -163,28 +163,6 @@ export function Header() {
 
             {user ? (
               <div className="flex items-center space-x-3">
-                {/* Notification and Message buttons for all logged-in users */}
-                <div className="flex items-center space-x-2">
-                  {/* Notification Dropdown */}
-                  <NotificationsDropdown unreadCount={unreadCount} />
-
-                  {/* Message Button */}
-                  <Link href="/messages">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="relative p-2"
-                      data-testid="button-messages"
-                    >
-                      <MessageSquare className="h-5 w-5 text-gray-600 hover:text-gray-900" />
-                      {unreadMessagesCount && unreadMessagesCount.count > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                          {unreadMessagesCount.count > 99 ? '99+' : unreadMessagesCount.count}
-                        </span>
-                      )}
-                    </Button>
-                  </Link>
-                </div>
 
                 {/* Dropdown menu for regular users */}
                 {(user.activeUserType || user.userType) === 'user' && (
@@ -388,6 +366,29 @@ export function Header() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
+
+                {/* Notification and Message buttons after all dropdowns */}
+                <div className="flex items-center space-x-2">
+                  {/* Notification Dropdown */}
+                  <NotificationsDropdown unreadCount={unreadCount} />
+
+                  {/* Message Button */}
+                  <Link href="/messages">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="relative p-2"
+                      data-testid="button-messages"
+                    >
+                      <MessageSquare className="h-5 w-5 text-gray-600 hover:text-gray-900" />
+                      {unreadMessagesCount && unreadMessagesCount.count > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {unreadMessagesCount.count > 99 ? '99+' : unreadMessagesCount.count}
+                        </span>
+                      )}
+                    </Button>
+                  </Link>
+                </div>
               </div>
             ) : (
               <>
