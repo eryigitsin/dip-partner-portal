@@ -15,6 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { EmailTemplate, NotificationTemplate } from "@shared/schema";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { useToast } from "@/hooks/use-toast";
 
 interface EmailPreview {
   subject: string;
@@ -165,8 +166,10 @@ export default function TemplateManagement() {
   const [showNotificationCreator, setShowNotificationCreator] = useState(false);
   const [showSmsCreator, setShowSmsCreator] = useState(false);
   const [templateCreatorType, setTemplateCreatorType] = useState<'email' | 'notification' | 'sms'>('email');
+  const [emailBuilderWindow, setEmailBuilderWindow] = useState<Window | null>(null);
   
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Email Templates API
   const { data: emailTemplates = [] } = useQuery<EmailTemplate[]>({
@@ -236,6 +239,98 @@ export default function TemplateManagement() {
     }
   });
 
+  // SMS template save mutation
+  const saveSmsTemplateMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentSmsTemplate) return;
+      
+      return await apiRequest('PUT', `/api/admin/sms-templates/${currentSmsTemplate.type}`, {
+        content: currentSmsTemplate.content
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/sms-templates"] });
+    }
+  });
+
+  // Email builder functions
+  const openEmailBuilder = () => {
+    const popup = window.open('/email-builder', 'emailBuilder', 'width=1400,height=900,scrollbars=yes,resizable=yes');
+    
+    // Listen for messages from the popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'emailTemplate') {
+        const { template } = event.data;
+        // Save the template to the server
+        saveEmailTemplate(template);
+        window.removeEventListener('message', handleMessage);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    
+    // Cleanup if popup is closed
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        window.removeEventListener('message', handleMessage);
+        clearInterval(checkClosed);
+      }
+    }, 1000);
+  };
+
+  const saveEmailTemplate = async (template: { name: string, subject: string, htmlContent: string }) => {
+    try {
+      const response = await apiRequest('POST', '/api/admin/email-templates', {
+        type: template.name.toLowerCase().replace(/\s+/g, '_'),
+        name: template.name,
+        subject: template.subject,
+        htmlContent: template.htmlContent,
+        isActive: true
+      });
+
+      if (response) {
+        toast({
+          title: "Başarılı",
+          description: "Email şablonu başarıyla kaydedildi",
+        });
+        // Refresh email templates
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/email-templates'] });
+      }
+    } catch (error) {
+      console.error('Error saving email template:', error);
+      toast({
+        title: "Hata",
+        description: "Email şablonu kaydedilirken hata oluştu",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Add unsubscribe footer to email templates
+  const addUnsubscribeFooter = (htmlContent: string) => {
+    const footer = `
+      <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #dee2e6; text-align: center; font-size: 12px; color: #6c757d;">
+        <p style="margin: 0 0 10px 0;">
+          <strong>dip | iş ortakları platformu</strong>
+        </p>
+        <p style="margin: 0;">
+          Bu e-postayı almak istemiyorsanız 
+          <a href="{{unsubscribeUrl}}" style="color: #007bff; text-decoration: none;">buraya tıklayarak listeden çıkabilirsiniz</a>.
+        </p>
+      </div>
+    `;
+    
+    // If HTML content has closing body tag, insert footer before it
+    if (htmlContent.includes('</body>')) {
+      return htmlContent.replace('</body>', footer + '</body>');
+    } else {
+      // Otherwise, append to the end
+      return htmlContent + footer;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -253,25 +348,75 @@ export default function TemplateManagement() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <Button
-            onClick={() => { setShowTemplateCreator(true); setTemplateCreatorType('email'); }}
-            className="flex items-center gap-2"
-            data-testid="button-create-template"
-          >
-            <Plus className="h-4 w-4" />
-            Yeni Şablon Oluştur
-          </Button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <div className="flex flex-wrap gap-4 mb-6">
+              <Button
+                onClick={openEmailBuilder}
+                className="flex items-center gap-2"
+                data-testid="button-create-email-template"
+              >
+                <Mail className="h-4 w-4" />
+                Yeni E-Posta Şablonu
+              </Button>
 
-          <Button
-            onClick={() => setShowTemplateLibrary(true)}
-            variant="outline"
-            className="flex items-center gap-2"
-            data-testid="button-template-library"
-          >
-            <Layout className="h-4 w-4" />
-            Şablon Kütüphanesi
-          </Button>
+              <Button
+                onClick={() => { setShowTemplateCreator(true); setTemplateCreatorType('notification'); }}
+                variant="outline"
+                className="flex items-center gap-2"
+                data-testid="button-create-notification-template"
+              >
+                <Bell className="h-4 w-4" />
+                Yeni Bildirim Şablonu
+              </Button>
+
+              <Button
+                onClick={() => { setShowTemplateCreator(true); setTemplateCreatorType('sms'); }}
+                variant="outline"
+                className="flex items-center gap-2"
+                data-testid="button-create-sms-template"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Yeni SMS Şablonu
+              </Button>
+
+              <Button
+                onClick={() => setShowTemplateLibrary(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+                data-testid="button-template-library"
+              >
+                <Layout className="h-4 w-4" />
+                Şablon Kütüphanesi
+              </Button>
+            </div>
+          </div>
+          
+          <div className="lg:col-span-1">
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Email Builder İpuçları</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Şablon adını ve konusunu belirtmeyi unutmayın</li>
+                  <li>• Otomatik zorunlu footer eklenecektir</li>
+                  <li>• Parametreler {`{{parametre}}`} formatında kullanılabilir</li>
+                </ul>
+              </div>
+              
+              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <h4 className="text-sm font-medium text-yellow-900 mb-2">Gerekli URL Parametreleri</h4>
+                <div className="text-sm text-yellow-800 space-y-2">
+                  <div>
+                    <strong>Unsubscribe URL:</strong>
+                    <code className="block mt-1 p-2 bg-yellow-100 rounded text-xs">
+                      {`{{unsubscribeUrl}}`} → /api/unsubscribe/{`{{email}}`}
+                    </code>
+                  </div>
+                  <p className="text-xs">Bu parametreler tüm email şablonlarında otomatik olarak footer'a eklenir.</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
       <Tabs defaultValue="emails" className="w-full">
@@ -330,7 +475,7 @@ export default function TemplateManagement() {
                       value={currentEmailTemplate?.subject || ""}
                       onChange={(e) => setCurrentEmailTemplate(prev => 
                         prev ? { ...prev, subject: e.target.value } : 
-                        { id: 0, name: selectedEmailTemplate, type: selectedEmailTemplate, subject: e.target.value, htmlContent: "", isActive: true, createdAt: new Date(), updatedAt: new Date() }
+                        { id: 0, name: selectedEmailTemplate, type: selectedEmailTemplate, subject: e.target.value, htmlContent: "", description: null, isActive: true, createdAt: new Date(), updatedAt: new Date() }
                       )}
                     />
                   </div>
@@ -344,7 +489,7 @@ export default function TemplateManagement() {
                       value={currentEmailTemplate?.htmlContent || ""}
                       onChange={(e) => setCurrentEmailTemplate(prev => 
                         prev ? { ...prev, htmlContent: e.target.value } : 
-                        { id: 0, name: selectedEmailTemplate, type: selectedEmailTemplate, subject: "", htmlContent: e.target.value, isActive: true, createdAt: new Date(), updatedAt: new Date() }
+                        { id: 0, name: selectedEmailTemplate, type: selectedEmailTemplate, subject: "", htmlContent: e.target.value, description: null, isActive: true, createdAt: new Date(), updatedAt: new Date() }
                       )}
                     />
                   </div>
@@ -445,7 +590,7 @@ export default function TemplateManagement() {
                       value={currentNotificationTemplate?.title || ""}
                       onChange={(e) => setCurrentNotificationTemplate(prev => 
                         prev ? { ...prev, title: e.target.value } : 
-                        { id: 0, type: selectedNotificationTemplate, title: e.target.value, content: "", userId: null, isRead: false, createdAt: new Date(), updatedAt: new Date() }
+                        { id: 0, type: selectedNotificationTemplate, name: selectedNotificationTemplate, description: null, isActive: true, title: e.target.value, message: "", createdAt: new Date(), updatedAt: new Date() }
                       )}
                     />
                   </div>
@@ -456,10 +601,10 @@ export default function TemplateManagement() {
                       data-testid="textarea-notification-message"
                       className="min-h-[150px]"
                       placeholder="Bildirim mesajı..."
-                      value={currentNotificationTemplate?.content || ""}
+                      value={currentNotificationTemplate?.message || ""}
                       onChange={(e) => setCurrentNotificationTemplate(prev => 
-                        prev ? { ...prev, content: e.target.value } : 
-                        { id: 0, type: selectedNotificationTemplate, title: "", content: e.target.value, userId: null, isRead: false, createdAt: new Date(), updatedAt: new Date() }
+                        prev ? { ...prev, message: e.target.value } : 
+                        { id: 0, type: selectedNotificationTemplate, name: selectedNotificationTemplate, description: null, isActive: true, title: "", message: e.target.value, createdAt: new Date(), updatedAt: new Date() }
                       )}
                     />
                   </div>
@@ -593,10 +738,11 @@ export default function TemplateManagement() {
                     <Button 
                       size="sm"
                       data-testid="button-save-sms-template"
-                      onClick={() => console.log('SMS template save')}
+                      onClick={() => saveSmsTemplateMutation.mutate()}
+                      disabled={saveSmsTemplateMutation.isPending}
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      Kaydet
+                      {saveSmsTemplateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
                     </Button>
                   </div>
                 </div>

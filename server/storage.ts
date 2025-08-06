@@ -342,6 +342,17 @@ export interface IStorage {
   getNotificationTemplate(type: string): Promise<NotificationTemplate | undefined>;
   updateNotificationTemplate(type: string, template: Partial<InsertNotificationTemplate>): Promise<NotificationTemplate | undefined>;
   createNotificationTemplate(template: InsertNotificationTemplate): Promise<NotificationTemplate>;
+
+  // Newsletter subscription methods  
+  subscribeToNewsletter(data: InsertNewsletterSubscriber): Promise<any>;
+  getNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
+  removeNewsletterSubscriber(email: string): Promise<void>;
+
+  // SMS Template methods
+  getAllSmsTemplates(): Promise<SmsTemplate[]>;
+  getSmsTemplate(type: string): Promise<SmsTemplate | undefined>;
+  updateSmsTemplate(type: string, template: Partial<InsertSmsTemplate>): Promise<SmsTemplate | undefined>;
+  createSmsTemplate(template: InsertSmsTemplate): Promise<SmsTemplate>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2600,6 +2611,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(newsletterSubscribers.subscribedAt));
   }
 
+  async removeNewsletterSubscriber(email: string): Promise<void> {
+    await db.delete(newsletterSubscribers)
+      .where(eq(newsletterSubscribers.email, email));
+  }
+
   async unsubscribeFromNewsletter(email: string): Promise<{ success: boolean; message: string }> {
     const [updated] = await db
       .update(newsletterSubscribers)
@@ -2657,7 +2673,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Notification Template methods - using standardized method names
-  async getNotificationTemplates(): Promise<NotificationTemplate[]> {
+  async getAllNotificationTemplates(): Promise<NotificationTemplate[]> {
     return await db
       .select()
       .from(notificationTemplates)
@@ -2690,7 +2706,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // SMS Template methods - using standardized method names
-  async getSmsTemplates(): Promise<SmsTemplate[]> {
+  async getAllSmsTemplates(): Promise<SmsTemplate[]> {
     return await db
       .select()
       .from(smsTemplates)

@@ -2878,6 +2878,66 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Unsubscribe from newsletter
+  app.get("/api/unsubscribe/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      // Decode email from URL
+      const decodedEmail = decodeURIComponent(email);
+      
+      // Remove from newsletter subscribers
+      await storage.removeNewsletterSubscriber(decodedEmail);
+      
+      // Return a simple HTML page confirming unsubscription
+      res.send(`
+        <!DOCTYPE html>
+        <html lang="tr">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Abonelik İptal Edildi - DİP</title>
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }
+            .container { background: #f8f9fa; padding: 40px; border-radius: 10px; }
+            .success { color: #28a745; font-size: 24px; margin-bottom: 20px; }
+            .email { background: #e9ecef; padding: 10px; border-radius: 5px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="success">✓ Abonelik başarıyla iptal edildi</div>
+            <p>E-posta adresiniz marketing listesinden çıkarıldı:</p>
+            <div class="email">${decodedEmail}</div>
+            <p>Artık bizden pazarlama e-postaları almayacaksınız.</p>
+            <p><strong>dip | iş ortakları platformu</strong></p>
+          </div>
+        </body>
+        </html>
+      `);
+    } catch (error: any) {
+      console.error("Error unsubscribing:", error);
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html lang="tr">
+        <head>
+          <meta charset="UTF-8">
+          <title>Hata - DİP</title>
+          <style>body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }</style>
+        </head>
+        <body>
+          <h2>Hata Oluştu</h2>
+          <p>Abonelik iptal edilirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.</p>
+        </body>
+        </html>
+      `);
+    }
+  });
+
   // Send bulk campaign endpoint (legacy single-channel)
   app.post('/api/admin/send-bulk-campaign', async (req, res) => {
     if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
@@ -3010,7 +3070,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const smsTemplates = await storage.getSmsTemplates();
+      const smsTemplates = await storage.getAllSmsTemplates();
       res.json(smsTemplates);
     } catch (error: any) {
       console.error("Error fetching SMS templates:", error);
@@ -3025,7 +3085,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const notificationTemplates = await storage.getNotificationTemplates();
+      const notificationTemplates = await storage.getAllNotificationTemplates();
       res.json(notificationTemplates);
     } catch (error: any) {
       console.error("Error fetching notification templates:", error);
@@ -6033,6 +6093,38 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post("/api/admin/email-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const { type, name, subject, htmlContent, isActive = true } = req.body;
+      
+      if (!type || !name || !subject || !htmlContent) {
+        return res.status(400).json({ message: "Type, name, subject and htmlContent are required" });
+      }
+
+      const created = await storage.createEmailTemplate({
+        type,
+        name,
+        subject,
+        htmlContent,
+        isActive
+      });
+      
+      res.status(201).json(created);
+    } catch (error) {
+      console.error('Error creating email template:', error);
+      res.status(500).json({ message: "Failed to create email template" });
+    }
+  });
+
   // Notification Template Management Routes
   app.get("/api/admin/notification-templates", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
@@ -6100,6 +6192,85 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Error updating notification template:', error);
       res.status(500).json({ message: "Failed to update notification template" });
+    }
+  });
+
+  // SMS Templates endpoints
+  app.get("/api/admin/sms-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const smsTemplates = await storage.getAllSmsTemplates();
+      res.json(smsTemplates);
+    } catch (error: any) {
+      console.error("Error fetching SMS templates:", error);
+      res.status(500).json({ error: "Failed to fetch SMS templates" });
+    }
+  });
+
+  app.get("/api/admin/sms-templates/:type", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const { type } = req.params;
+      const smsTemplate = await storage.getSmsTemplate(type);
+      
+      if (!smsTemplate) {
+        return res.status(404).json({ error: "SMS template not found" });
+      }
+      
+      res.json(smsTemplate);
+    } catch (error: any) {
+      console.error("Error fetching SMS template:", error);
+      res.status(500).json({ error: "Failed to fetch SMS template" });
+    }
+  });
+
+  app.put("/api/admin/sms-templates/:type", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const userType = req.user.activeUserType || req.user.userType;
+    if (!['master_admin', 'editor_admin'].includes(userType)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const { type } = req.params;
+      const { content } = req.body;
+
+      if (!content) {
+        return res.status(400).json({ error: "Content is required" });
+      }
+
+      const updatedTemplate = await storage.updateSmsTemplate(type, {
+        content,
+        updatedAt: new Date()
+      });
+
+      if (!updatedTemplate) {
+        return res.status(404).json({ error: "SMS template not found" });
+      }
+
+      res.json(updatedTemplate);
+    } catch (error: any) {
+      console.error("Error updating SMS template:", error);
+      res.status(500).json({ error: "Failed to update SMS template" });
     }
   });
 
