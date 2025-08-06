@@ -2885,7 +2885,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const { subject, content, recipients, channels, targetGroup, targetContacts, email, sms, notification } = req.body;
+      const { subject, content, recipients, channels, targetGroups, targetContacts, email, sms, notification } = req.body;
       
       // Handle both legacy and new multi-channel format
       if (channels && Array.isArray(channels)) {
@@ -2965,7 +2965,7 @@ export function registerRoutes(app: Express): Server {
           sentCount: totalSent,
           results,
           channels: channels,
-          targetGroup
+          targetGroups
         });
       } else {
         // Legacy single-channel format

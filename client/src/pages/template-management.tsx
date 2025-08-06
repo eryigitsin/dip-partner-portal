@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Eye, Mail, Bell, Plus, Send, Layout, MessageSquare, Type, Palette, Users, Image, Edit, Trash2 } from "lucide-react";
+import { Save, Eye, Mail, Bell, Plus, Send, Layout, MessageSquare, Type, Palette, Users, Image, Edit, Trash2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/queryClient";
 import { EmailTemplate, NotificationTemplate } from "@shared/schema";
 import { Header } from "@/components/layout/header";
@@ -159,6 +161,9 @@ export default function TemplateManagement() {
   const [emailPreview, setEmailPreview] = useState<EmailPreview | null>(null);
   const [showTemplateCreator, setShowTemplateCreator] = useState(false);
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+  const [showEmailBuilder, setShowEmailBuilder] = useState(false);
+  const [showNotificationCreator, setShowNotificationCreator] = useState(false);
+  const [showSmsCreator, setShowSmsCreator] = useState(false);
   const [templateCreatorType, setTemplateCreatorType] = useState<'email' | 'notification' | 'sms'>('email');
   
   const queryClient = useQueryClient();
@@ -257,15 +262,7 @@ export default function TemplateManagement() {
             <Plus className="h-4 w-4" />
             Yeni Şablon Oluştur
           </Button>
-          <Button
-            onClick={() => window.location.href = '/admin/marketing-list'}
-            variant="outline"
-            className="flex items-center gap-2"
-            data-testid="button-send-campaign"
-          >
-            <Send className="h-4 w-4" />
-            Pazarlama Listesi'ne Git
-          </Button>
+
           <Button
             onClick={() => setShowTemplateLibrary(true)}
             variant="outline"
@@ -706,14 +703,14 @@ export default function TemplateManagement() {
 
       {/* Template Library Dialog */}
       <Dialog open={showTemplateLibrary} onOpenChange={setShowTemplateLibrary}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Layout className="h-5 w-5" />
               Şablon Kütüphanesi
             </DialogTitle>
             <DialogDescription>
-              Oluşturduğunuz özel şablonları görüntüleyin ve yönetin
+              E-posta, SMS ve bildirim şablonlarını oluşturun ve yönetin
             </DialogDescription>
           </DialogHeader>
           
@@ -727,43 +724,64 @@ export default function TemplateManagement() {
               
               <TabsContent value="email" className="space-y-4">
                 <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">Örnek Email Şablonu</h4>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
-                          <Edit className="h-4 w-4 mr-2" />
-                          Düzenle
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Sil
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Özel olarak oluşturulan email şablonu</p>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">E-Posta Şablonları</h3>
+                    <Button 
+                      onClick={() => setShowEmailBuilder(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Yeni E-Posta Şablonu
+                    </Button>
                   </div>
+                  
                   <div className="text-center py-8 text-muted-foreground">
                     <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Henüz özel şablon oluşturmamışsınız</p>
-                    <p className="text-sm">Yeni şablon oluşturmak için "Yeni Şablon Oluştur" butonunu kullanın</p>
+                    <p>Henüz özel e-posta şablonu oluşturmamışsınız</p>
+                    <p className="text-sm">Yukarıdaki butonu kullanarak görsel editör ile şablon oluşturabilirsiniz</p>
                   </div>
                 </div>
               </TabsContent>
               
               <TabsContent value="notification" className="space-y-4">
-                <div className="text-center py-8 text-muted-foreground">
-                  <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Henüz özel bildirim şablonu oluşturmamışsınız</p>
-                  <p className="text-sm">Yeni şablon oluşturmak için "Yeni Şablon Oluştur" butonunu kullanın</p>
+                <div className="grid gap-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">Bildirim Şablonları</h3>
+                    <Button 
+                      onClick={() => setShowNotificationCreator(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Yeni Bildirim Şablonu
+                    </Button>
+                  </div>
+                  
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Henüz özel bildirim şablonu oluşturmamışsınız</p>
+                    <p className="text-sm">Yukarıdaki butonu kullanarak text-based editör ile şablon oluşturabilirsiniz</p>
+                  </div>
                 </div>
               </TabsContent>
               
               <TabsContent value="sms" className="space-y-4">
-                <div className="text-center py-8 text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Henüz özel SMS şablonu oluşturmamışsınız</p>
-                  <p className="text-sm">Yeni şablon oluşturmak için "Yeni Şablon Oluştur" butonunu kullanın</p>
+                <div className="grid gap-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">SMS Şablonları</h3>
+                    <Button 
+                      onClick={() => setShowSmsCreator(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Yeni SMS Şablonu
+                    </Button>
+                  </div>
+                  
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Henüz özel SMS şablonu oluşturmamışsınız</p>
+                    <p className="text-sm">Yukarıdaki butonu kullanarak text-based editör ile şablon oluşturabilirsiniz</p>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
@@ -777,7 +795,182 @@ export default function TemplateManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Email Builder Dialog */}
+      <Dialog open={showEmailBuilder} onOpenChange={setShowEmailBuilder}>
+        <DialogContent className="max-w-7xl max-h-[95vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              E-Posta Şablonu Oluşturucu
+            </DialogTitle>
+            <DialogDescription>
+              Sürükle-bırak editörü ile profesyonel e-posta şablonları oluşturun
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 min-h-[500px] bg-gray-50 dark:bg-gray-900">
+              <div className="text-center text-muted-foreground">
+                <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">Email Builder entegrasyonu yakında eklenecek</p>
+                <p className="text-xs mt-2">email-builder-js paketi yüklendi</p>
+              </div>
+            </div>
+            
+            <div className="flex justify-between pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowEmailBuilder(false)}>
+                İptal
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Önizle
+                </Button>
+                <Button>
+                  <Save className="h-4 w-4 mr-2" />
+                  Şablonu Kaydet
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
+      {/* Notification Creator Dialog */}
+      <Dialog open={showNotificationCreator} onOpenChange={setShowNotificationCreator}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Bildirim Şablonu Oluşturucu
+            </DialogTitle>
+            <DialogDescription>
+              Text-based editör ile bildirim şablonu oluşturun
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="notif-name">Şablon Adı</Label>
+              <Input 
+                id="notif-name"
+                placeholder="Bildirim şablon adı"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="notif-title">Bildirim Başlığı</Label>
+              <Input 
+                id="notif-title"
+                placeholder="Bildirim başlığı"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="notif-content">Bildirim İçeriği</Label>
+              <Textarea 
+                id="notif-content"
+                className="min-h-[150px]"
+                placeholder="Bildirim içeriği... Parametreler: {{customerName}}, {{partnerName}}, {{serviceNeeded}}"
+              />
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Kullanılabilir Parametreler:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <code>{"{{customerName}}"}</code>
+                <code>{"{{partnerName}}"}</code>
+                <code>{"{{serviceNeeded}}"}</code>
+                <code>{"{{companyName}}"}</code>
+                <code>{"{{projectTitle}}"}</code>
+                <code>{"{{message}}"}</code>
+              </div>
+            </div>
+            
+            <div className="flex justify-between pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowNotificationCreator(false)}>
+                İptal
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Önizle
+                </Button>
+                <Button>
+                  <Save className="h-4 w-4 mr-2" />
+                  Şablonu Kaydet
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* SMS Creator Dialog */}
+      <Dialog open={showSmsCreator} onOpenChange={setShowSmsCreator}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              SMS Şablonu Oluşturucu
+            </DialogTitle>
+            <DialogDescription>
+              Text-based editör ile SMS şablonu oluşturun
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="sms-name">Şablon Adı</Label>
+              <Input 
+                id="sms-name"
+                placeholder="SMS şablon adı"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="sms-content">SMS İçeriği</Label>
+              <Textarea 
+                id="sms-content"
+                className="min-h-[120px]"
+                placeholder="SMS içeriği... (160 karakter limitine dikkat edin)"
+                maxLength={160}
+              />
+              <div className="text-xs text-muted-foreground mt-1">
+                0/160 karakter
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Kullanılabilir Parametreler:</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <code>{"{{code}}"}</code>
+                <code>{"{{name}}"}</code>
+                <code>{"{{company}}"}</code>
+                <code>{"{{amount}}"}</code>
+                <code>{"{{date}}"}</code>
+                <code>{"{{time}}"}</code>
+              </div>
+            </div>
+            
+            <div className="flex justify-between pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowSmsCreator(false)}>
+                İptal
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Önizle
+                </Button>
+                <Button>
+                  <Save className="h-4 w-4 mr-2" />
+                  Şablonu Kaydet
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Email Preview Dialog */}
       {emailPreview && (

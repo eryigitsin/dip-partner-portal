@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Table, 
   TableBody, 
@@ -31,7 +32,8 @@ import {
   RefreshCw,
   RotateCcw,
   Send,
-  Eye
+  Eye,
+  X
 } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -64,7 +66,7 @@ export default function MarketingListPage() {
   
   // Multi-channel campaign states
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['email']);
-  const [selectedTargetGroup, setSelectedTargetGroup] = useState('all');
+  const [selectedTargetGroups, setSelectedTargetGroups] = useState<string[]>(['all']);
   const [emailTemplate, setEmailTemplate] = useState('');
   const [smsTemplate, setSmsTemplate] = useState('');
   const [notificationTemplate, setNotificationTemplate] = useState('');
@@ -288,20 +290,36 @@ export default function MarketingListPage() {
     return baseContacts.length;
   };
 
-  // Filter contacts by target group
+  // Filter contacts by multiple target groups
   const getFilteredContactsByGroup = () => {
-    switch (selectedTargetGroup) {
-      case 'users':
-        return allData.filter((c: any) => c.userType === 'user');
-      case 'partners':
-        return allData.filter((c: any) => c.userType === 'partner');
-      case 'admins':
-        return allData.filter((c: any) => c.userType === 'master_admin' || c.userType === 'editor_admin');
-      case 'subscribers':
-        return allData.filter((c: any) => c.userType === 'subscriber');
-      default:
-        return allData;
-    }
+    let filteredContacts: any[] = [];
+    
+    selectedTargetGroups.forEach(group => {
+      switch (group) {
+        case 'users':
+          filteredContacts.push(...allData.filter((c: any) => c.userType === 'user'));
+          break;
+        case 'partners':
+          filteredContacts.push(...allData.filter((c: any) => c.userType === 'partner'));
+          break;
+        case 'admins':
+          filteredContacts.push(...allData.filter((c: any) => c.userType === 'master_admin' || c.userType === 'editor_admin'));
+          break;
+        case 'subscribers':
+          filteredContacts.push(...allData.filter((c: any) => c.userType === 'subscriber'));
+          break;
+        case 'all':
+          filteredContacts.push(...allData);
+          break;
+      }
+    });
+    
+    // Remove duplicates based on email
+    const uniqueContacts = filteredContacts.filter((contact, index, self) => 
+      index === self.findIndex(c => c.email === contact.email)
+    );
+    
+    return uniqueContacts;
   };
 
   // Multi-channel campaign function
@@ -344,7 +362,7 @@ export default function MarketingListPage() {
     // Prepare campaign data
     const campaignData = {
       channels: selectedChannels,
-      targetGroup: selectedTargetGroup,
+      targetGroups: selectedTargetGroups,
       targetContacts: targetContacts.map((c: any) => ({ 
         email: c.email, 
         phone: c.phone,
@@ -757,20 +775,60 @@ export default function MarketingListPage() {
               </div>
 
               {/* Target Group Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="target-group">Hedef Grup</Label>
-                <Select value={selectedTargetGroup} onValueChange={setSelectedTargetGroup}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Hedef grubu seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm Kullanıcılar</SelectItem>
-                    <SelectItem value="users">Sadece Kullanıcılar</SelectItem>
-                    <SelectItem value="partners">Sadece Partnerler</SelectItem>
-                    <SelectItem value="admins">Sadece Adminler</SelectItem>
-                    <SelectItem value="subscribers">Sadece Aboneler</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3">
+                <Label>Hedef Gruplar (Çoklu Seçim)</Label>
+                <div className="space-y-2">
+                  {[
+                    { value: 'all', label: 'Tüm Kullanıcılar' },
+                    { value: 'users', label: 'Sadece Kullanıcılar' },
+                    { value: 'partners', label: 'Sadece Partnerler' },
+                    { value: 'admins', label: 'Sadece Adminler' },
+                    { value: 'subscribers', label: 'Sadece Aboneler' }
+                  ].map((group) => (
+                    <div key={group.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`target-group-${group.value}`}
+                        checked={selectedTargetGroups.includes(group.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedTargetGroups(prev => [...prev, group.value]);
+                          } else {
+                            setSelectedTargetGroups(prev => prev.filter(g => g !== group.value));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`target-group-${group.value}`} className="text-sm font-normal">
+                        {group.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                
+                {selectedTargetGroups.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {selectedTargetGroups.map((group) => {
+                      const groupLabel = {
+                        all: 'Tüm Kullanıcılar',
+                        users: 'Kullanıcılar',
+                        partners: 'Partnerler',
+                        admins: 'Adminler',
+                        subscribers: 'Aboneler'
+                      }[group];
+                      
+                      return (
+                        <Badge key={group} variant="secondary" className="text-xs">
+                          {groupLabel}
+                          <button
+                            onClick={() => setSelectedTargetGroups(prev => prev.filter(g => g !== group))}
+                            className="ml-1 hover:bg-gray-300 rounded-full w-4 h-4 flex items-center justify-center"
+                          >
+                            <X className="h-2 w-2" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Email Campaign Section */}
