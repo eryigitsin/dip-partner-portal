@@ -33,6 +33,7 @@ import {
   campaignEmailTemplates,
   campaignSmsTemplates,
   campaignNotificationTemplates,
+  notifications,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -104,6 +105,8 @@ import {
   type InsertCampaignSmsTemplate,
   type CampaignNotificationTemplate,
   type InsertCampaignNotificationTemplate,
+  type Notification,
+  type InsertNotification,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
@@ -381,6 +384,9 @@ export interface IStorage {
   createCampaignNotificationTemplate(template: InsertCampaignNotificationTemplate): Promise<CampaignNotificationTemplate>;
   updateCampaignNotificationTemplate(id: number, template: Partial<InsertCampaignNotificationTemplate>): Promise<CampaignNotificationTemplate | undefined>;
   deleteCampaignNotificationTemplate(id: number): Promise<boolean>;
+
+  // Notification methods
+  createNotification(notification: InsertNotification): Promise<Notification>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2906,6 +2912,15 @@ export class DatabaseStorage implements IStorage {
       .delete(campaignNotificationTemplates)
       .where(eq(campaignNotificationTemplates.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  // Notification methods
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [created] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
+    return created;
   }
 
 }
