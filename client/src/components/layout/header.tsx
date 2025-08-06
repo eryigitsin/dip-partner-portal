@@ -195,7 +195,8 @@ export function Header() {
                         size="sm" 
                         className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
                       >
-                        <span>{user.firstName} {user.lastName}</span>
+                        <span className="hidden sm:inline">{user.firstName} {user.lastName}</span>
+                        <span className="inline sm:hidden">{user.firstName}</span>
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -251,7 +252,8 @@ export function Header() {
                         size="sm" 
                         className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
                       >
-                        <span>{user.firstName} {user.lastName}</span>
+                        <span className="hidden sm:inline">{user.firstName} {user.lastName}</span>
+                        <span className="inline sm:hidden">{user.firstName}</span>
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -307,7 +309,8 @@ export function Header() {
                         size="sm" 
                         className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
                       >
-                        <span>{user.firstName} {user.lastName}</span>
+                        <span className="hidden sm:inline">{user.firstName} {user.lastName}</span>
+                        <span className="inline sm:hidden">{user.firstName}</span>
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
