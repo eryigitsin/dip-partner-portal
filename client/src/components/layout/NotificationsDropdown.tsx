@@ -138,47 +138,47 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
         data-testid="notifications-dropdown"
       >
         <div className="p-3 border-b">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between">
             <h3 className="font-semibold text-sm">Bildirimler</h3>
-          </div>
-          <div className="flex gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => window.location.href = '/notifications'}
-                    className="h-7 px-2 flex-1"
-                    data-testid="button-view-all"
-                  >
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Tümünü Gör</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleMarkAllAsRead}
-                    disabled={markAllAsReadMutation.isPending}
-                    className="h-7 px-2 flex-1"
-                    data-testid="button-mark-all-read"
-                  >
-                    <CheckCheck className="h-3 w-3" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Tümünü Okunmuş İşaretle</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.location.href = '/notifications'}
+                      className="h-6 w-6 p-0"
+                      data-testid="button-view-all"
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Tümünü Gör</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleMarkAllAsRead}
+                      disabled={markAllAsReadMutation.isPending}
+                      className="h-6 w-6 p-0"
+                      data-testid="button-mark-all-read"
+                    >
+                      <CheckCheck className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Tümünü Okunmuş İşaretle</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
 
