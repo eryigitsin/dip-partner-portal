@@ -273,6 +273,46 @@ export default function MarketingListPage() {
     },
   });
 
+  // Update template mutations
+  const updateEmailTemplateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => 
+      apiRequest('PUT', `/api/admin/campaign-email-templates/${id}`, data),
+    onSuccess: () => {
+      toast({ title: "E-posta şablonu güncellendi", description: "Şablon başarıyla kaydedildi" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-email-templates"] });
+      resetTemplateForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon güncellenemedi", variant: "destructive" });
+    },
+  });
+
+  const updateSmsTemplateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => 
+      apiRequest('PUT', `/api/admin/campaign-sms-templates/${id}`, data),
+    onSuccess: () => {
+      toast({ title: "SMS şablonu güncellendi", description: "Şablon başarıyla kaydedildi" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-sms-templates"] });
+      resetTemplateForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon güncellenemedi", variant: "destructive" });
+    },
+  });
+
+  const updateNotificationTemplateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => 
+      apiRequest('PUT', `/api/admin/campaign-notification-templates/${id}`, data),
+    onSuccess: () => {
+      toast({ title: "Bildirim şablonu güncellendi", description: "Şablon başarıyla kaydedildi" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaign-notification-templates"] });
+      resetTemplateForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şablon güncellenemedi", variant: "destructive" });
+    },
+  });
+
   const deleteEmailTemplateMutation = useMutation({
     mutationFn: (id: number) => apiRequest('DELETE', `/api/admin/campaign-email-templates/${id}`),
     onSuccess: () => {
@@ -353,23 +393,41 @@ export default function MarketingListPage() {
         toast({ title: "Hata", description: "E-posta konusu gereklidir", variant: "destructive" });
         return;
       }
-      createEmailTemplateMutation.mutate({
+      
+      const emailData = {
         ...baseData,
         subject: templateSubject,
         htmlContent: templateContent
-      });
+      };
+
+      if (editingTemplate) {
+        updateEmailTemplateMutation.mutate({ id: editingTemplate.id, data: emailData });
+      } else {
+        createEmailTemplateMutation.mutate(emailData);
+      }
     } else if (templateType === 'sms') {
-      createSmsTemplateMutation.mutate(baseData);
+      if (editingTemplate) {
+        updateSmsTemplateMutation.mutate({ id: editingTemplate.id, data: baseData });
+      } else {
+        createSmsTemplateMutation.mutate(baseData);
+      }
     } else if (templateType === 'notification') {
       if (!templateTitle) {
         toast({ title: "Hata", description: "Bildirim başlığı gereklidir", variant: "destructive" });
         return;
       }
-      createNotificationTemplateMutation.mutate({
+      
+      const notificationData = {
         name: templateName,
         title: templateTitle,
         content: templateContent
-      });
+      };
+
+      if (editingTemplate) {
+        updateNotificationTemplateMutation.mutate({ id: editingTemplate.id, data: notificationData });
+      } else {
+        createNotificationTemplateMutation.mutate(notificationData);
+      }
     }
   };
 
@@ -1659,7 +1717,10 @@ export default function MarketingListPage() {
                   disabled={
                     createEmailTemplateMutation.isPending ||
                     createSmsTemplateMutation.isPending ||
-                    createNotificationTemplateMutation.isPending
+                    createNotificationTemplateMutation.isPending ||
+                    updateEmailTemplateMutation.isPending ||
+                    updateSmsTemplateMutation.isPending ||
+                    updateNotificationTemplateMutation.isPending
                   }
                   data-testid="button-save-template"
                 >
