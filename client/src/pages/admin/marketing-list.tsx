@@ -1768,6 +1768,19 @@ export default function MarketingListPage() {
               >
                 Kapat
               </Button>
+              <Button
+                onClick={() => {
+                  // Close preview and open test dialog with the same template
+                  setShowTemplatePreview(false);
+                  setTestingTemplate(previewingTemplate);
+                  setShowTestDialog(true);
+                }}
+                disabled={!previewingTemplate}
+                data-testid="button-test-from-preview"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Test Gönder
+              </Button>
             </div>
           </div>
         </DialogContent>
