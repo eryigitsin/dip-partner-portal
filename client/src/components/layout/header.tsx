@@ -18,7 +18,7 @@ import { t } from '@/lib/i18n';
 import { Menu, X, User, Settings, MessageCircle, MessageSquare, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2, Bell } from 'lucide-react';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
-import { NotificationsDropdown } from '@/components/notifications-dropdown';
+import { NotificationsDropdown } from './NotificationsDropdown';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

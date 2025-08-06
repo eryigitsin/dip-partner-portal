@@ -29,6 +29,7 @@ import {
   recipientAccounts,
   emailTemplates,
   notificationTemplates,
+  smsTemplates,
   type User, 
   type InsertUser,
   type UserProfile,
@@ -92,6 +93,8 @@ import {
   type InsertEmailTemplate,
   type NotificationTemplate,
   type InsertNotificationTemplate,
+  type SmsTemplate,
+  type InsertSmsTemplate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and, or, count, sql, isNotNull } from "drizzle-orm";
@@ -2188,31 +2191,7 @@ export class DatabaseStorage implements IStorage {
     return result[0]?.count || 0;
   }
 
-  // Mark messages as read in a conversation
-  async markMessagesAsRead(conversationId: string, userId: number): Promise<void> {
-    try {
-      // Parse conversation ID to get both user IDs
-      const [user1Id, user2Id] = conversationId.split('-').map(Number);
-      
-      // Find the other user in the conversation (the sender)
-      const otherUserId = user1Id === userId ? user2Id : user1Id;
-      
-      // Mark all messages from the other user as read
-      await db.update(messages)
-        .set({ 
-          isRead: true,
-          updatedAt: new Date()
-        })
-        .where(and(
-          eq(messages.senderId, otherUserId),
-          eq(messages.receiverId, userId),
-          eq(messages.isRead, false)
-        ));
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-      throw error;
-    }
-  }
+
 
   // User-Partner Interaction methods
   async getUserPartnerInteractions(userId: number): Promise<any[]> {
@@ -2708,6 +2687,46 @@ export class DatabaseStorage implements IStorage {
       .values(template)
       .returning();
     return created;
+  }
+
+  // SMS Template methods
+  async getAllSmsTemplates(): Promise<SmsTemplate[]> {
+    return await db
+      .select()
+      .from(smsTemplates)
+      .orderBy(asc(smsTemplates.name));
+  }
+
+  async getSmsTemplateByType(type: string): Promise<SmsTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(smsTemplates)
+      .where(eq(smsTemplates.type, type));
+    return template;
+  }
+
+  async createSmsTemplate(template: InsertSmsTemplate): Promise<SmsTemplate> {
+    const [created] = await db
+      .insert(smsTemplates)
+      .values(template)
+      .returning();
+    return created;
+  }
+
+  async updateSmsTemplate(type: string, template: Partial<InsertSmsTemplate>): Promise<SmsTemplate | undefined> {
+    const [updated] = await db
+      .update(smsTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(smsTemplates.type, type))
+      .returning();
+    return updated;
+  }
+
+  async deleteSmsTemplate(type: string): Promise<boolean> {
+    const result = await db
+      .delete(smsTemplates)
+      .where(eq(smsTemplates.type, type));
+    return (result.rowCount || 0) > 0;
   }
 
 }

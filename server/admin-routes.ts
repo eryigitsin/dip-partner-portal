@@ -478,5 +478,98 @@ export function createAdminRoutes(storage: IStorage): Router {
     }
   });
 
+  // SMS Templates Management - Get all SMS templates
+  router.get('/sms-templates', requireAdmin, async (req, res) => {
+    try {
+      const templates = await storage.getAllSmsTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching SMS templates:', error);
+      res.status(500).json({ message: 'Failed to fetch SMS templates' });
+    }
+  });
+
+  // Get specific SMS template by type
+  router.get('/sms-templates/:type', requireAdmin, async (req, res) => {
+    try {
+      const { type } = req.params;
+      const template = await storage.getSmsTemplateByType(type);
+      
+      if (!template) {
+        return res.status(404).json({ message: 'SMS template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching SMS template:', error);
+      res.status(500).json({ message: 'Failed to fetch SMS template' });
+    }
+  });
+
+  // Create new SMS template
+  router.post('/sms-templates', requireAdmin, async (req, res) => {
+    try {
+      const { type, name, description, content, isActive } = req.body;
+      
+      if (!type || !name || !content) {
+        return res.status(400).json({ message: 'Type, name, and content are required' });
+      }
+      
+      const newTemplate = await storage.createSmsTemplate({
+        type,
+        name,
+        description,
+        content,
+        isActive: isActive !== undefined ? isActive : true
+      });
+      
+      res.json(newTemplate);
+    } catch (error) {
+      console.error('Error creating SMS template:', error);
+      res.status(500).json({ message: 'Failed to create SMS template' });
+    }
+  });
+
+  // Update SMS template
+  router.put('/sms-templates/:type', requireAdmin, async (req, res) => {
+    try {
+      const { type } = req.params;
+      const { name, description, content, isActive } = req.body;
+      
+      const updated = await storage.updateSmsTemplate(type, {
+        name,
+        description,
+        content,
+        isActive
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ message: 'SMS template not found' });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating SMS template:', error);
+      res.status(500).json({ message: 'Failed to update SMS template' });
+    }
+  });
+
+  // Delete SMS template
+  router.delete('/sms-templates/:type', requireAdmin, async (req, res) => {
+    try {
+      const { type } = req.params;
+      const deleted = await storage.deleteSmsTemplate(type);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: 'SMS template not found' });
+      }
+      
+      res.json({ success: true, message: 'SMS template deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting SMS template:', error);
+      res.status(500).json({ message: 'Failed to delete SMS template' });
+    }
+  });
+
   return router;
 }

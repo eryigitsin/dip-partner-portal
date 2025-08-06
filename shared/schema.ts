@@ -849,6 +849,18 @@ export const notificationTemplates = pgTable("notification_templates", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// SMS Templates - Template management for SMS messages including OTP verification
+export const smsTemplates = pgTable("sms_templates", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull().unique(), // otp_verification, login_verification, password_reset, welcome, campaign, announcement, reminder
+  name: text("name").notNull(), // Human readable name
+  description: text("description"), // Description of when this template is used
+  content: text("content").notNull(), // SMS content with variables like {{code}}, {{name}}, {{company}}
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Notifications table - LinkedIn style notification system
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
@@ -885,6 +897,12 @@ export const insertNotificationTemplateSchema = createInsertSchema(notificationT
   updatedAt: true,
 });
 
+export const insertSmsTemplateSchema = createInsertSchema(smsTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true,
   createdAt: true,
@@ -896,6 +914,8 @@ export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 export type NotificationTemplate = typeof notificationTemplates.$inferSelect;
 export type InsertNotificationTemplate = z.infer<typeof insertNotificationTemplateSchema>;
+export type SmsTemplate = typeof smsTemplates.$inferSelect;
+export type InsertSmsTemplate = z.infer<typeof insertSmsTemplateSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
