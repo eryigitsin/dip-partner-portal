@@ -119,6 +119,10 @@ export default function MarketingListPage() {
   const [templateTitle, setTemplateTitle] = useState('');
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [showTemplatePreview, setShowTemplatePreview] = useState(false);
+  const [previewingTemplate, setPreviewingTemplate] = useState<any>(null);
+  const [showTestDialog, setShowTestDialog] = useState(false);
+  const [testingTemplate, setTestingTemplate] = useState<any>(null);
+  const [testEmail, setTestEmail] = useState('');
   const { toast } = useToast();
 
   // Campaign template queries
@@ -299,6 +303,27 @@ export default function MarketingListPage() {
     },
     onError: (error: any) => {
       toast({ title: "Hata", description: error.message || "Şablon silinemedi", variant: "destructive" });
+    },
+  });
+
+  // Test template mutation
+  const testTemplateMutation = useMutation({
+    mutationFn: (data: { type: string; templateId: number; email?: string }) =>
+      apiRequest('POST', '/api/admin/test-template', data),
+    onSuccess: () => {
+      toast({
+        title: "Başarılı!",
+        description: "Test mesajı başarıyla gönderildi",
+      });
+      setShowTestDialog(false);
+      setTestEmail('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata!",
+        description: error.message || 'Test mesajı gönderilirken hata oluştu',
+        variant: "destructive",
+      });
     },
   });
 
@@ -1233,6 +1258,30 @@ export default function MarketingListPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
+                                    setPreviewingTemplate(template);
+                                    setTemplateType('email');
+                                    setShowTemplatePreview(true);
+                                  }}
+                                  data-testid={`button-preview-email-${template.id}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setTestingTemplate(template);
+                                    setTemplateType('email');
+                                    setShowTestDialog(true);
+                                  }}
+                                  data-testid={`button-test-email-${template.id}`}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
                                     setEditingTemplate(template);
                                     setTemplateType('email');
                                     setTemplateName(template.name);
@@ -1287,6 +1336,30 @@ export default function MarketingListPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
+                                    setPreviewingTemplate(template);
+                                    setTemplateType('sms');
+                                    setShowTemplatePreview(true);
+                                  }}
+                                  data-testid={`button-preview-sms-${template.id}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setTestingTemplate(template);
+                                    setTemplateType('sms');
+                                    setShowTestDialog(true);
+                                  }}
+                                  data-testid={`button-test-sms-${template.id}`}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
                                     setEditingTemplate(template);
                                     setTemplateType('sms');
                                     setTemplateName(template.name);
@@ -1337,6 +1410,30 @@ export default function MarketingListPage() {
                                 </p>
                               </div>
                               <div className="flex gap-2 ml-4">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setPreviewingTemplate(template);
+                                    setTemplateType('notification');
+                                    setShowTemplatePreview(true);
+                                  }}
+                                  data-testid={`button-preview-notification-${template.id}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setTestingTemplate(template);
+                                    setTemplateType('notification');
+                                    setShowTestDialog(true);
+                                  }}
+                                  data-testid={`button-test-notification-${template.id}`}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1590,14 +1687,24 @@ export default function MarketingListPage() {
             {/* Template Name */}
             <div>
               <Label className="text-sm font-medium">Şablon Adı:</Label>
-              <p className="font-medium">{templateName || 'Belirtilmedi'}</p>
+              <p className="font-medium">
+                {previewingTemplate 
+                  ? previewingTemplate.name 
+                  : templateName || 'Belirtilmedi'
+                }
+              </p>
             </div>
 
             {/* Email Subject */}
             {templateType === 'email' && (
               <div>
                 <Label className="text-sm font-medium">E-posta Konusu:</Label>
-                <p className="font-medium">{templateSubject || 'Belirtilmedi'}</p>
+                <p className="font-medium">
+                  {previewingTemplate 
+                    ? previewingTemplate.subject 
+                    : templateSubject || 'Belirtilmedi'
+                  }
+                </p>
               </div>
             )}
 
@@ -1605,7 +1712,12 @@ export default function MarketingListPage() {
             {templateType === 'notification' && (
               <div>
                 <Label className="text-sm font-medium">Bildirim Başlığı:</Label>
-                <p className="font-medium">{templateTitle || 'Belirtilmedi'}</p>
+                <p className="font-medium">
+                  {previewingTemplate 
+                    ? previewingTemplate.title 
+                    : templateTitle || 'Belirtilmedi'
+                  }
+                </p>
               </div>
             )}
 
@@ -1615,11 +1727,18 @@ export default function MarketingListPage() {
               {templateType === 'email' ? (
                 <div 
                   className="border rounded-lg p-4 bg-white dark:bg-gray-900 min-h-[200px]"
-                  dangerouslySetInnerHTML={{ __html: templateContent }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: previewingTemplate 
+                      ? previewingTemplate.htmlContent 
+                      : templateContent 
+                  }}
                 />
               ) : (
                 <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 whitespace-pre-wrap">
-                  {templateContent || 'İçerik belirtilmedi'}
+                  {previewingTemplate 
+                    ? previewingTemplate.content 
+                    : templateContent || 'İçerik belirtilmedi'
+                  }
                 </div>
               )}
             </div>
@@ -1641,10 +1760,119 @@ export default function MarketingListPage() {
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setShowTemplatePreview(false)}
+                onClick={() => {
+                  setShowTemplatePreview(false);
+                  setPreviewingTemplate(null);
+                }}
                 data-testid="button-close-preview"
               >
                 Kapat
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Template Dialog */}
+      <Dialog open={showTestDialog} onOpenChange={setShowTestDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Test Gönder</DialogTitle>
+            <DialogDescription>
+              {templateType === 'email' && testingTemplate && 
+                `"${testingTemplate.name}" e-posta şablonunu test et`
+              }
+              {templateType === 'sms' && testingTemplate && 
+                `"${testingTemplate.name}" SMS şablonunu test et`
+              }
+              {templateType === 'notification' && testingTemplate && 
+                `"${testingTemplate.name}" bildirim şablonunu test et`
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Email input for email templates */}
+            {templateType === 'email' && (
+              <div className="space-y-2">
+                <Label htmlFor="test-email">Test E-posta Adresi</Label>
+                <Input
+                  id="test-email"
+                  type="email"
+                  placeholder="test@example.com"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  data-testid="input-test-email"
+                />
+              </div>
+            )}
+
+            {/* Phone number input for SMS templates */}
+            {templateType === 'sms' && (
+              <div className="space-y-2">
+                <Label htmlFor="test-phone">Test Telefon Numarası</Label>
+                <Input
+                  id="test-phone"
+                  type="tel"
+                  placeholder="+90 5XX XXX XX XX"
+                  value={testEmail} // using same state for simplicity
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  data-testid="input-test-phone"
+                />
+              </div>
+            )}
+
+            {/* Note for notification templates */}
+            {templateType === 'notification' && (
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+                <p className="text-sm text-blue-700">
+                  <strong>Not:</strong> Test bildirimi sadece sizin hesabınıza gönderilecektir.
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowTestDialog(false);
+                  setTestingTemplate(null);
+                  setTestEmail('');
+                }}
+                data-testid="button-cancel-test"
+              >
+                İptal
+              </Button>
+              <Button
+                onClick={() => {
+                  if (templateType === 'email' && !testEmail) {
+                    toast({
+                      title: "Hata!",
+                      description: "E-posta adresi gereklidir",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  if (templateType === 'sms' && !testEmail) {
+                    toast({
+                      title: "Hata!",
+                      description: "Telefon numarası gereklidir",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  testTemplateMutation.mutate({
+                    type: templateType,
+                    templateId: testingTemplate.id,
+                    email: testEmail
+                  });
+                }}
+                disabled={testTemplateMutation.isPending}
+                data-testid="button-send-test"
+              >
+                {testTemplateMutation.isPending ? 'Gönderiliyor...' : 'Test Gönder'}
               </Button>
             </div>
           </div>

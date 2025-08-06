@@ -2790,6 +2790,10 @@ export class DatabaseStorage implements IStorage {
     return template;
   }
 
+  async getCampaignEmailTemplateById(id: number): Promise<CampaignEmailTemplate | undefined> {
+    return this.getCampaignEmailTemplate(id);
+  }
+
   async createCampaignEmailTemplate(template: InsertCampaignEmailTemplate): Promise<CampaignEmailTemplate> {
     const [created] = await db
       .insert(campaignEmailTemplates)
@@ -2831,6 +2835,10 @@ export class DatabaseStorage implements IStorage {
     return template;
   }
 
+  async getCampaignSmsTemplateById(id: number): Promise<CampaignSmsTemplate | undefined> {
+    return this.getCampaignSmsTemplate(id);
+  }
+
   async createCampaignSmsTemplate(template: InsertCampaignSmsTemplate): Promise<CampaignSmsTemplate> {
     const [created] = await db
       .insert(campaignSmsTemplates)
@@ -2870,6 +2878,10 @@ export class DatabaseStorage implements IStorage {
       .from(campaignNotificationTemplates)
       .where(eq(campaignNotificationTemplates.id, id));
     return template;
+  }
+
+  async getCampaignNotificationTemplateById(id: number): Promise<CampaignNotificationTemplate | undefined> {
+    return this.getCampaignNotificationTemplate(id);
   }
 
   async createCampaignNotificationTemplate(template: InsertCampaignNotificationTemplate): Promise<CampaignNotificationTemplate> {

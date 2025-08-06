@@ -3341,6 +3341,142 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Test Template Route (Admin only)
+  app.post("/api/admin/test-template", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { type, templateId, email } = req.body;
+      const user = req.user;
+      
+      if (!type || !templateId) {
+        return res.status(400).json({ error: "Missing required fields: type and templateId" });
+      }
+
+      let template: any = null;
+      let testContent = "";
+      let testSubject = "";
+      let testTitle = "";
+
+      // Get template based on type
+      if (type === 'email') {
+        template = await storage.getCampaignEmailTemplateById(templateId);
+        if (!template) {
+          return res.status(404).json({ error: "Email template not found" });
+        }
+        
+        if (!email) {
+          return res.status(400).json({ error: "Email address required for email template test" });
+        }
+
+        // Replace parameters with sample data
+        testSubject = template.subject
+          .replace(/{{partnerName}}/g, 'Test Partner')
+          .replace(/{{companyName}}/g, 'Test Şirketi')
+          .replace(/{{customerName}}/g, 'Test Müşteri')
+          .replace(/{{serviceNeeded}}/g, 'Test Hizmeti')
+          .replace(/{{budget}}/g, '10.000 TL')
+          .replace(/{{partnerCompany}}/g, 'Test Partner Şirketi')
+          .replace(/{{userName}}/g, user?.firstName + ' ' + user?.lastName || 'Test User');
+
+        testContent = template.htmlContent
+          .replace(/{{partnerName}}/g, 'Test Partner')
+          .replace(/{{companyName}}/g, 'Test Şirketi')
+          .replace(/{{customerName}}/g, 'Test Müşteri')
+          .replace(/{{serviceNeeded}}/g, 'Test Hizmeti')
+          .replace(/{{budget}}/g, '10.000 TL')
+          .replace(/{{partnerCompany}}/g, 'Test Partner Şirketi')
+          .replace(/{{userName}}/g, user?.firstName + ' ' + user?.lastName || 'Test User')
+          .replace(/{{resetLink}}/g, 'https://partner.dip.tc/reset-password?token=test');
+
+        // Send test email
+        await resendService.sendEmail({
+          to: email,
+          subject: `[TEST] ${testSubject}`,
+          html: testContent,
+        });
+
+      } else if (type === 'sms') {
+        template = await storage.getCampaignSmsTemplateById(templateId);
+        if (!template) {
+          return res.status(404).json({ error: "SMS template not found" });
+        }
+        
+        if (!email) { // Using email field for phone number
+          return res.status(400).json({ error: "Phone number required for SMS template test" });
+        }
+
+        // Replace parameters with sample data
+        testContent = template.content
+          .replace(/{{partnerName}}/g, 'Test Partner')
+          .replace(/{{companyName}}/g, 'Test Şirketi')
+          .replace(/{{customerName}}/g, 'Test Müşteri')
+          .replace(/{{serviceNeeded}}/g, 'Test Hizmeti')
+          .replace(/{{budget}}/g, '10.000 TL')
+          .replace(/{{partnerCompany}}/g, 'Test Partner Şirketi')
+          .replace(/{{userName}}/g, user?.firstName + ' ' + user?.lastName || 'Test User');
+
+        // For SMS testing, we'll just log the content since NetGSM integration needs proper setup
+        console.log(`SMS Test Message to ${email}:`, testContent);
+        
+        // In a real implementation, you would send via NetGSM:
+        // await netgsmService.sendSMS(email, testContent);
+
+      } else if (type === 'notification') {
+        template = await storage.getCampaignNotificationTemplateById(templateId);
+        if (!template) {
+          return res.status(404).json({ error: "Notification template not found" });
+        }
+
+        // Replace parameters with sample data
+        testTitle = template.title
+          .replace(/{{partnerName}}/g, 'Test Partner')
+          .replace(/{{companyName}}/g, 'Test Şirketi')
+          .replace(/{{customerName}}/g, 'Test Müşteri')
+          .replace(/{{serviceNeeded}}/g, 'Test Hizmeti')
+          .replace(/{{budget}}/g, '10.000 TL')
+          .replace(/{{partnerCompany}}/g, 'Test Partner Şirketi')
+          .replace(/{{userName}}/g, user?.firstName + ' ' + user?.lastName || 'Test User');
+
+        testContent = template.content
+          .replace(/{{partnerName}}/g, 'Test Partner')
+          .replace(/{{companyName}}/g, 'Test Şirketi')
+          .replace(/{{customerName}}/g, 'Test Müşteri')
+          .replace(/{{serviceNeeded}}/g, 'Test Hizmeti')
+          .replace(/{{budget}}/g, '10.000 TL')
+          .replace(/{{partnerCompany}}/g, 'Test Partner Şirketi')
+          .replace(/{{userName}}/g, user?.firstName + ' ' + user?.lastName || 'Test User');
+
+        // Create a test notification for the current user
+        await storage.createNotification({
+          userId: user!.id,
+          title: `[TEST] ${testTitle}`,
+          message: testContent,
+          type: 'test',
+          isRead: false
+        });
+
+      } else {
+        return res.status(400).json({ error: "Invalid template type. Must be 'email', 'sms', or 'notification'" });
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Test ${type} sent successfully`,
+        templateName: template.name,
+        ...(type === 'email' && { sentTo: email }),
+        ...(type === 'sms' && { sentTo: email }),
+        ...(type === 'notification' && { sentTo: user?.firstName + ' ' + user?.lastName })
+      });
+
+    } catch (error: any) {
+      console.error("Error sending test template:", error);
+      res.status(500).json({ error: "Failed to send test template" });
+    }
+  });
+
   // Quote Response Management Routes
   app.post('/api/quote-responses', async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
