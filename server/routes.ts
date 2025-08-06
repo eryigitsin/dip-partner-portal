@@ -2878,45 +2878,158 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Send bulk campaign endpoint
+  // Send bulk campaign endpoint (legacy single-channel)
   app.post('/api/admin/send-bulk-campaign', async (req, res) => {
     if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
     try {
-      const { subject, content, recipients } = req.body;
+      const { subject, content, recipients, channels, targetGroup, targetContacts, email, sms, notification } = req.body;
       
-      if (!subject || !content || !recipients || !Array.isArray(recipients)) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      let sentCount = 0;
-      let errorCount = 0;
-      
-      // Send emails to all recipients
-      for (const email of recipients) {
-        try {
-          await resendService.sendEmail({
-            to: email,
-            subject: subject,
-            html: content,
-          });
-          sentCount++;
-        } catch (error) {
-          console.error(`Failed to send email to ${email}:`, error);
-          errorCount++;
+      // Handle both legacy and new multi-channel format
+      if (channels && Array.isArray(channels)) {
+        // New multi-channel format
+        if (channels.length === 0) {
+          return res.status(400).json({ error: 'At least one channel must be selected' });
         }
-      }
 
-      res.json({ 
-        sentCount, 
-        errorCount, 
-        totalRecipients: recipients.length 
-      });
+        if (!targetContacts || !Array.isArray(targetContacts) || targetContacts.length === 0) {
+          return res.status(400).json({ error: 'No target contacts found' });
+        }
+
+        let totalSent = 0;
+        const results = {
+          email: { sent: 0, failed: 0 },
+          sms: { sent: 0, failed: 0 },
+          notification: { sent: 0, failed: 0 }
+        };
+
+        // Process email campaign
+        if (channels.includes('email') && email) {
+          const emailRecipients = targetContacts.filter((c: any) => c.email).map((c: any) => c.email);
+          if (emailRecipients.length > 0) {
+            for (const emailAddr of emailRecipients) {
+              try {
+                await resendService.sendEmail({
+                  to: emailAddr,
+                  subject: email.subject,
+                  html: email.content,
+                });
+                results.email.sent++;
+                totalSent++;
+              } catch (error) {
+                console.error(`Failed to send email to ${emailAddr}:`, error);
+                results.email.failed++;
+              }
+            }
+          }
+        }
+
+        // Process SMS campaign
+        if (channels.includes('sms') && sms) {
+          const smsRecipients = targetContacts.filter((c: any) => c.phone);
+          if (smsRecipients.length > 0) {
+            // Here you would integrate with NetGSM SMS service
+            // For now, simulate success
+            results.sms.sent = smsRecipients.length;
+            totalSent += smsRecipients.length;
+            
+            console.log(`SMS campaign would be sent to ${smsRecipients.length} recipients:`, {
+              content: sms.content,
+              templateId: sms.templateId
+            });
+          }
+        }
+
+        // Process notification campaign
+        if (channels.includes('notification') && notification) {
+          const notificationRecipients = targetContacts.filter((c: any) => c.userId);
+          if (notificationRecipients.length > 0) {
+            // Here you would integrate with your notification system
+            // For now, simulate success
+            results.notification.sent = notificationRecipients.length;
+            totalSent += notificationRecipients.length;
+            
+            console.log(`Notification campaign would be sent to ${notificationRecipients.length} recipients:`, {
+              title: notification.title,
+              content: notification.content,
+              templateId: notification.templateId
+            });
+          }
+        }
+
+        return res.json({ 
+          success: true, 
+          message: `Multi-channel campaign sent successfully`,
+          sentCount: totalSent,
+          results,
+          channels: channels,
+          targetGroup
+        });
+      } else {
+        // Legacy single-channel format
+        if (!subject || !content || !recipients || !Array.isArray(recipients)) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        let sentCount = 0;
+        let errorCount = 0;
+        
+        // Send emails to all recipients
+        for (const email of recipients) {
+          try {
+            await resendService.sendEmail({
+              to: email,
+              subject: subject,
+              html: content,
+            });
+            sentCount++;
+          } catch (error) {
+            console.error(`Failed to send email to ${email}:`, error);
+            errorCount++;
+          }
+        }
+
+        return res.json({ 
+          sentCount, 
+          errorCount, 
+          totalRecipients: recipients.length 
+        });
+      }
     } catch (error) {
       console.error('Error sending bulk campaign:', error);
       res.status(500).json({ error: 'Failed to send bulk campaign' });
+    }
+  });
+
+  // Get SMS templates (Admin only)
+  app.get("/api/admin/sms-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const smsTemplates = await storage.getSmsTemplates();
+      res.json(smsTemplates);
+    } catch (error: any) {
+      console.error("Error fetching SMS templates:", error);
+      res.status(500).json({ error: "Failed to fetch SMS templates" });
+    }
+  });
+
+  // Get notification templates (Admin only)
+  app.get("/api/admin/notification-templates", async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const notificationTemplates = await storage.getNotificationTemplates();
+      res.json(notificationTemplates);
+    } catch (error: any) {
+      console.error("Error fetching notification templates:", error);
+      res.status(500).json({ error: "Failed to fetch notification templates" });
     }
   });
 

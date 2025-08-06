@@ -2656,8 +2656,8 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  // Notification Template methods
-  async getAllNotificationTemplates(): Promise<NotificationTemplate[]> {
+  // Notification Template methods - using standardized method names
+  async getNotificationTemplates(): Promise<NotificationTemplate[]> {
     return await db
       .select()
       .from(notificationTemplates)
@@ -2689,15 +2689,15 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  // SMS Template methods
-  async getAllSmsTemplates(): Promise<SmsTemplate[]> {
+  // SMS Template methods - using standardized method names
+  async getSmsTemplates(): Promise<SmsTemplate[]> {
     return await db
       .select()
       .from(smsTemplates)
       .orderBy(asc(smsTemplates.name));
   }
 
-  async getSmsTemplateByType(type: string): Promise<SmsTemplate | undefined> {
+  async getSmsTemplate(type: string): Promise<SmsTemplate | undefined> {
     const [template] = await db
       .select()
       .from(smsTemplates)

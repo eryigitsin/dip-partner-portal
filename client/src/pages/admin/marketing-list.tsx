@@ -61,6 +61,16 @@ export default function MarketingListPage() {
   const [campaignContent, setCampaignContent] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
+  
+  // Multi-channel campaign states
+  const [selectedChannels, setSelectedChannels] = useState<string[]>(['email']);
+  const [selectedTargetGroup, setSelectedTargetGroup] = useState('all');
+  const [emailTemplate, setEmailTemplate] = useState('');
+  const [smsTemplate, setSmsTemplate] = useState('');
+  const [notificationTemplate, setNotificationTemplate] = useState('');
+  const [smsContent, setSmsContent] = useState('');
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [notificationContent, setNotificationContent] = useState('');
   const { toast } = useToast();
 
   // Fetch marketing contacts
@@ -77,6 +87,16 @@ export default function MarketingListPage() {
   // Fetch email templates
   const { data: emailTemplates = [] } = useQuery({
     queryKey: ['/api/admin/email-templates'],
+  });
+
+  // Fetch SMS templates  
+  const { data: smsTemplates = [] } = useQuery({
+    queryKey: ['/api/admin/sms-templates'],
+  });
+
+  // Fetch notification templates
+  const { data: notificationTemplates = [] } = useQuery({
+    queryKey: ['/api/admin/notification-templates'],
   });
 
   // Sync contacts mutation
@@ -105,16 +125,42 @@ export default function MarketingListPage() {
 
   // Send bulk campaign mutation
   const sendCampaignMutation = useMutation({
-    mutationFn: (data: { subject: string; content: string; recipients: string[] }) =>
+    mutationFn: (data: any) =>
       apiRequest('POST', '/api/admin/send-bulk-campaign', data),
     onSuccess: (data: any) => {
+      let message = '';
+      if (data.channels) {
+        // Multi-channel response
+        message = `Kampanya başarıyla gönderildi: ${data.sentCount} toplam gönderim`;
+        if (data.results) {
+          const details = [];
+          if (data.results.email.sent > 0) details.push(`${data.results.email.sent} e-posta`);
+          if (data.results.sms.sent > 0) details.push(`${data.results.sms.sent} SMS`);
+          if (data.results.notification.sent > 0) details.push(`${data.results.notification.sent} bildirim`);
+          if (details.length > 0) {
+            message += ` (${details.join(', ')})`;
+          }
+        }
+      } else {
+        // Legacy single-channel response
+        message = `Kampanya ${data.sentCount || 0} kişiye gönderildi`;
+      }
+      
       toast({
         title: "Başarılı!",
-        description: `Kampanya ${data.sentCount || 0} kişiye gönderildi`,
+        description: message,
       });
+      
+      // Reset form states
       setCampaignSubject('');
       setCampaignContent('');
       setSelectedTemplate('');
+      setSmsContent('');
+      setNotificationTitle('');
+      setNotificationContent('');
+      setEmailTemplate('');
+      setSmsTemplate('');
+      setNotificationTemplate('');
     },
     onError: (error: any) => {
       toast({
@@ -126,7 +172,7 @@ export default function MarketingListPage() {
   });
 
   // Combine contacts and subscribers for display
-  const allData = [...contacts, ...subscribers.map(sub => ({
+  const allData = [...contacts, ...subscribers.map((sub: any) => ({
     ...sub,
     firstName: '',
     lastName: '',
@@ -136,7 +182,7 @@ export default function MarketingListPage() {
     website: '',
     linkedinProfile: '',
     userType: 'subscriber',
-    source: sub.source || 'homepage',
+    source: 'homepage',
     tags: [],
     isActive: sub.isActive,
     createdAt: sub.subscribedAt,
@@ -234,6 +280,120 @@ export default function MarketingListPage() {
       content: campaignContent,
       recipients
     });
+  };
+
+  // Get target count based on selected group
+  const getTargetCount = () => {
+    const baseContacts = getFilteredContactsByGroup();
+    return baseContacts.length;
+  };
+
+  // Filter contacts by target group
+  const getFilteredContactsByGroup = () => {
+    switch (selectedTargetGroup) {
+      case 'users':
+        return allData.filter((c: any) => c.userType === 'user');
+      case 'partners':
+        return allData.filter((c: any) => c.userType === 'partner');
+      case 'admins':
+        return allData.filter((c: any) => c.userType === 'master_admin' || c.userType === 'editor_admin');
+      case 'subscribers':
+        return allData.filter((c: any) => c.userType === 'subscriber');
+      default:
+        return allData;
+    }
+  };
+
+  // Multi-channel campaign function
+  const sendMultiChannelCampaign = async () => {
+    const targetContacts = getFilteredContactsByGroup();
+    
+    if (targetContacts.length === 0) {
+      toast({
+        title: "Hata!",
+        description: "Hedef grupta gönderim yapılacak kişi bulunamadı",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate channel requirements
+    const validationErrors = [];
+    
+    if (selectedChannels.includes('email') && (!campaignSubject.trim() || !campaignContent.trim())) {
+      validationErrors.push("E-posta için konu ve içerik gerekli");
+    }
+    
+    if (selectedChannels.includes('sms') && !smsContent.trim()) {
+      validationErrors.push("SMS için içerik gerekli");
+    }
+    
+    if (selectedChannels.includes('notification') && (!notificationTitle.trim() || !notificationContent.trim())) {
+      validationErrors.push("Bildirim için başlık ve içerik gerekli");
+    }
+
+    if (validationErrors.length > 0) {
+      toast({
+        title: "Hata!",
+        description: validationErrors.join(", "),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare campaign data
+    const campaignData = {
+      channels: selectedChannels,
+      targetGroup: selectedTargetGroup,
+      targetContacts: targetContacts.map((c: any) => ({ 
+        email: c.email, 
+        phone: c.phone,
+        userId: c.userId || c.id 
+      })),
+      email: selectedChannels.includes('email') ? {
+        subject: campaignSubject,
+        content: campaignContent,
+        templateId: emailTemplate || null
+      } : null,
+      sms: selectedChannels.includes('sms') ? {
+        content: smsContent,
+        templateId: smsTemplate || null
+      } : null,
+      notification: selectedChannels.includes('notification') ? {
+        title: notificationTitle,
+        content: notificationContent,
+        templateId: notificationTemplate || null
+      } : null
+    };
+
+    sendCampaignMutation.mutate(campaignData);
+  };
+
+  // Template selection handlers
+  const handleEmailTemplateSelect = (templateId: string) => {
+    setEmailTemplate(templateId);
+    const template = emailTemplates.find((t: any) => t.id.toString() === templateId);
+    if (template) {
+      setCampaignSubject(template.subject || '');
+      setCampaignContent(template.content || '');
+    }
+  };
+
+  const handleSmsTemplateSelect = (templateId: string) => {
+    setSmsTemplate(templateId);
+    const template = smsTemplates.find((t: any) => t.id.toString() === templateId);
+    if (template) {
+      setSmsContent(template.content || '');
+    }
+  };
+
+  const handleNotificationTemplateSelect = (templateId: string) => {
+    setNotificationTemplate(templateId);
+    const template = notificationTemplates.find((t: any) => t.id.toString() === templateId);
+    if (template) {
+      setNotificationTitle(template.title || '');
+      setNotificationContent(template.content || '');
+    }
   };
 
   const stats = {
@@ -561,69 +721,208 @@ export default function MarketingListPage() {
         <TabsContent value="campaign" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Toplu Kampanya Gönderimi</CardTitle>
+              <CardTitle>Çok Kanallı Kampanya Gönderimi</CardTitle>
               <CardDescription>
-                Tüm e-posta listesine toplu kampanya gönderin. Hedef: {filteredContacts.filter((c: any) => c.email).length} kişi
+                E-posta, SMS ve bildirim kanallarında kampanya gönderin. Hedef: {filteredContacts.length} kişi
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Template Selection */}
+              {/* Channel Selection */}
               <div className="space-y-2">
-                <Label htmlFor="template-select">Şablon Seçin (Opsiyonel)</Label>
-                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                <Label>Kampanya Kanalları</Label>
+                <div className="flex gap-4">
+                  {[
+                    { id: 'email', label: 'E-posta', icon: Mail },
+                    { id: 'sms', label: 'SMS', icon: Phone },
+                    { id: 'notification', label: 'Bildirim', icon: Globe }
+                  ].map(channel => (
+                    <label key={channel.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedChannels.includes(channel.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedChannels([...selectedChannels, channel.id]);
+                          } else {
+                            setSelectedChannels(selectedChannels.filter(c => c !== channel.id));
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <channel.icon className="h-4 w-4" />
+                      <span>{channel.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target Group Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="target-group">Hedef Grup</Label>
+                <Select value={selectedTargetGroup} onValueChange={setSelectedTargetGroup}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Önceden hazırlanmış şablon seçin" />
+                    <SelectValue placeholder="Hedef grubu seçin" />
                   </SelectTrigger>
                   <SelectContent>
-                    {emailTemplates.map((template: any) => (
-                      <SelectItem key={template.id} value={template.id.toString()}>
-                        {template.name} - {template.subject}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="all">Tüm Kullanıcılar</SelectItem>
+                    <SelectItem value="users">Sadece Kullanıcılar</SelectItem>
+                    <SelectItem value="partners">Sadece Partnerler</SelectItem>
+                    <SelectItem value="admins">Sadece Adminler</SelectItem>
+                    <SelectItem value="subscribers">Sadece Aboneler</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Subject */}
-              <div className="space-y-2">
-                <Label htmlFor="campaign-subject">E-posta Konusu</Label>
-                <Input
-                  id="campaign-subject"
-                  placeholder="Kampanya e-posta konusu"
-                  value={campaignSubject}
-                  onChange={(e) => setCampaignSubject(e.target.value)}
-                />
-              </div>
+              {/* Email Campaign Section */}
+              {selectedChannels.includes('email') && (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    E-posta Kampanyası
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <Label>E-posta Şablonu (Şablon Kütüphanesinden)</Label>
+                    <Select value={emailTemplate} onValueChange={handleEmailTemplateSelect}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="E-posta şablonu seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {emailTemplates.map((template: any) => (
+                          <SelectItem key={template.id} value={template.id.toString()}>
+                            {template.name || template.type} - {template.subject}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {/* Content */}
-              <div className="space-y-2">
-                <Label htmlFor="campaign-content">E-posta İçeriği</Label>
-                <Textarea
-                  id="campaign-content"
-                  placeholder="Kampanya e-posta içeriği (HTML desteklenir)"
-                  value={campaignContent}
-                  onChange={(e) => setCampaignContent(e.target.value)}
-                  rows={10}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email-subject">E-posta Konusu</Label>
+                    <Input
+                      id="email-subject"
+                      placeholder="Kampanya e-posta konusu"
+                      value={campaignSubject}
+                      onChange={(e) => setCampaignSubject(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email-content">E-posta İçeriği</Label>
+                    <Textarea
+                      id="email-content"
+                      placeholder="Kampanya e-posta içeriği (HTML desteklenir)"
+                      value={campaignContent}
+                      onChange={(e) => setCampaignContent(e.target.value)}
+                      rows={6}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* SMS Campaign Section */}
+              {selectedChannels.includes('sms') && (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    SMS Kampanyası
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <Label>SMS Şablonu (Şablon Kütüphanesinden)</Label>
+                    <Select value={smsTemplate} onValueChange={handleSmsTemplateSelect}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="SMS şablonu seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {smsTemplates.map((template: any) => (
+                          <SelectItem key={template.id} value={template.id.toString()}>
+                            {template.name || template.type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sms-content">SMS İçeriği</Label>
+                    <Textarea
+                      id="sms-content"
+                      placeholder="SMS mesajı (160 karakter önerilir)"
+                      value={smsContent}
+                      onChange={(e) => setSmsContent(e.target.value)}
+                      rows={3}
+                      maxLength={160}
+                    />
+                    <p className="text-sm text-gray-500">{smsContent.length}/160 karakter</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Notification Campaign Section */}
+              {selectedChannels.includes('notification') && (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Bildirim Kampanyası
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <Label>Bildirim Şablonu (Şablon Kütüphanesinden)</Label>
+                    <Select value={notificationTemplate} onValueChange={handleNotificationTemplateSelect}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Bildirim şablonu seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {notificationTemplates.map((template: any) => (
+                          <SelectItem key={template.id} value={template.id.toString()}>
+                            {template.name || template.type} - {template.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notification-title">Bildirim Başlığı</Label>
+                    <Input
+                      id="notification-title"
+                      placeholder="Bildirim başlığı"
+                      value={notificationTitle}
+                      onChange={(e) => setNotificationTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notification-content">Bildirim İçeriği</Label>
+                    <Textarea
+                      id="notification-content"
+                      placeholder="Bildirim mesajı"
+                      value={notificationContent}
+                      onChange={(e) => setNotificationContent(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex gap-4">
                 <Button
                   onClick={() => setPreviewOpen(true)}
                   variant="outline"
-                  disabled={!campaignSubject.trim() || !campaignContent.trim()}
+                  disabled={selectedChannels.length === 0}
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Önizle
                 </Button>
                 
                 <Button
-                  onClick={sendCampaign}
-                  disabled={sendCampaignMutation.isPending || !campaignSubject.trim() || !campaignContent.trim()}
+                  onClick={sendMultiChannelCampaign}
+                  disabled={sendCampaignMutation.isPending || selectedChannels.length === 0}
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  {sendCampaignMutation.isPending ? 'Gönderiliyor...' : `Kampanya Gönder (${filteredContacts.filter((c: any) => c.email).length} kişi)`}
+                  {sendCampaignMutation.isPending ? 'Gönderiliyor...' : `Kampanya Gönder (${getTargetCount()} kişi)`}
                 </Button>
               </div>
             </CardContent>
