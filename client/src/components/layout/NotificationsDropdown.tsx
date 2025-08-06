@@ -40,13 +40,18 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
     hasMore: boolean;
   }>({
     queryKey: ['/api/notifications', 1, 10], // page, limit
-    queryFn: () => apiRequest('GET', '/api/notifications?page=1&limit=10'),
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/notifications?page=1&limit=10');
+      return await response.json();
+    },
     enabled: isOpen,
   });
 
   const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: number) =>
-      apiRequest('PATCH', `/api/notifications/${notificationId}/read`),
+    mutationFn: async (notificationId: number) => {
+      const response = await apiRequest('PATCH', `/api/notifications/${notificationId}/read`);
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
@@ -54,8 +59,10 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
   });
 
   const markAllAsReadMutation = useMutation({
-    mutationFn: () =>
-      apiRequest('PATCH', '/api/notifications/mark-all-read'),
+    mutationFn: async () => {
+      const response = await apiRequest('PATCH', '/api/notifications/mark-all-read');
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/unread-count'] });
@@ -146,13 +153,13 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
             <div className="p-4 text-center text-sm text-muted-foreground">
               Bildirimler yükleniyor...
             </div>
-          ) : !notifications || notifications.notifications.length === 0 ? (
+          ) : !notifications || !notifications.notifications || notifications.notifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               Henüz bildiriminiz yok
             </div>
           ) : (
             <div className="py-1">
-              {notifications.notifications.map((notification: Notification) => (
+              {notifications?.notifications?.map((notification: Notification) => (
                 <DropdownMenuItem
                   key={notification.id}
                   className={`p-3 cursor-pointer border-b border-gray-50 last:border-b-0 ${
