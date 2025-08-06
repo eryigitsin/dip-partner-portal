@@ -14,7 +14,9 @@ router.get('/', async (req: any, res) => {
     const limit = parseInt(req.query.limit as string) || 20;
     const userId = req.user.id;
 
+    console.log('Getting notifications for user:', userId, 'page:', page, 'limit:', limit);
     const result = await notificationService.getUserNotifications(userId, page, limit);
+    console.log('Notifications result:', result);
     
     res.json(result);
   } catch (error) {
