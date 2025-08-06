@@ -404,6 +404,22 @@ export default function SystemSettings() {
     },
   });
 
+  const saveMediaSettingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/system-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heroVideoUrl: mediaSettings.heroVideoUrl }),
+      });
+      if (!response.ok) throw new Error('Failed to update media settings');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/system-config'] });
+      toast({ title: 'Medya ayarları kaydedildi' });
+    },
+  });
+
 
 
 
