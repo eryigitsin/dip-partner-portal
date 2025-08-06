@@ -199,8 +199,8 @@ export default function NotificationsPage() {
                     <div
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                        !notification.isRead ? 'bg-blue-50' : ''
+                      className={`p-4 cursor-pointer transition-colors ${
+                        !notification.isRead ? 'bg-blue-50 hover:bg-blue-100' : 'bg-gray-50 hover:bg-gray-100 opacity-75'
                       }`}
                       data-testid={`notification-item-${notification.id}`}
                     >
@@ -212,7 +212,7 @@ export default function NotificationsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
                             <h4 className={`text-sm font-medium ${
-                              !notification.isRead ? 'text-gray-900' : 'text-gray-700'
+                              !notification.isRead ? 'text-gray-900' : 'text-gray-500'
                             }`}>
                               {notification.title}
                             </h4>
@@ -232,7 +232,7 @@ export default function NotificationsPage() {
                           </div>
                           
                           <p className={`text-sm ${
-                            !notification.isRead ? 'text-gray-800' : 'text-gray-600'
+                            !notification.isRead ? 'text-gray-800' : 'text-gray-400'
                           }`}>
                             {notification.message}
                           </p>

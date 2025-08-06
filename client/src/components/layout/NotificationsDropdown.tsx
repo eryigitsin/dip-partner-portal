@@ -10,7 +10,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Check, CheckCheck, ExternalLink } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Bell, Check, CheckCheck, ExternalLink, Eye } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -136,26 +142,43 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
             <h3 className="font-semibold text-sm">Bildirimler</h3>
           </div>
           <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.location.href = '/notifications'}
-              className="h-7 text-xs flex-1"
-              data-testid="button-view-all"
-            >
-              Tümünü Gör
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              disabled={markAllAsReadMutation.isPending}
-              className="h-7 text-xs flex-1"
-              data-testid="button-mark-all-read"
-            >
-              <CheckCheck className="h-3 w-3 mr-1" />
-              Tümünü Okunmuş İşaretle
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.location.href = '/notifications'}
+                    className="h-7 px-2 flex-1"
+                    data-testid="button-view-all"
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Tümünü Gör</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                    disabled={markAllAsReadMutation.isPending}
+                    className="h-7 px-2 flex-1"
+                    data-testid="button-mark-all-read"
+                  >
+                    <CheckCheck className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Tümünü Okunmuş İşaretle</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
@@ -174,7 +197,7 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
                 <DropdownMenuItem
                   key={notification.id}
                   className={`p-3 cursor-pointer border-b border-gray-50 last:border-b-0 ${
-                    !notification.isRead ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
+                    !notification.isRead ? 'bg-blue-50 hover:bg-blue-100' : 'bg-gray-50 hover:bg-gray-100 opacity-75'
                   }`}
                   onClick={() => handleNotificationClick(notification)}
                   data-testid={`notification-${notification.id}`}
@@ -185,18 +208,24 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className={`text-sm font-medium truncate ${
+                          !notification.isRead ? 'text-gray-900' : 'text-gray-500'
+                        }`}>
                           {notification.title}
                         </p>
                         {!notification.isRead && (
                           <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0 ml-2" />
                         )}
                       </div>
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                      <p className={`text-xs mt-1 line-clamp-2 ${
+                        !notification.isRead ? 'text-gray-600' : 'text-gray-400'
+                      }`}>
                         {notification.message}
                       </p>
                       <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-gray-500">
+                        <p className={`text-xs ${
+                          !notification.isRead ? 'text-gray-500' : 'text-gray-400'
+                        }`}>
                           {formatDistanceToNow(new Date(notification.createdAt), {
                             addSuffix: true,
                             locale: tr
