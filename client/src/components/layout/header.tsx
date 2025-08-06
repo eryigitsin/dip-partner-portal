@@ -45,7 +45,8 @@ export function Header() {
   const { data: unreadCount } = useQuery<{ count: number }>({
     queryKey: ['/api/notifications/unread-count'],
     enabled: !!user,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+    staleTime: 0, // Always fetch fresh data
   });
 
   // Get unread messages count
