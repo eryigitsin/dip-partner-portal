@@ -131,24 +131,35 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
         className="w-80 max-h-96"
         data-testid="notifications-dropdown"
       >
-        <div className="flex items-center justify-between p-3 border-b">
-          <h3 className="font-semibold text-sm">Bildirimler</h3>
-          {unreadCount && unreadCount.count > 0 && (
+        <div className="p-3 border-b">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-sm">Bildirimler</h3>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/notifications'}
+              className="h-7 text-xs flex-1"
+              data-testid="button-view-all"
+            >
+              Tümünü Gör
+            </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleMarkAllAsRead}
               disabled={markAllAsReadMutation.isPending}
-              className="h-7 text-xs"
+              className="h-7 text-xs flex-1"
               data-testid="button-mark-all-read"
             >
               <CheckCheck className="h-3 w-3 mr-1" />
-              Tümünü Okundu İşaretle
+              Tümünü Okunmuş İşaretle
             </Button>
-          )}
+          </div>
         </div>
 
-        <ScrollArea className="max-h-64">
+        <ScrollArea className="max-h-64 overflow-y-auto">
           {isLoading ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               Bildirimler yükleniyor...
@@ -202,20 +213,6 @@ export function NotificationsDropdown({ unreadCount }: NotificationsDropdownProp
             </div>
           )}
         </ScrollArea>
-
-        {notifications && notifications.hasMore && (
-          <div className="border-t p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs"
-              onClick={() => window.location.href = '/notifications'}
-              data-testid="button-view-all-notifications"
-            >
-              Tüm Bildirimleri Görüntüle
-            </Button>
-          </div>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

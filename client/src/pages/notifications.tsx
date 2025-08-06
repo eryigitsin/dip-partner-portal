@@ -93,12 +93,17 @@ export default function NotificationsPage() {
 
   const { data: notificationData, isLoading } = useQuery<NotificationResponse>({
     queryKey: ['/api/notifications', page],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/notifications?page=${page}&limit=20`);
+      return await response.json();
+    },
     enabled: !!user,
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
-      return await apiRequest(`/api/notifications/${notificationId}/read`, 'PATCH');
+      const response = await apiRequest('PATCH', `/api/notifications/${notificationId}/read`);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
@@ -108,7 +113,8 @@ export default function NotificationsPage() {
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/notifications/mark-all-read', 'PATCH');
+      const response = await apiRequest('PATCH', '/api/notifications/mark-all-read');
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
