@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Eye, Mail, Bell } from "lucide-react";
+import { Save, Eye, Mail, Bell, Plus, Send, Layout, MessageSquare, Type, Palette, Users, Image } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { EmailTemplate, NotificationTemplate } from "@shared/schema";
 import { Header } from "@/components/layout/header";
@@ -172,7 +173,7 @@ export default function TemplateManagement() {
   });
 
   // SMS Templates API
-  const { data: smsTemplates = [] } = useQuery({
+  const { data: smsTemplates = [] } = useQuery<any[]>({
     queryKey: ["/api/admin/sms-templates"],
   });
 
@@ -195,7 +196,7 @@ export default function TemplateManagement() {
   // Load selected SMS template
   useEffect(() => {
     if (selectedSmsTemplate) {
-      const template = smsTemplates.find(t => t.type === selectedSmsTemplate);
+      const template = smsTemplates.find((t: any) => t.type === selectedSmsTemplate);
       setCurrentSmsTemplate(template || null);
     }
   }, [selectedSmsTemplate, smsTemplates]);
@@ -205,12 +206,9 @@ export default function TemplateManagement() {
     mutationFn: async () => {
       if (!currentEmailTemplate) return;
       
-      return await apiRequest(`/api/admin/email-templates/${currentEmailTemplate.type}`, {
-        method: "PUT",
-        body: {
-          subject: currentEmailTemplate.subject,
-          htmlContent: currentEmailTemplate.htmlContent
-        }
+      return await apiRequest(`/api/admin/email-templates/${currentEmailTemplate.type}`, 'PUT', {
+        subject: currentEmailTemplate.subject,
+        htmlContent: currentEmailTemplate.htmlContent
       });
     },
     onSuccess: () => {
@@ -223,12 +221,9 @@ export default function TemplateManagement() {
     mutationFn: async () => {
       if (!currentNotificationTemplate) return;
       
-      return await apiRequest(`/api/admin/notification-templates/${currentNotificationTemplate.type}`, {
-        method: "PUT",
-        body: {
-          title: currentNotificationTemplate.title,
-          message: currentNotificationTemplate.message
-        }
+      return await apiRequest(`/api/admin/notification-templates/${currentNotificationTemplate.type}`, 'PUT', {
+        title: currentNotificationTemplate.title,
+        message: currentNotificationTemplate.message
       });
     },
     onSuccess: () => {
@@ -534,7 +529,7 @@ export default function TemplateManagement() {
                       className="min-h-[120px]"
                       placeholder="SMS içeriği... (160 karakter limitine dikkat edin)"
                       value={currentSmsTemplate.content}
-                      onChange={(e) => setCurrentSmsTemplate(prev => prev ? { ...prev, content: e.target.value } : null)}
+                      onChange={(e) => setCurrentSmsTemplate((prev: any) => prev ? { ...prev, content: e.target.value } : null)}
                       maxLength={160}
                     />
                     <div className="text-xs text-muted-foreground mt-1">
@@ -562,7 +557,7 @@ export default function TemplateManagement() {
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        const preview = currentSmsTemplate.content.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+                        const preview = currentSmsTemplate.content.replace(/\{\{(\w+)\}\}/g, (match: string, key: string) => {
                           const mockData = {
                             code: '123456',
                             name: 'Test Kullanıcı',
@@ -573,7 +568,7 @@ export default function TemplateManagement() {
                             projectTitle: 'Test Proje',
                             partnerName: 'Test Partner'
                           };
-                          return mockData[key] || match;
+                          return (mockData as any)[key] || match;
                         });
                         alert(`SMS Önizleme:\n\n${preview}`);
                       }}
@@ -667,7 +662,7 @@ export default function TemplateManagement() {
                     draggable
                     data-testid={`component-${component.name.toLowerCase()}`}
                   >
-                    <component.icon className="h-4 w-4" />
+                    <component.icon className="h-4 w-4" size={16} />
                     <span className="text-sm">{component.name}</span>
                   </div>
                 ))}
