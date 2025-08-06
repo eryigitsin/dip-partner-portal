@@ -1213,6 +1213,228 @@ export default function SystemSettings() {
                       value={smsSettings.netgsmPassword}
                       onChange={(e) => setSmsSettings(prev => ({ ...prev, netgsmPassword: e.target.value }))}
                     />
+                    </div>
+                    <div>
+                      <Label>HTML İçerik</Label>
+                      <Textarea 
+                        className="min-h-[200px] font-mono"
+                        placeholder="HTML email içeriği..."
+                        defaultValue={`<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">DİP Platformuna Hoşgeldiniz!</h2>
+  <p>Merhaba {{partnerName}},</p>
+  <p>Partner başvurunuz onaylandı ve artık DİP platformunun bir üyesisiniz.</p>
+  <p><strong>Şirket:</strong> {{companyName}}</p>
+  <p>Platform üzerinden profil bilgilerinizi güncelleyebilir ve hizmetlerinizi tanıtabilirsiniz.</p>
+  <p>Başarılı işbirlikleri dileriz!</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEmailPreview({
+                          subject: "DİP Platformuna Hoşgeldiniz!",
+                          content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">DİP Platformuna Hoşgeldiniz!</h2>
+  <p>Merhaba Test Partner,</p>
+  <p>Partner başvurunuz onaylandı ve artık DİP platformunun bir üyesisiniz.</p>
+  <p><strong>Şirket:</strong> Test Şirketi</p>
+  <p>Platform üzerinden profil bilgilerinizi güncelleyebilir ve hizmetlerinizi tanıtabilirsiniz.</p>
+  <p>Başarılı işbirlikleri dileriz!</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`
+                        })}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Önizle
+                      </Button>
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="quote-received" className="space-y-4">
+                    <div>
+                      <Label>Konu</Label>
+                      <Input 
+                        placeholder="Email konusu"
+                        defaultValue="Teklif Talebiniz Alındı"
+                      />
+                    </div>
+                    <div>
+                      <Label>HTML İçerik</Label>
+                      <Textarea 
+                        className="min-h-[200px] font-mono"
+                        placeholder="HTML email içeriği..."
+                        defaultValue={`<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">Teklif Talebiniz Alındı</h2>
+  <p>Merhaba {{customerName}},</p>
+  <p>{{partnerCompany}} firmasına gönderdiğiniz teklif talebiniz başarıyla alındı.</p>
+  <p><strong>Hizmet:</strong> {{serviceNeeded}}</p>
+  <p><strong>Bütçe:</strong> {{budget}}</p>
+  <p>Kısa süre içinde firma tarafından iletişime geçilecektir.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEmailPreview({
+                          subject: "Teklif Talebiniz Alındı",
+                          content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #2563eb;">Teklif Talebiniz Alındı</h2>
+  <p>Merhaba Test Müşteri,</p>
+  <p>Test Şirketi firmasına gönderdiğiniz teklif talebiniz başarıyla alındı.</p>
+  <p><strong>Hizmet:</strong> Dijital Pazarlama</p>
+  <p><strong>Bütçe:</strong> 10.000 TL</p>
+  <p>Kısa süre içinde firma tarafından iletişime geçilecektir.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`
+                        })}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Önizle
+                      </Button>
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="quote-approved" className="space-y-4">
+                    <div>
+                      <Label>Konu</Label>
+                      <Input 
+                        placeholder="Email konusu"
+                        defaultValue="Teklifiniz Onaylandı!"
+                      />
+                    </div>
+                    <div>
+                      <Label>HTML İçerik</Label>
+                      <Textarea 
+                        className="min-h-[200px] font-mono"
+                        placeholder="HTML email içeriği..."
+                        defaultValue={`<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #16a34a;">Teklifiniz Onaylandı!</h2>
+  <p>Tebrikler!</p>
+  <p>{{customerName}} adlı müşteri teklifinizi onayladı.</p>
+  <p><strong>Hizmet:</strong> {{serviceNeeded}}</p>
+  <p><strong>Müşteri:</strong> {{customerName}}</p>
+  <p>Müşteri ile iletişime geçerek projeyi başlatabilirsiniz.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEmailPreview({
+                          subject: "Teklifiniz Onaylandı!",
+                          content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #16a34a;">Teklifiniz Onaylandı!</h2>
+  <p>Tebrikler!</p>
+  <p>Test Müşteri adlı müşteri teklifinizi onayladı.</p>
+  <p><strong>Hizmet:</strong> Dijital Pazarlama</p>
+  <p><strong>Müşteri:</strong> Test Müşteri</p>
+  <p>Müşteri ile iletişime geçerek projeyi başlatabilirsiniz.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`
+                        })}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Önizle
+                      </Button>
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="quote-rejected" className="space-y-4">
+                    <div>
+                      <Label>Konu</Label>
+                      <Input 
+                        placeholder="Email konusu"
+                        defaultValue="Teklif Durumu Hakkında"
+                      />
+                    </div>
+                    <div>
+                      <Label>HTML İçerik</Label>
+                      <Textarea 
+                        className="min-h-[200px] font-mono"
+                        placeholder="HTML email içeriği..."
+                        defaultValue={`<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #dc2626;">Teklif Durumu</h2>
+  <p>{{customerName}} adlı müşteri teklifinizi reddetmiştir.</p>
+  <p><strong>Hizmet:</strong> {{serviceNeeded}}</p>
+  <p>Başka fırsatlar için platformumuzda aktif kalabilirsiniz.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEmailPreview({
+                          subject: "Teklif Durumu Hakkında",
+                          content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #dc2626;">Teklif Durumu</h2>
+  <p>Test Müşteri adlı müşteri teklifinizi reddetmiştir.</p>
+  <p><strong>Hizmet:</strong> Dijital Pazarlama</p>
+  <p>Başka fırsatlar için platformumuzda aktif kalabilirsiniz.</p>
+  <p>Saygılarımızla,<br>DİP Ekibi</p>
+</div>`
+                        })}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Önizle
+                      </Button>
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Kaydet
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SMS Settings */}
+          <TabsContent value="sms" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>SMS Ayarları</CardTitle>
+                <CardDescription>NetGSM API konfigürasyonu</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="netgsmUsername">NetGSM Kullanıcı Adı</Label>
+                    <Input
+                      id="netgsmUsername"
+                      value={smsSettings.netgsmUsername}
+                      onChange={(e) => setSmsSettings(prev => ({ ...prev, netgsmUsername: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="netgsmPassword">NetGSM Şifre</Label>
+                    <Input
+                      id="netgsmPassword"
+                      type="password"
+                      value={smsSettings.netgsmPassword}
+                      onChange={(e) => setSmsSettings(prev => ({ ...prev, netgsmPassword: e.target.value }))}
+                    />
                   </div>
                 </div>
                 <div>
@@ -1236,7 +1458,7 @@ export default function SystemSettings() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* Media Settings */}
           <TabsContent value="media" className="space-y-6">
             <Card>
@@ -1285,4 +1507,4 @@ export default function SystemSettings() {
       )}
     </div>
   );
-} 
+}

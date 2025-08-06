@@ -11,6 +11,8 @@ This is a Turkish-English bilingual partner management system for DİP (Digital 
 - Partner management enhancement: Users assigned to partners become partner managers with contact person updates
 - Admin partner creation: Simplified "Yeni Partner" form with streamlined service and market entry fields
 - Database schema: Added managedBy field to partners table for tracking partner managers
+- Template Management System: Comprehensive email/notification template management with dropdown-based selection and 26+ email templates including partner welcome, project lifecycle, payment confirmations, security alerts, and system maintenance notifications
+- Admin Interface Enhancement: Email templates removed from system-settings.tsx and consolidated into dedicated template-management.tsx page with header/footer integration
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

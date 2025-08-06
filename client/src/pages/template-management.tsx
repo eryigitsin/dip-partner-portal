@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Eye, Mail, Bell } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { EmailTemplate, NotificationTemplate } from "@shared/schema";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 
 interface EmailPreview {
   subject: string;
@@ -50,6 +52,59 @@ const EmailPreviewDialog = ({ isOpen, onClose, subject, htmlContent }: EmailPrev
     </div>
   );
 };
+
+// Comprehensive email template types for the system
+const EMAIL_TEMPLATE_TYPES = [
+  { value: "partner_welcome", label: "Partner Hoşgeldin", description: "Yeni partner onaylandığında gönderilen hoşgeldin maili" },
+  { value: "quote_received", label: "Teklif Alındı", description: "Müşteriye teklif talebinin alındığını bildiren mail" },
+  { value: "quote_approved", label: "Teklif Onaylandı", description: "Partner'e teklifinin onaylandığını bildiren mail" },
+  { value: "quote_rejected", label: "Teklif Reddedildi", description: "Partner'e teklifinin reddedildiğini bildiren mail" },
+  { value: "password_reset", label: "Şifre Sıfırlama", description: "Şifre sıfırlama linki içeren mail" },
+  { value: "email_verification", label: "Email Doğrulama", description: "Email adresini doğrulamak için gönderilen mail" },
+  { value: "payment_confirmation", label: "Ödeme Onayı", description: "Ödeme onaylandığında gönderilen mail" },
+  { value: "project_reminder", label: "Proje Hatırlatma", description: "Proje deadline'larında gönderilen hatırlatma" },
+  { value: "partner_application_received", label: "Partner Başvuru Alındı", description: "Partner başvurusu alındığında gönderilen mail" },
+  { value: "partner_application_approved", label: "Partner Başvuru Onaylandı", description: "Partner başvurusu onaylandığında gönderilen mail" },
+  { value: "partner_application_rejected", label: "Partner Başvuru Reddedildi", description: "Partner başvurusu reddedildiğinde gönderilen mail" },
+  { value: "newsletter_welcome", label: "Newsletter Hoşgeldin", description: "Newsletter'a abone olan kullanıcılara hoşgeldin maili" },
+  { value: "newsletter_monthly", label: "Aylık Newsletter", description: "Aylık gönderilen newsletter maili" },
+  { value: "project_started", label: "Proje Başladı", description: "Yeni proje başlatıldığında gönderilen mail" },
+  { value: "project_completed", label: "Proje Tamamlandı", description: "Proje tamamlandığında gönderilen mail" },
+  { value: "project_cancelled", label: "Proje İptal Edildi", description: "Proje iptal edildiğinde gönderilen mail" },
+  { value: "feedback_received", label: "Geri Bildirim Alındı", description: "Geri bildirim alındığında partner'e gönderilen mail" },
+  { value: "feedback_reminder", label: "Geri Bildirim Hatırlatma", description: "Proje sonrası geri bildirim hatırlatması" },
+  { value: "account_suspended", label: "Hesap Askıya Alındı", description: "Hesap askıya alındığında gönderilen mail" },
+  { value: "account_reactivated", label: "Hesap Yeniden Aktifleştirildi", description: "Hesap yeniden aktifleştirildiğinde gönderilen mail" },
+  { value: "new_message", label: "Yeni Mesaj", description: "Yeni mesaj alındığında gönderilen bildirim maili" },
+  { value: "profile_incomplete", label: "Profil Eksik", description: "Profili tamamlanmamış kullanıcılara gönderilen hatırlatma" },
+  { value: "weekly_summary", label: "Haftalık Özet", description: "Haftalık aktivite özeti maili" },
+  { value: "system_maintenance", label: "Sistem Bakımı", description: "Sistem bakımı öncesi bilgilendirme maili" },
+  { value: "data_export_ready", label: "Veri Dışa Aktarma Hazır", description: "Veri dışa aktarma tamamlandığında gönderilen mail" },
+  { value: "security_alert", label: "Güvenlik Uyarısı", description: "Güvenlik ihlali durumunda gönderilen uyarı maili" }
+];
+
+const NOTIFICATION_TEMPLATE_TYPES = [
+  { value: "quote_request", label: "Teklif Talebi", description: "Yeni teklif talebi geldiğinde" },
+  { value: "quote_response", label: "Teklif Yanıtı", description: "Teklif yanıtlandığında" },
+  { value: "partner_application", label: "Partner Başvurusu", description: "Yeni partner başvurusu" },
+  { value: "follower", label: "Yeni Takipçi", description: "Yeni takipçi eklendiğinde" },
+  { value: "project_update", label: "Proje Güncellemesi", description: "Proje durumu güncellendiğinde" },
+  { value: "feedback", label: "Geri Bildirim", description: "Yeni geri bildirim alındığında" },
+  { value: "newsletter_subscriber", label: "Newsletter Aboneliği", description: "Newsletter'a yeni abone olunduğunda" },
+  { value: "system_status", label: "Sistem Durumu", description: "Sistem durumu değişikliklerinde" },
+  { value: "partner_post", label: "Partner Paylaşımı", description: "Partner yeni paylaşım yaptığında" },
+  { value: "campaign", label: "Kampanya", description: "Yeni kampanya duyurularında" },
+  { value: "message_received", label: "Mesaj Alındı", description: "Yeni mesaj alındığında" },
+  { value: "profile_viewed", label: "Profil Görüntülendi", description: "Profil görüntülendiğinde" },
+  { value: "service_inquiry", label: "Hizmet Sorgusu", description: "Hizmet ile ilgili soru sorulduğunda" },
+  { value: "payment_received", label: "Ödeme Alındı", description: "Ödeme alındığında" },
+  { value: "payment_pending", label: "Ödeme Beklemede", description: "Ödeme onay beklerken" },
+  { value: "contract_signed", label: "Sözleşme İmzalandı", description: "Dijital sözleşme imzalandığında" },
+  { value: "milestone_reached", label: "Kilometre Taşı", description: "Proje kilometre taşı tamamlandığında" },
+  { value: "deadline_approaching", label: "Deadline Yaklaşıyor", description: "Deadline yaklaştığında" },
+  { value: "task_assigned", label: "Görev Atandı", description: "Yeni görev atandığında" },
+  { value: "task_completed", label: "Görev Tamamlandı", description: "Görev tamamlandığında" }
+];
 
 export default function TemplateManagement() {
   const [selectedEmailTemplate, setSelectedEmailTemplate] = useState<string>("");
@@ -122,18 +177,20 @@ export default function TemplateManagement() {
   });
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center">
-          <Mail className="h-4 w-4 text-primary" />
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="container mx-auto px-4 py-8 space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center">
+            <Mail className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Şablon Yönetimi</h1>
+            <p className="text-sm text-muted-foreground">
+              Email ve bildirim şablonlarını yönetin
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">Şablon Yönetimi</h1>
-          <p className="text-sm text-muted-foreground">
-            Email ve bildirim şablonlarını yönetin
-          </p>
-        </div>
-      </div>
 
       <Tabs defaultValue="emails" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -163,9 +220,12 @@ export default function TemplateManagement() {
                       <SelectValue placeholder="Email şablonu seçin" />
                     </SelectTrigger>
                     <SelectContent>
-                      {emailTemplates.map((template) => (
-                        <SelectItem key={template.type} value={template.type}>
-                          {template.name}
+                      {EMAIL_TEMPLATE_TYPES.map((template) => (
+                        <SelectItem key={template.value} value={template.value}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{template.label}</span>
+                            <span className="text-xs text-muted-foreground">{template.description}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -269,9 +329,12 @@ export default function TemplateManagement() {
                       <SelectValue placeholder="Bildirim şablonu seçin" />
                     </SelectTrigger>
                     <SelectContent>
-                      {notificationTemplates.map((template) => (
-                        <SelectItem key={template.type} value={template.type}>
-                          {template.name}
+                      {NOTIFICATION_TEMPLATE_TYPES.map((template) => (
+                        <SelectItem key={template.value} value={template.value}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{template.label}</span>
+                            <span className="text-xs text-muted-foreground">{template.description}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -349,6 +412,8 @@ export default function TemplateManagement() {
           htmlContent={emailPreview.content}
         />
       )}
+      </div>
+      <Footer />
     </div>
   );
 }
