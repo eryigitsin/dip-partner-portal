@@ -118,6 +118,7 @@ export default function MarketingListPage() {
   const [templateContent, setTemplateContent] = useState('');
   const [templateTitle, setTemplateTitle] = useState('');
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
   const { toast } = useToast();
 
   // Campaign template queries
@@ -1504,6 +1505,25 @@ export default function MarketingListPage() {
               )}
             </div>
 
+            {/* Available Parameters */}
+            <div className="bg-gray-50 border rounded-lg p-4">
+              <h4 className="font-medium text-sm mb-2">Kullanılabilir Parametreler:</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                <div className="flex flex-col gap-1">
+                  <span><code className="bg-gray-200 px-1 rounded">{"{{partnerName}}"}</code> - Partner adı</span>
+                  <span><code className="bg-gray-200 px-1 rounded">{"{{companyName}}"}</code> - Şirket adı</span>
+                  <span><code className="bg-gray-200 px-1 rounded">{"{{customerName}}"}</code> - Müşteri adı</span>
+                  <span><code className="bg-gray-200 px-1 rounded">{"{{serviceNeeded}}"}</code> - İhtiyaç duyulan hizmet</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span><code className="bg-gray-200 px-1 rounded">{"{{budget}}"}</code> - Bütçe</span>
+                  <span><code className="bg-gray-200 px-1 rounded">{"{{partnerCompany}}"}</code> - Partner şirketi</span>
+                  <span><code className="bg-gray-200 px-1 rounded">{"{{userName}}"}</code> - Kullanıcı adı</span>
+                  <span><code className="bg-gray-200 px-1 rounded">{"{{resetLink}}"}</code> - Sıfırlama linki</span>
+                </div>
+              </div>
+            </div>
+
             {/* Mandatory Footer Notice */}
             {templateType === 'email' && (
               <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
@@ -1518,24 +1538,113 @@ export default function MarketingListPage() {
             )}
 
             {/* Actions */}
+            <div className="flex justify-between pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowTemplatePreview(true)}
+                disabled={!templateContent || (templateType === 'email' && !templateSubject) || (templateType === 'notification' && !templateTitle)}
+                data-testid="button-preview-template"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Önizleme
+              </Button>
+              
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={resetTemplateForm}
+                  data-testid="button-cancel-template"
+                >
+                  İptal
+                </Button>
+                <Button
+                  onClick={handleCreateTemplate}
+                  disabled={
+                    createEmailTemplateMutation.isPending ||
+                    createSmsTemplateMutation.isPending ||
+                    createNotificationTemplateMutation.isPending
+                  }
+                  data-testid="button-save-template"
+                >
+                  {editingTemplate ? 'Güncelle' : 'Oluştur'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Preview Dialog */}
+      <Dialog open={showTemplatePreview} onOpenChange={setShowTemplatePreview}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Şablon Önizleme</DialogTitle>
+            <DialogDescription>
+              {templateType === 'email' && 'E-posta şablonu önizlemesi'}
+              {templateType === 'sms' && 'SMS şablonu önizlemesi'}
+              {templateType === 'notification' && 'Bildirim şablonu önizlemesi'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Template Name */}
+            <div>
+              <Label className="text-sm font-medium">Şablon Adı:</Label>
+              <p className="font-medium">{templateName || 'Belirtilmedi'}</p>
+            </div>
+
+            {/* Email Subject */}
+            {templateType === 'email' && (
+              <div>
+                <Label className="text-sm font-medium">E-posta Konusu:</Label>
+                <p className="font-medium">{templateSubject || 'Belirtilmedi'}</p>
+              </div>
+            )}
+
+            {/* Notification Title */}
+            {templateType === 'notification' && (
+              <div>
+                <Label className="text-sm font-medium">Bildirim Başlığı:</Label>
+                <p className="font-medium">{templateTitle || 'Belirtilmedi'}</p>
+              </div>
+            )}
+
+            {/* Template Content */}
+            <div>
+              <Label className="text-sm font-medium">İçerik:</Label>
+              {templateType === 'email' ? (
+                <div 
+                  className="border rounded-lg p-4 bg-white dark:bg-gray-900 min-h-[200px]"
+                  dangerouslySetInnerHTML={{ __html: templateContent }}
+                />
+              ) : (
+                <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 whitespace-pre-wrap">
+                  {templateContent || 'İçerik belirtilmedi'}
+                </div>
+              )}
+            </div>
+
+            {/* Sample Data Notice */}
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700">
+                    <strong>Not:</strong> Bu önizlemede parametreler örnek verilerle değiştirilmez. 
+                    Gerçek kullanımda {"{{partnerName}}"}, {"{{companyName}}"} gibi parametreler 
+                    otomatik olarak değiştirilecektir.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
             <div className="flex justify-end gap-3 pt-4">
               <Button
                 variant="outline"
-                onClick={resetTemplateForm}
-                data-testid="button-cancel-template"
+                onClick={() => setShowTemplatePreview(false)}
+                data-testid="button-close-preview"
               >
-                İptal
-              </Button>
-              <Button
-                onClick={handleCreateTemplate}
-                disabled={
-                  createEmailTemplateMutation.isPending ||
-                  createSmsTemplateMutation.isPending ||
-                  createNotificationTemplateMutation.isPending
-                }
-                data-testid="button-save-template"
-              >
-                {editingTemplate ? 'Güncelle' : 'Oluştur'}
+                Kapat
               </Button>
             </div>
           </div>
