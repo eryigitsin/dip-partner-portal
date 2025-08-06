@@ -206,7 +206,7 @@ export default function TemplateManagement() {
     mutationFn: async () => {
       if (!currentEmailTemplate) return;
       
-      return await apiRequest(`/api/admin/email-templates/${currentEmailTemplate.type}`, 'PUT', {
+      return await apiRequest('PUT', `/api/admin/email-templates/${currentEmailTemplate.type}`, {
         subject: currentEmailTemplate.subject,
         htmlContent: currentEmailTemplate.htmlContent
       });
@@ -221,7 +221,7 @@ export default function TemplateManagement() {
     mutationFn: async () => {
       if (!currentNotificationTemplate) return;
       
-      return await apiRequest(`/api/admin/notification-templates/${currentNotificationTemplate.type}`, 'PUT', {
+      return await apiRequest('PUT', `/api/admin/notification-templates/${currentNotificationTemplate.type}`, {
         title: currentNotificationTemplate.title,
         message: currentNotificationTemplate.message
       });
@@ -258,13 +258,13 @@ export default function TemplateManagement() {
             Yeni Şablon Oluştur
           </Button>
           <Button
-            onClick={() => window.location.href = '/admin/marketing-crm'}
+            onClick={() => window.location.href = '/admin/marketing-list'}
             variant="outline"
             className="flex items-center gap-2"
             data-testid="button-send-campaign"
           >
             <Send className="h-4 w-4" />
-            Pazarlama & CRM'e Git
+            Pazarlama Listesi'ne Git
           </Button>
           <Button
             onClick={() => setShowTemplateLibrary(true)}

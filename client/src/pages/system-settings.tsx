@@ -128,6 +128,17 @@ export default function SystemSettings() {
   
   const [mediaSettings, setMediaSettings] = useState({
     heroVideoUrl: '',
+    heroBackgroundImage: '',
+    logoUrl: '',
+    faviconUrl: '',
+    logoWhiteUrl: '',
+    ogImageUrl: '',
+    twitterImageUrl: '',
+    partnerLogosUrl: '',
+    sponsorLogosUrl: '',
+    defaultAvatarUrl: '',
+    defaultPartnerCoverUrl: '',
+    noImagePlaceholderUrl: '',
   });
 
   // Fetch categories
@@ -1248,19 +1259,153 @@ export default function SystemSettings() {
                 <CardTitle>Medya Ayarları</CardTitle>
                 <CardDescription>Hero video ve diğer medya içeriklerini yönetin</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="heroVideoUrl">Hero Bölümü Video URL</Label>
-                  <Input
-                    id="heroVideoUrl"
-                    placeholder="https://example.com/video.mp4"
-                    value={mediaSettings.heroVideoUrl}
-                    onChange={(e) => setMediaSettings(prev => ({ ...prev, heroVideoUrl: e.target.value }))}
-                  />
+              <CardContent className="space-y-6">
+                {/* Hero Section Media */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Hero Bölümü</h3>
+                  <div>
+                    <Label htmlFor="heroVideoUrl">Hero Video URL</Label>
+                    <Input
+                      id="heroVideoUrl"
+                      placeholder="https://example.com/video.mp4"
+                      value={mediaSettings.heroVideoUrl}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, heroVideoUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="heroBackgroundImage">Hero Arkaplan Resmi URL</Label>
+                    <Input
+                      id="heroBackgroundImage"
+                      placeholder="https://example.com/hero-bg.jpg"
+                      value={mediaSettings.heroBackgroundImage || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, heroBackgroundImage: e.target.value }))}
+                    />
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600">
-                  <p>Video URL'si değiştirildiğinde anasayfadaki hero bölümünde otomatik olarak güncellenir.</p>
-                  <p>Desteklenen formatlar: MP4, WebM, OGV</p>
+
+                {/* Logo Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Logo ve Marka</h3>
+                  <div>
+                    <Label htmlFor="logoUrl">Ana Logo URL</Label>
+                    <Input
+                      id="logoUrl"
+                      placeholder="https://example.com/logo.png"
+                      value={mediaSettings.logoUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, logoUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="faviconUrl">Favicon URL</Label>
+                    <Input
+                      id="faviconUrl"
+                      placeholder="https://example.com/favicon.ico"
+                      value={mediaSettings.faviconUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, faviconUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="logoWhiteUrl">Beyaz Logo URL (Koyu temalar için)</Label>
+                    <Input
+                      id="logoWhiteUrl"
+                      placeholder="https://example.com/logo-white.png"
+                      value={mediaSettings.logoWhiteUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, logoWhiteUrl: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Social Media Images */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Sosyal Medya Görselleri</h3>
+                  <div>
+                    <Label htmlFor="ogImageUrl">Open Graph Resmi URL</Label>
+                    <Input
+                      id="ogImageUrl"
+                      placeholder="https://example.com/og-image.jpg"
+                      value={mediaSettings.ogImageUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, ogImageUrl: e.target.value }))}
+                    />
+                    <p className="text-sm text-gray-600 mt-1">Facebook, LinkedIn ve diğer sosyal medyada paylaşım görünümü</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="twitterImageUrl">Twitter Card Resmi URL</Label>
+                    <Input
+                      id="twitterImageUrl"
+                      placeholder="https://example.com/twitter-card.jpg"
+                      value={mediaSettings.twitterImageUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, twitterImageUrl: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Partnership Logos */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Ortaklık ve Sponsorluk Logoları</h3>
+                  <div>
+                    <Label htmlFor="partnerLogosUrl">Partner Logoları JSON URL</Label>
+                    <Input
+                      id="partnerLogosUrl"
+                      placeholder="https://example.com/partner-logos.json"
+                      value={mediaSettings.partnerLogosUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, partnerLogosUrl: e.target.value }))}
+                    />
+                    <p className="text-sm text-gray-600 mt-1">JSON formatında partner logoları listesi</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="sponsorLogosUrl">Sponsor Logoları JSON URL</Label>
+                    <Input
+                      id="sponsorLogosUrl"
+                      placeholder="https://example.com/sponsor-logos.json"
+                      value={mediaSettings.sponsorLogosUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, sponsorLogosUrl: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Default Images */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Varsayılan Görseller</h3>
+                  <div>
+                    <Label htmlFor="defaultAvatarUrl">Varsayılan Profil Resmi URL</Label>
+                    <Input
+                      id="defaultAvatarUrl"
+                      placeholder="https://example.com/default-avatar.png"
+                      value={mediaSettings.defaultAvatarUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, defaultAvatarUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="defaultPartnerCoverUrl">Varsayılan Partner Kapak Resmi URL</Label>
+                    <Input
+                      id="defaultPartnerCoverUrl"
+                      placeholder="https://example.com/default-partner-cover.jpg"
+                      value={mediaSettings.defaultPartnerCoverUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, defaultPartnerCoverUrl: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="noImagePlaceholderUrl">Resim Yok Placeholder URL</Label>
+                    <Input
+                      id="noImagePlaceholderUrl"
+                      placeholder="https://example.com/no-image.png"
+                      value={mediaSettings.noImagePlaceholderUrl || ''}
+                      onChange={(e) => setMediaSettings(prev => ({ ...prev, noImagePlaceholderUrl: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="text-sm text-gray-600 space-y-2">
+                  <p><strong>Desteklenen video formatları:</strong> MP4, WebM, OGV</p>
+                  <p><strong>Desteklenen resim formatları:</strong> JPG, PNG, SVG, WebP</p>
+                  <p><strong>Önerilen boyutlar:</strong></p>
+                  <ul className="list-disc ml-6 space-y-1">
+                    <li>Logo: 200x60px veya daha yüksek çözünürlük</li>
+                    <li>Hero arkaplan: 1920x1080px veya daha büyük</li>
+                    <li>Open Graph: 1200x630px</li>
+                    <li>Twitter Card: 1200x600px</li>
+                    <li>Profil resimleri: 400x400px</li>
+                  </ul>
                 </div>
 
                 <div className="flex justify-end">

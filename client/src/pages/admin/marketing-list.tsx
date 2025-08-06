@@ -3,9 +3,12 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Table, 
@@ -26,7 +29,9 @@ import {
   Linkedin,
   Tag,
   RefreshCw,
-  RotateCcw
+  RotateCcw,
+  Send,
+  Eye
 } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -52,6 +57,10 @@ interface MarketingContact {
 export default function MarketingListPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [campaignSubject, setCampaignSubject] = useState('');
+  const [campaignContent, setCampaignContent] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [previewOpen, setPreviewOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch marketing contacts
@@ -64,6 +73,11 @@ export default function MarketingListPage() {
     queryKey: ['/api/admin/newsletter-subscribers'],
   });
   const { data: subscribers = [], isLoading: subscribersLoading } = subscribersQuery as { data: any[], isLoading: boolean };
+
+  // Fetch email templates
+  const { data: emailTemplates = [] } = useQuery({
+    queryKey: ['/api/admin/email-templates'],
+  });
 
   // Sync contacts mutation
   const syncContactsMutation = useMutation({
@@ -84,6 +98,28 @@ export default function MarketingListPage() {
       toast({
         title: "Hata!",
         description: error.message || 'Senkronizasyon işlemi başarısız',
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Send bulk campaign mutation
+  const sendCampaignMutation = useMutation({
+    mutationFn: (data: { subject: string; content: string; recipients: string[] }) =>
+      apiRequest('POST', '/api/admin/send-bulk-campaign', data),
+    onSuccess: (data: any) => {
+      toast({
+        title: "Başarılı!",
+        description: `Kampanya ${data.sentCount || 0} kişiye gönderildi`,
+      });
+      setCampaignSubject('');
+      setCampaignContent('');
+      setSelectedTemplate('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Hata!",
+        description: error.message || "Kampanya gönderimi sırasında bir hata oluştu",
         variant: "destructive",
       });
     },
@@ -159,6 +195,45 @@ export default function MarketingListPage() {
     link.href = URL.createObjectURL(blob);
     link.download = `pazarlama_listesi_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+  };
+
+  // Handle template selection
+  const handleTemplateSelect = (templateId: string) => {
+    const template = emailTemplates.find((t: any) => t.id === parseInt(templateId));
+    if (template) {
+      setCampaignSubject(template.subject);
+      setCampaignContent(template.htmlContent);
+    }
+    setSelectedTemplate(templateId);
+  };
+
+  // Send campaign to selected recipients
+  const sendCampaign = () => {
+    if (!campaignSubject.trim() || !campaignContent.trim()) {
+      toast({
+        title: "Hata!",
+        description: "Konu ve içerik alanları boş olamaz",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const recipients = filteredContacts.map((contact: any) => contact.email).filter(Boolean);
+    
+    if (recipients.length === 0) {
+      toast({
+        title: "Hata!",
+        description: "Gönderilebilecek e-posta adresi bulunamadı",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    sendCampaignMutation.mutate({
+      subject: campaignSubject,
+      content: campaignContent,
+      recipients
+    });
   };
 
   const stats = {
@@ -302,21 +377,29 @@ export default function MarketingListPage() {
         </CardContent>
       </Card>
 
-      {/* Contacts Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>İletişim Listesi ({filteredContacts.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-6 w-full mb-4">
-              <TabsTrigger value="all">Tümü ({stats.total})</TabsTrigger>
-              <TabsTrigger value="users">Kullanıcılar ({stats.users})</TabsTrigger>
-              <TabsTrigger value="partners">Partnerler ({stats.partners})</TabsTrigger>
-              <TabsTrigger value="admins">Adminler ({stats.admins})</TabsTrigger>
-              <TabsTrigger value="applicants">Başvuranlar ({stats.applicants})</TabsTrigger>
-              <TabsTrigger value="subscribers">Abone ({stats.subscribers})</TabsTrigger>
-            </TabsList>
+      {/* Main Tabs */}
+      <Tabs defaultValue="contacts" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="contacts">İletişim Listesi</TabsTrigger>
+          <TabsTrigger value="campaign">Toplu Kampanya Gönderimi</TabsTrigger>
+        </TabsList>
+
+        {/* Contacts Tab */}
+        <TabsContent value="contacts" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>İletişim Listesi ({filteredContacts.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-6 w-full mb-4">
+                  <TabsTrigger value="all">Tümü ({stats.total})</TabsTrigger>
+                  <TabsTrigger value="users">Kullanıcılar ({stats.users})</TabsTrigger>
+                  <TabsTrigger value="partners">Partnerler ({stats.partners})</TabsTrigger>
+                  <TabsTrigger value="admins">Adminler ({stats.admins})</TabsTrigger>
+                  <TabsTrigger value="applicants">Başvuranlar ({stats.applicants})</TabsTrigger>
+                  <TabsTrigger value="subscribers">Abone ({stats.subscribers})</TabsTrigger>
+                </TabsList>
 
             <TabsContent value={activeTab}>
               <div className="rounded-md border">
@@ -467,12 +550,113 @@ export default function MarketingListPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+        </TabsContent>
+
+        {/* Campaign Tab */}
+        <TabsContent value="campaign" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Toplu Kampanya Gönderimi</CardTitle>
+              <CardDescription>
+                Tüm e-posta listesine toplu kampanya gönderin. Hedef: {filteredContacts.filter((c: any) => c.email).length} kişi
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Template Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="template-select">Şablon Seçin (Opsiyonel)</Label>
+                <Select value={selectedTemplate} onValueChange={handleTemplateSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Önceden hazırlanmış şablon seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {emailTemplates.map((template: any) => (
+                      <SelectItem key={template.id} value={template.id.toString()}>
+                        {template.name} - {template.subject}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+
+              {/* Subject */}
+              <div className="space-y-2">
+                <Label htmlFor="campaign-subject">E-posta Konusu</Label>
+                <Input
+                  id="campaign-subject"
+                  placeholder="Kampanya e-posta konusu"
+                  value={campaignSubject}
+                  onChange={(e) => setCampaignSubject(e.target.value)}
+                />
+              </div>
+
+              {/* Content */}
+              <div className="space-y-2">
+                <Label htmlFor="campaign-content">E-posta İçeriği</Label>
+                <Textarea
+                  id="campaign-content"
+                  placeholder="Kampanya e-posta içeriği (HTML desteklenir)"
+                  value={campaignContent}
+                  onChange={(e) => setCampaignContent(e.target.value)}
+                  rows={10}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-4">
+                <Button
+                  onClick={() => setPreviewOpen(true)}
+                  variant="outline"
+                  disabled={!campaignSubject.trim() || !campaignContent.trim()}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Önizle
+                </Button>
+                
+                <Button
+                  onClick={sendCampaign}
+                  disabled={sendCampaignMutation.isPending || !campaignSubject.trim() || !campaignContent.trim()}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {sendCampaignMutation.isPending ? 'Gönderiliyor...' : `Kampanya Gönder (${filteredContacts.filter((c: any) => c.email).length} kişi)`}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
       </div>
+      
+      {/* Preview Dialog */}
+      {previewOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setPreviewOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Kampanya Önizleme</h3>
+              <Button variant="ghost" size="sm" onClick={() => setPreviewOpen(false)}>×</Button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <Label>Konu:</Label>
+                <p className="font-medium">{campaignSubject}</p>
+              </div>
+              <div>
+                <Label>İçerik:</Label>
+                <div 
+                  className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
+                  dangerouslySetInnerHTML={{ __html: campaignContent }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Footer />
     </div>
   );

@@ -2878,6 +2878,48 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Send bulk campaign endpoint
+  app.post('/api/admin/send-bulk-campaign', async (req, res) => {
+    if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const { subject, content, recipients } = req.body;
+      
+      if (!subject || !content || !recipients || !Array.isArray(recipients)) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      let sentCount = 0;
+      let errorCount = 0;
+      
+      // Send emails to all recipients
+      for (const email of recipients) {
+        try {
+          await resendService.sendEmail({
+            to: email,
+            subject: subject,
+            html: content,
+          });
+          sentCount++;
+        } catch (error) {
+          console.error(`Failed to send email to ${email}:`, error);
+          errorCount++;
+        }
+      }
+
+      res.json({ 
+        sentCount, 
+        errorCount, 
+        totalRecipients: recipients.length 
+      });
+    } catch (error) {
+      console.error('Error sending bulk campaign:', error);
+      res.status(500).json({ error: 'Failed to send bulk campaign' });
+    }
+  });
+
   // Quote Response Management Routes
   app.post('/api/quote-responses', async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
