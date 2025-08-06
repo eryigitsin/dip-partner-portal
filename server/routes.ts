@@ -3024,6 +3024,9 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{userName\}\}/g, userName);
                   personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
                   personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
+                  personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, user.firstName || '');
+                  personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, user.lastName || '');
+                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, user.companyName || '');
                 }
 
                 if (netgsm) {
@@ -3065,6 +3068,12 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
                   personalizedTitle = personalizedTitle.replace(/\{\{fullName\}\}/g, fullName);
                   personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
+                  personalizedTitle = personalizedTitle.replace(/\{\{firstName\}\}/g, user.firstName || '');
+                  personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, user.firstName || '');
+                  personalizedTitle = personalizedTitle.replace(/\{\{lastName\}\}/g, user.lastName || '');
+                  personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, user.lastName || '');
+                  personalizedTitle = personalizedTitle.replace(/\{\{companyName\}\}/g, user.companyName || '');
+                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, user.companyName || '');
                 }
 
                 await notificationService.createNotification({

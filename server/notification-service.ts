@@ -123,6 +123,66 @@ export class NotificationService {
     }
   }
 
+  // Replace parameters in notification content
+  private replaceNotificationParameters(content: string, userInfo: any): string {
+    if (!userInfo) return content;
+
+    const fullName = [userInfo.firstName, userInfo.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
+    const userName = userInfo.companyName || fullName;
+
+    return content
+      .replace(/\{\{userName\}\}/g, userName)
+      .replace(/\{\{userEmail\}\}/g, userInfo.email || '')
+      .replace(/\{\{fullName\}\}/g, fullName)
+      .replace(/\{\{firstName\}\}/g, userInfo.firstName || '')
+      .replace(/\{\{lastName\}\}/g, userInfo.lastName || '')
+      .replace(/\{\{companyName\}\}/g, userInfo.companyName || '');
+  }
+
+  // Create notification with parameter replacement
+  async createNotificationWithParams(notification: InsertNotification, userInfo?: any): Promise<void> {
+    try {
+      if (userInfo) {
+        // Replace parameters in title and message
+        const processedNotification = {
+          ...notification,
+          title: this.replaceNotificationParameters(notification.title, userInfo),
+          message: this.replaceNotificationParameters(notification.message, userInfo)
+        };
+        await db.insert(notifications).values(processedNotification);
+      } else {
+        await this.createNotification(notification);
+      }
+    } catch (error) {
+      console.error('Error creating notification with parameters:', error);
+    }
+  }
+
+  // Create bulk notifications with parameter replacement
+  async createBulkNotificationsWithParams(notificationsList: Array<{
+    notification: InsertNotification;
+    userInfo?: any;
+  }>): Promise<void> {
+    try {
+      if (notificationsList.length > 0) {
+        const processedNotifications = notificationsList.map(({ notification, userInfo }) => {
+          if (userInfo) {
+            return {
+              ...notification,
+              title: this.replaceNotificationParameters(notification.title, userInfo),
+              message: this.replaceNotificationParameters(notification.message, userInfo)
+            };
+          }
+          return notification;
+        });
+
+        await db.insert(notifications).values(processedNotifications);
+      }
+    } catch (error) {
+      console.error('Error creating bulk notifications with parameters:', error);
+    }
+  }
+
   // Mark all notifications as read for user
   async markAllAsRead(userId: number): Promise<void> {
     try {
