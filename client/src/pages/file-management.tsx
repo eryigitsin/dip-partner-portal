@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   FileText, 
   Image, 
@@ -22,7 +24,9 @@ import {
   Share, 
   Copy,
   Filter,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  Plus
 } from 'lucide-react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -45,6 +49,10 @@ export default function FileManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTypeFilter, setFileTypeFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [makePublic, setMakePublic] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch all uploaded files
   const { data: files, isLoading: filesLoading, refetch } = useQuery<UploadedFile[]>({
@@ -93,6 +101,40 @@ export default function FileManagement() {
     },
   });
 
+  // File upload mutation
+  const uploadFileMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      return await fetch('/api/admin/files/upload', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      }).then(async (response) => {
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Upload failed');
+        }
+        return response.json();
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/files'] });
+      toast({
+        title: 'Başarılı',
+        description: 'Dosya başarıyla yüklendi.',
+      });
+      setShowUploadDialog(false);
+      setSelectedFile(null);
+      setMakePublic(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Hata',
+        description: error.message || 'Dosya yüklenirken bir hata oluştu.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Filter files based on search and filters
   const filteredFiles = files?.filter(file => {
     const matchesSearch = file.fileName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -132,7 +174,10 @@ export default function FileManagement() {
       'partner': 'Partner Görseli',
       'application': 'Başvuru Belgesi',
       'payment': 'Ödeme Makbuzu',
-      'post': 'İçerik Görseli'
+      'post': 'İçerik Görseli',
+      'attached_assets': 'Sistem Dosyası',
+      'object_storage_public': 'Herkese Açık Depolama',
+      'object_storage_private': 'Özel Depolama'
     };
     return labels[source] || source;
   };
@@ -147,11 +192,35 @@ export default function FileManagement() {
   };
 
   const generateShareableUrl = (file: UploadedFile) => {
-    if (file.isPublic) {
+    if (file.isPublic || file.source === 'attached_assets' || file.source === 'object_storage_public') {
       return `${window.location.origin}/public-objects/${file.fileName}`;
     } else {
       return `${window.location.origin}/objects/${file.id}`;
     }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUpload = () => {
+    if (!selectedFile) {
+      toast({
+        title: 'Hata',
+        description: 'Lütfen bir dosya seçin.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('makePublic', makePublic.toString());
+
+    uploadFileMutation.mutate(formData);
   };
 
   if (filesLoading) {
@@ -198,7 +267,7 @@ export default function FileManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Filters */}
+              {/* Upload and Filters */}
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="flex-1">
                   <Label htmlFor="search">Dosya Ara</Label>
@@ -243,6 +312,69 @@ export default function FileManagement() {
                       <SelectItem value="payment">Ödemeler</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="self-end">
+                  <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-2">
+                        <Upload className="h-4 w-4" />
+                        Dosya Yükle
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Yeni Dosya Yükle</DialogTitle>
+                        <DialogDescription>
+                          Sisteme yeni bir dosya yükleyin. Herkese açık dosyalar paylaşılabilir URL ile erişilebilir olacaktır.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="fileInput">Dosya Seç</Label>
+                          <Input
+                            id="fileInput"
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                          />
+                          {selectedFile && (
+                            <p className="text-sm text-gray-600 mt-2">
+                              Seçilen dosya: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="makePublic"
+                            checked={makePublic}
+                            onCheckedChange={(checked) => setMakePublic(checked as boolean)}
+                          />
+                          <Label htmlFor="makePublic">
+                            Herkese açık dosya (paylaşılabilir URL ile erişilebilir)
+                          </Label>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowUploadDialog(false);
+                            setSelectedFile(null);
+                            setMakePublic(false);
+                          }}
+                        >
+                          İptal
+                        </Button>
+                        <Button
+                          onClick={handleUpload}
+                          disabled={!selectedFile || uploadFileMutation.isPending}
+                        >
+                          {uploadFileMutation.isPending ? 'Yükleniyor...' : 'Yükle'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
 

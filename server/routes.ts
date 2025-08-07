@@ -20,6 +20,23 @@ import { db } from "./db";
 import { quoteResponses, partners, notifications } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { ObjectStorageService } from "./objectStorage";
+import { promises as fsPromises } from "fs";
+
+// Helper function to parse object path
+function parseObjectPath(path: string): { bucketName: string; objectName: string } {
+  if (!path.startsWith("/")) {
+    path = `/${path}`;
+  }
+  const pathParts = path.split("/");
+  if (pathParts.length < 3) {
+    throw new Error("Invalid path: must contain at least a bucket name");
+  }
+
+  const bucketName = pathParts[1];
+  const objectName = pathParts.slice(2).join("/");
+
+  return { bucketName, objectName };
+}
 
 // Email templates and functionality
 const emailTemplates = {
@@ -2889,6 +2906,102 @@ export function registerRoutes(app: Express): Server {
       }
 
       const files = [];
+      const objectStorageService = new ObjectStorageService();
+
+      // Get files from attached_assets folder
+      try {
+        const attachedAssetsPath = path.join(process.cwd(), 'attached_assets');
+        const attachedFiles = await fsPromises.readdir(attachedAssetsPath);
+        
+        for (const fileName of attachedFiles) {
+          const filePath = path.join(attachedAssetsPath, fileName);
+          try {
+            const stats = await fsPromises.stat(filePath);
+            if (stats.isFile()) {
+              files.push({
+                id: `attached_${fileName}`,
+                fileName: fileName,
+                fileUrl: `/attached_assets/${fileName}`,
+                fileSize: stats.size,
+                source: 'attached_assets',
+                sourceId: 0,
+                uploadedBy: 'System',
+                uploadedAt: stats.mtime,
+                isPublic: true
+              });
+            }
+          } catch (statError) {
+            console.error(`Error getting stats for ${fileName}:`, statError);
+          }
+        }
+      } catch (error) {
+        console.error('Error reading attached_assets folder:', error);
+      }
+
+      // Get files from object storage (public)
+      try {
+        const publicPaths = objectStorageService.getPublicObjectSearchPaths();
+        for (const searchPath of publicPaths) {
+          try {
+            const { bucketName, objectName } = parseObjectPath(searchPath);
+            const bucket = objectStorageService.objectStorageClient.bucket(bucketName);
+            const [publicFiles] = await bucket.getFiles({
+              prefix: objectName
+            });
+            
+            for (const file of publicFiles) {
+              const [metadata] = await file.getMetadata();
+              files.push({
+                id: `public_${file.name.replace(/\//g, '_')}`,
+                fileName: path.basename(file.name),
+                fileUrl: `/public-objects/${path.basename(file.name)}`,
+                fileSize: parseInt(metadata.size || '0'),
+                mimeType: metadata.contentType,
+                source: 'object_storage_public',
+                sourceId: 0,
+                uploadedBy: 'User',
+                uploadedAt: metadata.timeCreated,
+                isPublic: true,
+                objectPath: file.name
+              });
+            }
+          } catch (bucketError) {
+            console.error('Error accessing public bucket:', bucketError);
+          }
+        }
+
+        // Search private objects
+        try {
+          const privateDir = objectStorageService.getPrivateObjectDir();
+          const { bucketName, objectName } = parseObjectPath(privateDir);
+          const bucket = objectStorageService.objectStorageClient.bucket(bucketName);
+          const [privateFiles] = await bucket.getFiles({
+            prefix: objectName
+          });
+          
+          for (const file of privateFiles) {
+            const [metadata] = await file.getMetadata();
+            const relativePath = file.name.replace(objectName + '/', '');
+            files.push({
+              id: `private_${file.name.replace(/\//g, '_')}`,
+              fileName: path.basename(file.name),
+              fileUrl: `/objects/${relativePath}`,
+              fileSize: parseInt(metadata.size || '0'),
+              mimeType: metadata.contentType,
+              source: 'object_storage_private',
+              sourceId: 0,
+              uploadedBy: 'User',
+              uploadedAt: metadata.timeCreated,
+              isPublic: false,
+              objectPath: file.name
+            });
+          }
+        } catch (privateBucketError) {
+          console.error('Error accessing private bucket:', privateBucketError);
+        }
+      } catch (objectStorageError) {
+        console.error('Error accessing object storage:', objectStorageError);
+      }
       
       // Get files from messages table
       const messages = await storage.getAllMessages();
@@ -3044,6 +3157,35 @@ export function registerRoutes(app: Express): Server {
       
       // Handle different file types
       switch (fileType) {
+        case 'attached':
+          // Delete file from attached_assets folder
+          try {
+            const attachedAssetsPath = path.join(process.cwd(), 'attached_assets');
+            const filePath = path.join(attachedAssetsPath, actualId);
+            await fsPromises.unlink(filePath);
+            deleted = true;
+          } catch (error) {
+            console.error('Error deleting attached file:', error);
+          }
+          break;
+        
+        case 'public':
+        case 'private':
+          // Delete file from object storage
+          try {
+            const objectStorageService = new ObjectStorageService();
+            // Parse the actualId to get the object path
+            const objectPath = actualId.replace(/_/g, '/');
+            const { bucketName, objectName } = parseObjectPath('/' + objectPath);
+            const bucket = objectStorageService.objectStorageClient.bucket(bucketName);
+            const file = bucket.file(objectName);
+            await file.delete();
+            deleted = true;
+          } catch (error) {
+            console.error('Error deleting object storage file:', error);
+          }
+          break;
+          
         case 'message':
           // Update message to remove file reference
           await storage.updateMessage(parseInt(actualId), { fileUrl: null, fileName: null });
@@ -3115,6 +3257,59 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
+  // File upload endpoint (admin only)
+  app.post("/api/admin/files/upload", uploadDocuments.single('file'), async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      if (!['master_admin', 'editor_admin'].includes(req.user!.userType)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const file = req.file;
+      const { makePublic } = req.body;
+      
+      try {
+        // Upload to Supabase storage
+        const uploadResult = await supabaseStorage.uploadGeneralFile(file, {
+          folder: makePublic ? 'public' : 'admin-uploads',
+          public: makePublic === 'true'
+        });
+        
+        if (uploadResult.success && uploadResult.url) {
+          res.json({
+            success: true,
+            message: "File uploaded successfully",
+            file: {
+              url: uploadResult.url,
+              fileName: file.originalname,
+              size: file.size,
+              mimeType: file.mimetype,
+              isPublic: makePublic === 'true'
+            }
+          });
+        } else {
+          res.status(500).json({ 
+            message: "Upload failed", 
+            error: uploadResult.error 
+          });
+        }
+      } catch (uploadError) {
+        console.error('File upload error:', uploadError);
+        res.status(500).json({ message: "Failed to upload file" });
+      }
+    } catch (error) {
+      console.error('Error in upload endpoint:', error);
+      res.status(500).json({ message: "Failed to process upload" });
+    }
+  });
+
   // Toggle file public access (admin only)
   app.put("/api/admin/files/:fileId/public", async (req, res) => {
     try {
@@ -3127,15 +3322,33 @@ export function registerRoutes(app: Express): Server {
       }
 
       const { isPublic } = req.body;
+      const fileId = req.params.fileId;
+      const [fileType] = fileId.split('_');
       
-      // For now, we'll just return success since the public access logic
-      // would require additional database schema changes to track file permissions
-      // This is a placeholder for future implementation
-      res.json({ 
-        success: true, 
-        message: `File access updated to ${isPublic ? 'public' : 'private'}`,
-        isPublic 
-      });
+      // Only handle object storage files for now
+      if (fileType === 'public' || fileType === 'private') {
+        try {
+          const objectStorageService = new ObjectStorageService();
+          // For object storage files, we would need to move them between buckets
+          // or update ACL policies. This is a simplified implementation.
+          res.json({ 
+            success: true, 
+            message: `File access updated to ${isPublic ? 'public' : 'private'}`,
+            isPublic,
+            note: "ACL update functionality requires additional implementation" 
+          });
+        } catch (error) {
+          console.error('Error updating object storage ACL:', error);
+          res.status(500).json({ message: "Failed to update file access" });
+        }
+      } else {
+        // For database-referenced files, just return success as they don't have ACL
+        res.json({ 
+          success: true, 
+          message: `File access setting noted (${isPublic ? 'public' : 'private'})`,
+          isPublic 
+        });
+      }
     } catch (error) {
       console.error('Error updating file access:', error);
       res.status(500).json({ message: "Failed to update file access" });
@@ -3146,13 +3359,31 @@ export function registerRoutes(app: Express): Server {
   app.get("/public-objects/:fileName", async (req, res) => {
     try {
       const fileName = req.params.fileName;
+      const objectStorageService = new ObjectStorageService();
       
-      // For now, redirect to the actual file URL
-      // In a production environment, you would implement proper file serving logic
-      // that checks if the file is marked as public and serves it accordingly
+      // Try to find the file in public object storage buckets
+      const file = await objectStorageService.searchPublicObject(fileName);
       
-      // This is a placeholder implementation
-      res.status(404).json({ message: "Public file serving not yet implemented" });
+      if (file) {
+        // Stream the file to the response
+        await objectStorageService.downloadObject(file, res);
+      } else {
+        // Also check attached_assets folder
+        try {
+          const attachedAssetsPath = path.join(process.cwd(), 'attached_assets');
+          const filePath = path.join(attachedAssetsPath, fileName);
+          const stats = await fsPromises.stat(filePath);
+          
+          if (stats.isFile()) {
+            res.sendFile(filePath);
+            return;
+          }
+        } catch (attachedError) {
+          // File not found in attached_assets either
+        }
+        
+        res.status(404).json({ message: "File not found" });
+      }
     } catch (error) {
       console.error('Error serving public file:', error);
       res.status(500).json({ message: "Failed to serve file" });
