@@ -2940,7 +2940,10 @@ export function registerRoutes(app: Express): Server {
 
   // Send bulk campaign endpoint (legacy single-channel)
   app.post('/api/admin/send-bulk-campaign', async (req, res) => {
+    console.log(`🔐 Admin bulk campaign request - User: ${req.user?.id || 'none'} (${req.user?.email || 'no-email'}) Type: ${req.user?.userType || 'none'}`);
+    
     if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {
+      console.log(`❌ Unauthorized bulk campaign attempt - Auth: ${req.isAuthenticated()}, UserType: ${req.user?.userType}`);
       return res.status(403).json({ message: "Unauthorized" });
     }
 
@@ -3063,7 +3066,7 @@ export function registerRoutes(app: Express): Server {
           // Filter contacts that have email (we'll find userId from email)
           const notificationRecipients = targetContacts.filter((c: any) => c.email);
           
-          console.log(`Processing notification campaign for ${notificationRecipients.length} recipients with email`);
+          console.log(`📢 Processing notification campaign for ${notificationRecipients.length} recipients with email from admin user ${req.user?.id} (${req.user?.email})`);
           
           if (notificationRecipients.length > 0) {
             // Send actual notifications using notification service
@@ -3076,10 +3079,12 @@ export function registerRoutes(app: Express): Server {
                 const user = await storage.getUserByEmail(recipient.email);
                 
                 if (!user) {
-                  console.log(`User not found for email: ${recipient.email}, skipping notification`);
+                  console.log(`❌ User not found for email: ${recipient.email}, skipping notification`);
                   results.notification.failed++;
                   continue;
                 }
+                
+                console.log(`👤 Found user ${user.id} for email: ${recipient.email} (${user.firstName} ${user.lastName})`);
 
                 // Replace parameters in notification title and content
                 let personalizedTitle = notification.title;

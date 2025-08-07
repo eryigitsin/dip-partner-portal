@@ -13,10 +13,11 @@ router.get('/', async (req: any, res) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const userId = req.user.id;
+    const domain = req.get('host') || 'unknown';
 
-    console.log('Getting notifications for user:', userId, 'page:', page, 'limit:', limit);
+    console.log(`🔍 [${domain}] Getting notifications for user: ${userId} (${req.user.email || 'no-email'}) [${req.user.userType || 'no-type'}] - page: ${page}, limit: ${limit}`);
     const result = await notificationService.getUserNotifications(userId, page, limit);
-    console.log('Notifications result:', result);
+    console.log(`📋 [${domain}] Notifications result for user ${userId}: ${result.notifications.length} notifications, total: ${result.totalCount}`);
     
     res.json(result);
   } catch (error) {
@@ -30,7 +31,10 @@ router.get('/unread-count', async (req: any, res) => {
   if (!req.isAuthenticated()) return res.sendStatus(401);
   try {
     const userId = req.user.id;
+    const domain = req.get('host') || 'unknown';
     const count = await notificationService.getUnreadCount(userId);
+    
+    console.log(`📊 [${domain}] Unread count for user ${userId} (${req.user.email}): ${count}`);
     
     res.json({ count });
   } catch (error) {
