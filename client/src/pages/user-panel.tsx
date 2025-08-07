@@ -580,7 +580,7 @@ export default function UserPanel() {
                         required
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        NetGSM formatında giriniz: +90XXXXXXXXXX (örn: +905551234567)
+                        +905551234567 formatında giriniz.
                       </p>
                       {phoneError && (
                         <p className="text-xs text-red-500 mt-1">{phoneError}</p>
