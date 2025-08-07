@@ -234,7 +234,7 @@ export function ChatPopup() {
               <h3 className="font-semibold">
                 {selectedConversation 
                   ? partners.find(p => p.userId === selectedConversation.partnerId)?.companyName || 'Partner'
-                  : 'Mesajlar'
+                  : 'İş Ortakları ile Konuş'
                 }
               </h3>
             </div>
