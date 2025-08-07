@@ -12,6 +12,8 @@ import { promisify } from "util";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { fileSecurityService, FileSecurityService } from "./security/file-security";
+import { emailSecurity } from "./security/email-security";
 import express from "express";
 import { supabaseStorage } from "./supabase-storage";
 import { setupSocketIO } from "./socket";
@@ -133,29 +135,8 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-// Multer configuration for file uploads (using memory storage for Supabase)
-const uploadDocuments = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg',
-      'image/jpg',
-      'image/png'
-    ];
-    
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(null, false);
-    }
-  }
-});
+// Secure Multer configuration for file uploads (using memory storage for Supabase)
+const uploadDocuments = fileSecurityService.createSecureUpload();
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
@@ -573,9 +554,17 @@ export function registerRoutes(app: Express): Server {
       // Upload files to Supabase Storage and store document info
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
-      // Handle logo upload
+      // Handle logo upload with security validation
       if (files?.logo && files.logo[0]) {
         const logoFile = files.logo[0];
+        
+        // Validate the uploaded logo file
+        const logoValidation = fileSecurityService.validateFile(logoFile);
+        if (!logoValidation.valid) {
+          console.error('Logo validation failed:', logoValidation.error);
+          return res.status(400).json({ message: `Logo dosyası hatalı: ${logoValidation.error}` });
+        }
+        
         const logoUploadResult = await supabaseStorage.uploadPartnerLogo(logoFile, application.id.toString());
         if (logoUploadResult.success && logoUploadResult.url) {
           console.log('Logo uploaded:', logoUploadResult.url);
@@ -585,9 +574,17 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      // Handle cover image upload
+      // Handle cover image upload with security validation
       if (files?.coverImage && files.coverImage[0]) {
         const coverFile = files.coverImage[0];
+        
+        // Validate the uploaded cover image file
+        const coverValidation = fileSecurityService.validateFile(coverFile);
+        if (!coverValidation.valid) {
+          console.error('Cover image validation failed:', coverValidation.error);
+          return res.status(400).json({ message: `Kapak resmi hatalı: ${coverValidation.error}` });
+        }
+        
         const coverUploadResult = await supabaseStorage.uploadPartnerCover(coverFile, application.id.toString());
         if (coverUploadResult.success && coverUploadResult.url) {
           console.log('Cover image uploaded:', coverUploadResult.url);
@@ -596,18 +593,28 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      // Handle document uploads
+      // Handle document uploads with security validation
       if (files?.documents && files.documents.length > 0) {
         console.log(`Uploading ${files.documents.length} documents to Supabase Storage...`);
         for (const file of files.documents) {
+          // Validate each document file
+          const docValidation = fileSecurityService.validateFile(file);
+          if (!docValidation.valid) {
+            console.error('Document validation failed:', docValidation.error);
+            return res.status(400).json({ message: `Belge hatalı (${file.originalname}): ${docValidation.error}` });
+          }
+          
           const uploadResult = await supabaseStorage.uploadPartnerDocument(file, application.id.toString());
           if (uploadResult.success && uploadResult.url) {
             console.log('Document uploaded:', uploadResult.url);
             
+            // Sanitize filename before storing
+            const sanitizedFilename = fileSecurityService.sanitizeFilename(file.originalname);
+            
             await storage.addApplicationDocument({
               applicationId: application.id,
-              fileName: file.originalname,
-              originalName: file.originalname,
+              fileName: sanitizedFilename,
+              originalName: sanitizedFilename,
               filePath: uploadResult.url, // Store Supabase URL instead of local path
               fileSize: file.size,
               mimeType: file.mimetype,
@@ -1294,6 +1301,13 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const { profileImageURL } = req.body;
+      
+      // Validate the profile image URL
+      const urlValidation = emailSecurity.validateUrl(profileImageURL);
+      if (!urlValidation.valid) {
+        return res.status(400).json({ error: `Geçersiz profil resmi URL'si: ${urlValidation.error}` });
+      }
+      
       const objectStorageService = new ObjectStorageService();
       const objectPath = objectStorageService.normalizeObjectEntityPath(profileImageURL);
       
@@ -1345,10 +1359,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // File upload for chat messages
-  app.post("/api/upload/file", multer({ 
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-  }).single('file'), async (req, res) => {
+  app.post("/api/upload/file", fileSecurityService.createSecureUpload().single('file'), async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     
     try {
@@ -1357,13 +1368,22 @@ export function registerRoutes(app: Express): Server {
       }
 
       const file = req.file;
+      
+      // Validate the uploaded file
+      const validation = fileSecurityService.validateFile(file);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+      
       const folder = req.body.folder || 'chat-files';
       
-      // Generate unique filename
+      // Generate secure filename using crypto
       const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 15);
-      const extension = file.originalname.split('.').pop();
-      const fileName = `${folder}/${timestamp}-${randomString}.${extension}`;
+      const crypto = require('crypto');
+      const randomString = crypto.randomBytes(16).toString('hex');
+      const extension = path.extname(file.originalname).toLowerCase();
+      const sanitizedName = fileSecurityService.sanitizeFilename(file.originalname);
+      const fileName = `${folder}/${timestamp}-${randomString}${extension}`;
 
       // Upload to Supabase Storage
       const { uploadFile } = await import('./supabase-storage');
@@ -1376,7 +1396,7 @@ export function registerRoutes(app: Express): Server {
 
       res.json({ 
         url: uploadResult.publicUrl,
-        fileName: file.originalname,
+        fileName: sanitizedName,
         size: file.size,
         type: file.mimetype
       });
@@ -1389,8 +1409,22 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const { recipientId, message, conversationId, fileUrl, fileName } = req.body;
+      let { recipientId, message, conversationId, fileUrl, fileName } = req.body;
       const senderId = req.user.id;
+      
+      // Validate and sanitize input
+      if (message) {
+        message = emailSecurity.sanitizeText(message);
+      }
+      if (fileName) {
+        fileName = fileSecurityService.sanitizeFilename(fileName);
+      }
+      if (fileUrl) {
+        const urlValidation = emailSecurity.validateUrl(fileUrl);
+        if (!urlValidation.valid) {
+          return res.status(400).json({ error: `Geçersiz dosya URL'si: ${urlValidation.error}` });
+        }
+      }
       
       // Check if sender is a partner and trying to initiate new conversation
       const [senderPartner] = await db.select().from(partners).where(eq(partners.userId, senderId));
@@ -2059,19 +2093,17 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Configure multer for profile image uploads (using memory storage for Supabase)
-  const uploadProfileImages = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB limit
-    },
-    fileFilter: (req, file, cb) => {
-      if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-      } else {
-        cb(new Error('Only image files are allowed!'));
-      }
-    }
-  });
+  // Secure image upload configuration
+  const uploadProfileImages = new FileSecurityService({
+    maxFileSize: 5 * 1024 * 1024, // 5MB limit
+    allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+    allowedMimeTypes: [
+      'image/jpeg', 
+      'image/png', 
+      'image/gif', 
+      'image/webp'
+    ]
+  }).createSecureUpload();
 
   // Partner profile update endpoint with file upload
   app.patch("/api/partners/:id", uploadProfileImages.fields([
@@ -2126,9 +2158,22 @@ export function registerRoutes(app: Express): Server {
       const updates: any = {};
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
-      // Handle file uploads to Supabase Storage
+      // Handle file uploads to Supabase Storage with security validation
       if (files && files.logo && files.logo[0]) {
         console.log('Uploading logo to Supabase Storage...');
+        
+        // Validate the logo file
+        const logoValidation = new FileSecurityService({
+          maxFileSize: 5 * 1024 * 1024,
+          allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        }).validateFile(files.logo[0]);
+        
+        if (!logoValidation.valid) {
+          console.error('Logo validation failed:', logoValidation.error);
+          return res.status(400).json({ error: `Logo dosyası hatalı: ${logoValidation.error}` });
+        }
+        
         const logoResult = await supabaseStorage.uploadPartnerLogo(files.logo[0], partnerId.toString());
         if (logoResult.success) {
           updates.logo = logoResult.url;
@@ -2141,6 +2186,19 @@ export function registerRoutes(app: Express): Server {
       
       if (files && files.coverImage && files.coverImage[0]) {
         console.log('Uploading cover image to Supabase Storage...');
+        
+        // Validate the cover image file
+        const coverValidation = new FileSecurityService({
+          maxFileSize: 5 * 1024 * 1024,
+          allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        }).validateFile(files.coverImage[0]);
+        
+        if (!coverValidation.valid) {
+          console.error('Cover image validation failed:', coverValidation.error);
+          return res.status(400).json({ error: `Kapak resmi hatalı: ${coverValidation.error}` });
+        }
+        
         const coverResult = await supabaseStorage.uploadPartnerCover(files.coverImage[0], partnerId.toString());
         if (coverResult.success) {
           updates.coverImage = coverResult.url;
@@ -2676,7 +2734,25 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/feedback", async (req, res) => {
     try {
       console.log('Creating feedback:', req.body);
-      const feedbackData = req.body;
+      let feedbackData = req.body;
+      
+      // Sanitize feedback input
+      if (feedbackData.name) {
+        feedbackData.name = emailSecurity.sanitizeText(feedbackData.name);
+      }
+      if (feedbackData.email) {
+        const emailValidation = emailSecurity.validateEmail(feedbackData.email);
+        if (!emailValidation.valid) {
+          return res.status(400).json({ message: `Geçersiz e-posta adresi: ${emailValidation.error}` });
+        }
+      }
+      if (feedbackData.message) {
+        feedbackData.message = emailSecurity.sanitizeText(feedbackData.message);
+      }
+      if (feedbackData.subject) {
+        feedbackData.subject = emailSecurity.sanitizeText(feedbackData.subject);
+      }
+      
       const newFeedback = await storage.createFeedback(feedbackData);
       res.json(newFeedback);
     } catch (error) {
@@ -2945,7 +3021,24 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const { subject, content, recipients, channels, targetGroups, targetContacts, email, sms, notification } = req.body;
+      let { subject, content, recipients, channels, targetGroups, targetContacts, email, sms, notification } = req.body;
+      
+      // Enhanced input sanitization for all campaign content
+      if (email?.subject) {
+        email.subject = emailSecurity.sanitizeHtml(email.subject);
+      }
+      if (email?.content) {
+        email.content = emailSecurity.sanitizeHtml(email.content);
+      }
+      if (sms?.message) {
+        sms.message = emailSecurity.sanitizeText(sms.message);
+      }
+      if (notification?.title) {
+        notification.title = emailSecurity.sanitizeText(notification.title);
+      }
+      if (notification?.message) {
+        notification.message = emailSecurity.sanitizeText(notification.message);
+      }
       
       // Handle both legacy and new multi-channel format
       if (channels && Array.isArray(channels)) {
@@ -2971,15 +3064,25 @@ export function registerRoutes(app: Express): Server {
           if (emailRecipients.length > 0) {
             for (const recipient of emailRecipients) {
               try {
-                // Replace parameters in subject and content
+                // Replace parameters in subject and content with secure validation
                 let personalizedSubject = email.subject;
                 let personalizedContent = email.content;
+                
+                // Validate recipient email
+                const emailValidation = emailSecurity.validateEmail(recipient.email);
+                if (!emailValidation.valid) {
+                  console.warn(`Invalid email skipped: ${recipient.email} - ${emailValidation.error}`);
+                  results.email.failed++;
+                  continue;
+                }
                 
                 // Get user data for parameter replacement
                 const user = await storage.getUserByEmail(recipient.email);
                 if (user) {
-                  // Create full name from firstName and lastName
-                  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
+                  // Create full name from firstName and lastName with sanitization
+                  const sanitizedFirstName = emailSecurity.sanitizeText(user.firstName || '');
+                  const sanitizedLastName = emailSecurity.sanitizeText(user.lastName || '');
+                  const fullName = [sanitizedFirstName, sanitizedLastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
                   const userName = fullName;
                   
                   personalizedSubject = personalizedSubject.replace(/\{\{userName\}\}/g, userName);
@@ -3012,21 +3115,31 @@ export function registerRoutes(app: Express): Server {
             const netgsm = createNetGsmService();
             for (const recipient of smsRecipients) {
               try {
-                // Replace parameters in SMS content
+                // Validate phone number format
+                if (!recipient.phone || typeof recipient.phone !== 'string' || recipient.phone.length < 10) {
+                  console.warn(`Invalid phone number skipped: ${recipient.phone}`);
+                  results.sms.failed++;
+                  continue;
+                }
+                
+                // Replace parameters in SMS content with sanitization
                 let personalizedContent = sms.content;
                 
                 // Get user data for parameter replacement
                 const user = await storage.getUserByEmail(recipient.email);
                 if (user) {
-                  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
+                  // Create full name with sanitization
+                  const sanitizedFirstName = emailSecurity.sanitizeText(user.firstName || '');
+                  const sanitizedLastName = emailSecurity.sanitizeText(user.lastName || '');
+                  const fullName = [sanitizedFirstName, sanitizedLastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
                   const userName = fullName;
                   
                   personalizedContent = personalizedContent.replace(/\{\{userName\}\}/g, userName);
                   personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
                   personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
-                  personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, user.firstName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, user.lastName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, user.companyName || '');
+                  personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, sanitizedFirstName);
+                  personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, sanitizedLastName);
+                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, emailSecurity.sanitizeText(user.companyName || ''));
                 }
 
                 if (netgsm) {
@@ -3052,14 +3165,24 @@ export function registerRoutes(app: Express): Server {
             const notificationService = storage.getNotificationService();
             for (const recipient of notificationRecipients) {
               try {
-                // Replace parameters in notification title and content
+                // Validate user ID
+                if (!recipient.userId || isNaN(recipient.userId)) {
+                  console.warn(`Invalid user ID skipped: ${recipient.userId}`);
+                  results.notification.failed++;
+                  continue;
+                }
+                
+                // Replace parameters in notification title and content with sanitization
                 let personalizedTitle = notification.title;
                 let personalizedContent = notification.content;
                 
                 // Get user data for parameter replacement
                 const user = await storage.getUser(recipient.userId);
                 if (user) {
-                  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
+                  // Create full name with sanitization
+                  const sanitizedFirstName = emailSecurity.sanitizeText(user.firstName || '');
+                  const sanitizedLastName = emailSecurity.sanitizeText(user.lastName || '');
+                  const fullName = [sanitizedFirstName, sanitizedLastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
                   const userName = fullName;
                   
                   personalizedTitle = personalizedTitle.replace(/\{\{userName\}\}/g, userName);
@@ -3068,12 +3191,12 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
                   personalizedTitle = personalizedTitle.replace(/\{\{fullName\}\}/g, fullName);
                   personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
-                  personalizedTitle = personalizedTitle.replace(/\{\{firstName\}\}/g, user.firstName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, user.firstName || '');
-                  personalizedTitle = personalizedTitle.replace(/\{\{lastName\}\}/g, user.lastName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, user.lastName || '');
-                  personalizedTitle = personalizedTitle.replace(/\{\{companyName\}\}/g, user.companyName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, user.companyName || '');
+                  personalizedTitle = personalizedTitle.replace(/\{\{firstName\}\}/g, sanitizedFirstName);
+                  personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, sanitizedFirstName);
+                  personalizedTitle = personalizedTitle.replace(/\{\{lastName\}\}/g, sanitizedLastName);
+                  personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, sanitizedLastName);
+                  personalizedTitle = personalizedTitle.replace(/\{\{companyName\}\}/g, emailSecurity.sanitizeText(user.companyName || ''));
+                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, emailSecurity.sanitizeText(user.companyName || ''));
                 }
 
                 await notificationService.createNotification({
