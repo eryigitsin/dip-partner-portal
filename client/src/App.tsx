@@ -14,7 +14,6 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home";
 import AuthPage from "@/pages/auth";
 import PasswordResetPage from "@/pages/password-reset";
-import PasswordResetHTML from "@/pages/password-reset-html";
 import EmailConfirmedPage from "@/pages/email-confirmed";
 import PartnerDashboard from "@/pages/partner-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -96,7 +95,6 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/password-reset" component={PasswordResetPage} />
-      <Route path="/password-reset-html" component={PasswordResetHTML} />
       <Route path="/email-confirmed" component={EmailConfirmedPage} />
       <ProtectedRoute path="/partner-dashboard" component={PartnerDashboard} />
 

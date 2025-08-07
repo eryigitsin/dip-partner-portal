@@ -13,6 +13,7 @@ This is a Turkish-English bilingual partner management system for DİP (Digital 
 - Database schema: Added managedBy field to partners table for tracking partner managers
 - Template Management System: Comprehensive email/notification template management with dropdown-based selection and 26+ email templates including partner welcome, project lifecycle, payment confirmations, security alerts, and system maintenance notifications
 - Admin Interface Enhancement: Email templates removed from system-settings.tsx and consolidated into dedicated template-management.tsx page with header/footer integration
+- Password Reset URL Fix: Corrected password reset email links from /password-reset-html to /password-reset for proper Supabase authentication flow
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

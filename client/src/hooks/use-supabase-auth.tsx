@@ -51,7 +51,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       // Handle auth event flows based on type
       if (event === 'PASSWORD_RECOVERY') {
         console.log('Password recovery detected, redirecting to password reset page');
-        window.location.href = '/password-reset-html';
+        window.location.href = '/password-reset';
         return;
       }
       
@@ -109,8 +109,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         // Skip auto-sync for password reset and email confirmation flows
         // But still allow session to be set for password reset functionality
         if (window.location.pathname === '/password-reset' || 
-            window.location.pathname === '/email-confirmed' ||
-            window.location.pathname === '/password-reset-html') {
+            window.location.pathname === '/email-confirmed') {
           // Set session but don't sync with backend for these pages
           setSession(session);
           setSupabaseUser(session?.user ?? null);
