@@ -30,6 +30,7 @@ export default function UserPanel() {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [phoneError, setPhoneError] = useState('');
 
   // Fetch user profile data
   const { data: userProfile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -354,13 +355,65 @@ export default function UserPanel() {
     return {};
   };
 
+  // Phone format validation for netGSM
+  const validateAndFormatPhone = (phone: string): { isValid: boolean, formatted: string, error: string } => {
+    if (!phone.trim()) {
+      return { isValid: false, formatted: '', error: 'Telefon numarası gereklidir' };
+    }
+
+    // Remove all non-numeric characters except +
+    let cleaned = phone.replace(/[^\d+]/g, '');
+    
+    // Handle different input formats
+    if (cleaned.startsWith('+90')) {
+      cleaned = cleaned.substring(3); // Remove +90
+    } else if (cleaned.startsWith('90')) {
+      cleaned = cleaned.substring(2); // Remove 90
+    } else if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1); // Remove leading 0
+    }
+    
+    // Check if it's a valid 10-digit Turkish mobile number
+    const mobileRegex = /^5\d{9}$/;
+    if (!mobileRegex.test(cleaned)) {
+      return { 
+        isValid: false, 
+        formatted: phone, 
+        error: 'Geçersiz telefon formatı. Türkiye cep telefonu formatında giriniz (örn: +905551234567)' 
+      };
+    }
+    
+    return { 
+      isValid: true, 
+      formatted: `+90${cleaned}`, 
+      error: '' 
+    };
+  };
+
   const handleProfileSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    
+    // Validate and format phone
+    const phoneValue = (formData.get('phone') as string) || '';
+    const phoneValidation = validateAndFormatPhone(phoneValue);
+    
+    if (!phoneValidation.isValid) {
+      setPhoneError(phoneValidation.error);
+      toast({
+        title: "Telefon Formatı Hatası",
+        description: phoneValidation.error,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setPhoneError('');
+    
     const data = {
       firstName: formData.get('firstName'),
       lastName: formData.get('lastName'),
-      phone: formData.get('phone'),
+      phone: phoneValidation.formatted, // Use formatted phone
       company: formData.get('company'),
       title: formData.get('title'),
       sector: formData.get('sector'),
@@ -518,11 +571,28 @@ export default function UserPanel() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="phone">Telefon</Label>
+                      <Label htmlFor="phone">Telefon (GSM) *</Label>
                       <Input
                         id="phone"
                         name="phone"
+                        placeholder="+905551234567"
                         defaultValue={user.phone || ''}
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        NetGSM formatında giriniz: +90XXXXXXXXXX (örn: +905551234567)
+                      </p>
+                      {phoneError && (
+                        <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="company">Firma</Label>
+                      <Input
+                        id="company"
+                        name="company"
+                        placeholder="Şirket/Firma adınız"
+                        defaultValue={userProfile?.company || ''}
                       />
                     </div>
                     <div>
@@ -530,6 +600,7 @@ export default function UserPanel() {
                       <Input
                         id="title"
                         name="title"
+                        placeholder="Örn: Pazarlama Müdürü, CEO"
                         defaultValue={userProfile?.title || ''}
                       />
                     </div>
