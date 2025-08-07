@@ -576,11 +576,11 @@ export default function UserPanel() {
                         id="phone"
                         name="phone"
                         placeholder="+905551234567"
-                        defaultValue={user.phone || ''}
+                        defaultValue={user.phone || '+905'}
                         required
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        +905551234567 formatında giriniz.
+                        İpucu: +905551234567 formatında giriniz.
                       </p>
                       {phoneError && (
                         <p className="text-xs text-red-500 mt-1">{phoneError}</p>
