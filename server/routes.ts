@@ -3029,7 +3029,9 @@ export function registerRoutes(app: Express): Server {
       }
       if (email?.content) {
         // For email content, we need to preserve HTML structure for rendering
+        console.log(`📧 BEFORE sanitization - Email content length: ${email.content.length}`);
         email.content = emailSecurity.sanitizeEmailContent(email.content);
+        console.log(`📧 AFTER sanitization - Email content length: ${email.content.length}`);
       }
       if (sms?.message) {
         sms.message = emailSecurity.sanitizeText(sms.message);
@@ -3094,6 +3096,9 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
                 }
 
+                console.log(`📧 Sending email to ${recipient.email} - Subject: ${personalizedSubject.substring(0, 50)}...`);
+                console.log(`📧 Content preview: ${personalizedContent.substring(0, 200)}...`);
+                
                 await resendService.sendEmail({
                   to: recipient.email,
                   subject: personalizedSubject,
@@ -3101,6 +3106,7 @@ export function registerRoutes(app: Express): Server {
                 });
                 results.email.sent++;
                 totalSent++;
+                console.log(`✅ Email sent successfully to ${recipient.email}`);
               } catch (error) {
                 console.error(`Failed to send email to ${recipient.email}:`, error);
                 results.email.failed++;
@@ -3201,8 +3207,10 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, '');
                 }
 
-                const notificationService = storage.getNotificationService();
-                await notificationService.createNotification({
+                console.log(`🔔 Creating notification for user ${recipient.userId} - Title: ${personalizedTitle}`);
+                
+                // Direct notification creation via storage
+                await storage.createNotification({
                   userId: recipient.userId,
                   type: 'campaign',
                   title: personalizedTitle,
@@ -3217,6 +3225,7 @@ export function registerRoutes(app: Express): Server {
                 });
                 results.notification.sent++;
                 totalSent++;
+                console.log(`✅ Notification sent successfully to user ${recipient.userId}`);
               } catch (error) {
                 console.error(`Failed to send notification to user ${recipient.userId}:`, error);
                 results.notification.failed++;
@@ -3227,10 +3236,14 @@ export function registerRoutes(app: Express): Server {
           }
         }
 
+        console.log(`✅ BULK CAMPAIGN COMPLETED - Total sent: ${totalSent}`);
+        console.log(`📊 Results breakdown:`, results);
+        
         return res.json({ 
           success: true, 
           message: `Kampanya başarıyla gönderildi! ${totalSent} kişiye ulaştı.`,
           sentCount: totalSent,
+          totalRecipients: totalSent,
           results,
           channels: channels,
           targetGroups

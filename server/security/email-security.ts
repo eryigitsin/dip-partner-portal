@@ -44,32 +44,28 @@ export class EmailSecurity {
     };
   }
 
-  // Sanitize HTML content for email templates
+  // Sanitize HTML content for email templates - VERY LIBERAL FOR EMAIL CAMPAIGNS
   sanitizeEmailContent(html: string): string {
+    // For bulk email campaigns, preserve almost all HTML structure
+    // Only remove script tags and potentially dangerous content
     return sanitizeHtml(html, {
-      allowedTags: this.allowedHtmlTags,
-      allowedAttributes: this.allowedAttributes,
-      allowedIframeHostnames: [], // No iframes allowed
-      allowedSchemes: ['http', 'https', 'mailto'],
+      allowedTags: false, // Allow all tags except those explicitly disallowed
+      disallowedTagsMode: 'discard',
+      allowedAttributes: false, // Allow all attributes except dangerous ones
+      allowedSchemes: ['http', 'https', 'mailto', 'data', 'tel'],
       allowedSchemesByTag: {
         img: ['http', 'https', 'data'],
-        a: ['http', 'https', 'mailto']
+        a: ['http', 'https', 'mailto', 'tel']
       },
-      transformTags: {
-        'a': (tagName: string, attribs: any) => {
-          // Force external links to open in new tab and add security attributes
-          if (attribs.href && (attribs.href.startsWith('http') || attribs.href.startsWith('https'))) {
-            return {
-              tagName,
-              attribs: {
-                ...attribs,
-                target: '_blank',
-                rel: 'noopener noreferrer'
-              }
-            };
-          }
-          return { tagName, attribs };
-        }
+      disallowedTagsMode: 'discard',
+      allowedIframeHostnames: [], // Still no iframes
+      allowProtocolRelative: true,
+      enforceHtmlBoundary: false,
+      // Only disallow truly dangerous tags
+      exclusiveFilter: function(frame: any) {
+        const tag = frame.tag;
+        const dangerousTags = ['script', 'object', 'embed', 'form', 'input', 'textarea', 'button', 'select', 'option', 'iframe', 'frame', 'frameset'];
+        return !dangerousTags.includes(tag);
       }
     });
   }
