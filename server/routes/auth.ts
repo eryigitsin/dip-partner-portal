@@ -117,10 +117,10 @@ router.post('/send-password-reset', async (req, res) => {
       return res.status(400).json({ error: 'Email gerekli' });
     }
 
-    console.log('Sending password reset email to:', email, 'redirect URL:', `${req.protocol}://${req.get('host')}/auth`);
+    console.log('Sending password reset email to:', email, 'redirect URL:', `${req.protocol}://${req.get('host')}/password-reset`);
 
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-      redirectTo: `${req.protocol}://${req.get('host')}/auth`,
+      redirectTo: `${req.protocol}://${req.get('host')}/password-reset`,
     });
 
     if (error) {

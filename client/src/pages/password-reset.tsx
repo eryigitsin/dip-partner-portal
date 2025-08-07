@@ -22,21 +22,35 @@ export default function PasswordResetPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user accessed this page from password reset email
-    const hash = window.location.hash;
-    
-    // Check for expired token error
-    if (hash.includes('error_description=Email+link+is+invalid+or+has+expired') || 
-        hash.includes('error=invalid_request')) {
-      setLocation('/auth?expired=true');
-      return;
-    }
-    
-    if (!hash || !hash.includes('access_token')) {
-      // Redirect to auth page if no valid reset token
-      setLocation('/auth');
-      return;
-    }
+    const handlePasswordResetFromURL = async () => {
+      const hash = window.location.hash;
+      
+      // Check for expired token error
+      if (hash.includes('error_description=Email+link+is+invalid+or+has+expired') || 
+          hash.includes('error=invalid_request')) {
+        setLocation('/auth?expired=true');
+        return;
+      }
+      
+      // Try to get session from URL - this is crucial for password reset to work
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Error getting session:', error);
+        setLocation('/auth');
+        return;
+      }
+
+      if (!session) {
+        // If no session and no hash with access token, redirect to auth
+        if (!hash || !hash.includes('access_token')) {
+          setLocation('/auth');
+          return;
+        }
+      }
+    };
+
+    handlePasswordResetFromURL();
   }, [setLocation]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -63,19 +77,37 @@ export default function PasswordResetPage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      // Check if we have a valid session first
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Geçerli bir oturum bulunamadı. Lütfen şifre sıfırlama linkini tekrar kullanın.');
+      }
+
+      const { data, error } = await supabase.auth.updateUser({
         password: password
       });
 
       if (error) {
+        console.error('Supabase update error:', error);
         throw error;
       }
 
+      console.log('Password updated successfully:', data);
+
+      // Show success message
+      toast({
+        title: 'Şifre başarıyla değiştirildi!',
+        description: 'Yeni şifrenizle giriş yapabilirsiniz.',
+        variant: 'default',
+      });
+
       setIsSuccess(true);
       
-      // Sign out the user after password change
+      // Sign out the user after password change to force re-login
       await supabase.auth.signOut();
       
+      // Redirect to auth page after success
       setTimeout(() => {
         setLocation('/auth');
       }, 3000);

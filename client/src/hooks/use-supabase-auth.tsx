@@ -73,10 +73,13 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         // Handle password recovery (reset)
         if (hash.includes('type=recovery')) {
           console.log('Password recovery detected, redirecting to password reset page');
-          // Don't redirect immediately, let the user stay on the password reset page
+          // Don't redirect if already on password reset page
           if (window.location.pathname !== '/password-reset') {
             window.location.href = '/password-reset';
           }
+          // Make sure session is available for password reset
+          setSession(session);
+          setSupabaseUser(session?.user ?? null);
           return;
         }
         
@@ -104,9 +107,13 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
         // Skip auto-sync for password reset and email confirmation flows
+        // But still allow session to be set for password reset functionality
         if (window.location.pathname === '/password-reset' || 
             window.location.pathname === '/email-confirmed' ||
             window.location.pathname === '/password-reset-html') {
+          // Set session but don't sync with backend for these pages
+          setSession(session);
+          setSupabaseUser(session?.user ?? null);
           return;
         }
         
