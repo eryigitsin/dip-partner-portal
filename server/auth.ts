@@ -39,18 +39,21 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "your-secret-key-here",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: false, // Always false for development to prevent session conflicts
+      secure: isProduction, // HTTPS only in production
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       httpOnly: true,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      domain: isProduction ? '.dip.tc' : undefined // Allow cross-subdomain in production
     },
-    name: 'connect.sid', // Explicit session name
+    name: 'dip_session', // Unique session name for this app
   };
 
   app.set("trust proxy", 1);

@@ -4,6 +4,13 @@ import { setupVite, serveStatic, log } from "./vite";
 import { quoteExpirationJob } from "./quote-expiration-job";
 
 const app = express();
+
+// 301 redirect for old partner login URL (SEO preservation) - MUST be FIRST
+app.get('/partner-login.php', (req, res) => {
+  console.log('🔀 301 Redirect: /partner-login.php -> /auth');
+  res.redirect(301, '/auth');
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use('/uploads', express.static('uploads'));
