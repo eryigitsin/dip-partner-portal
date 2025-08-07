@@ -51,7 +51,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       // Handle auth event flows based on type
       if (event === 'PASSWORD_RECOVERY') {
         console.log('Password recovery detected, redirecting to password reset page');
-        window.location.href = '/password-reset-html';
+        window.location.href = '/password-reset';
         return;
       }
       

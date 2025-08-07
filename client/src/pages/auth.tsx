@@ -194,25 +194,26 @@ export default function AuthPage() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${window.location.origin}/auth`
+        redirectTo: `${window.location.origin}/password-reset`
       });
       
       if (error) {
         toast({
           title: "Hata",
-          description: error.message,
+          description: error.message === 'User not found' ? 'Bu e-posta adresi bulunamadı' : error.message,
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Şifre sıfırlama",
-          description: "E-posta adresinizi kontrol edin",
+          title: "Şifre sıfırlama e-postası gönderildi",
+          description: "E-posta adresinizi kontrol edin ve linkle şifrenizi değiştirin",
+          duration: 6000,
         });
       }
     } catch (error) {
       toast({
         title: "Hata",
-        description: "Şifre sıfırlama başarısız",
+        description: "Şifre sıfırlama e-postası gönderilemedi",
         variant: "destructive",
       });
     }
