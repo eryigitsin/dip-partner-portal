@@ -17,8 +17,8 @@ import { supabaseStorage } from "./supabase-storage";
 import { setupSocketIO } from "./socket";
 import { supabaseAdmin } from "./supabase";
 import { db } from "./db";
-import { quoteResponses, partners } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { quoteResponses, partners, notifications } from "@shared/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { ObjectStorageService } from "./objectStorage";
 
 // Email templates and functionality
@@ -6886,6 +6886,86 @@ export function registerRoutes(app: Express): Server {
     } catch (error: any) {
       console.error("Error updating SMS template:", error);
       res.status(500).json({ error: "Failed to update SMS template" });
+    }
+  });
+
+  // Comprehensive production debug endpoint
+  app.get('/api/debug/production', async (req: any, res) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const domain = req.get('host') || 'unknown';
+    const authStatus = req.isAuthenticated();
+    const sessionID = req.sessionID;
+    const cookies = req.headers.cookie;
+    
+    try {
+      const debugInfo = {
+        environment: {
+          NODE_ENV: process.env.NODE_ENV || 'MISSING',
+          isProduction,
+          domain,
+          time: new Date().toISOString()
+        },
+        session: {
+          isAuthenticated: authStatus,
+          sessionID: sessionID ? 'exists' : 'missing',
+          sessionData: req.session ? Object.keys(req.session) : 'no-session',
+          hasPassport: req.session ? !!req.session.passport : false,
+          cookiePresent: !!cookies,
+          cookieCount: cookies ? cookies.split(';').length : 0
+        },
+        user: authStatus ? {
+          id: req.user?.id || 'missing',
+          email: req.user?.email || 'missing',
+          userType: req.user?.userType || 'missing'
+        } : null,
+        notifications: authStatus && req.user?.id ? {
+          available: true,
+          userId: req.user.id
+        } : { available: false, reason: 'not authenticated' },
+        cors: {
+          origin: req.get('origin') || 'no-origin',
+          referer: req.get('referer') || 'no-referer',
+          userAgent: req.get('user-agent')?.substring(0, 100) || 'no-user-agent'
+        }
+      };
+
+      // Get notification data if user is authenticated
+      if (authStatus && req.user?.id) {
+        try {
+          // Direct SQL queries since storage methods don't exist
+          const [totalResult] = await db.select({ count: sql`count(*)` })
+            .from(notifications)
+            .where(eq(notifications.userId, req.user.id));
+          
+          const [unreadResult] = await db.select({ count: sql`count(*)` })
+            .from(notifications)
+            .where(and(
+              eq(notifications.userId, req.user.id),
+              eq(notifications.isRead, false)
+            ));
+
+          (debugInfo.notifications as any) = {
+            ...debugInfo.notifications,
+            totalCount: totalResult.count,
+            unreadCount: unreadResult.count,
+            lastChecked: new Date().toISOString()
+          };
+        } catch (error) {
+          (debugInfo.notifications as any) = {
+            ...debugInfo.notifications,
+            error: (error as Error).message
+          };
+        }
+      }
+
+      console.log('🐛 Production Debug Info:', debugInfo);
+      res.json(debugInfo);
+    } catch (error) {
+      console.error('Debug endpoint error:', error);
+      res.status(500).json({ 
+        error: 'Debug endpoint failed',
+        message: (error as Error).message 
+      });
     }
   });
 

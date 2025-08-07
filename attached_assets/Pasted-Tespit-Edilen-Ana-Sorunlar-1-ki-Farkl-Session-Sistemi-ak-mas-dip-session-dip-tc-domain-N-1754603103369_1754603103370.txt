@@ -1,0 +1,248 @@
+Tespit Edilen Ana Sorunlar
+1. İki Farklı Session Sistemi Çakışması
+- dip_session → .dip.tc domain (Node.js)
+- PHPSESSID → partner.dip.tc domain (PHP?)
+2. Development vs Production Farkları
+
+Replit'te: Tek domain, basit cookie yönetimi
+Production'da: Subdomain, güvenlik katmanları, proxy
+
+🚀 ACİL ÇÖZÜM ADIMLARı
+Adım 1: Production Debug Endpoint Ekleyin
+SSH ile sunucuya bağlanın ve şu dosyayı oluşturun:
+bashssh root@partner.dip.tc
+cd /var/www/dip-partner-portal  # veya proje dizini
+server/routes/debug-production.ts dosyası oluşturun:
+typescriptimport { Router } from 'express';
+
+const router = Router();
+
+// Production debug endpoint - GÜVENLİK: Sonra kaldırın!
+router.get('/api/debug/production', (req: any, res) => {
+  res.json({
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      host: req.hostname,
+      protocol: req.protocol,
+      originalUrl: req.originalUrl,
+    },
+    session: {
+      exists: !!req.session,
+      id: req.sessionID,
+      cookie: req.session?.cookie,
+      user: req.session?.user || req.user,
+    },
+    cookies: {
+      all: Object.keys(req.cookies || {}),
+      dip_session: req.cookies?.dip_session ? 'EXISTS' : 'MISSING',
+      PHPSESSID: req.cookies?.PHPSESSID ? 'EXISTS' : 'MISSING',
+    },
+    auth: {
+      isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+      user: req.user ? { id: req.user.id, email: req.user.email } : null,
+    },
+    headers: {
+      cookie: req.headers.cookie?.substring(0, 100) + '...',
+      referer: req.headers.referer,
+      origin: req.headers.origin,
+    }
+  });
+});
+
+export default router;
+Adım 2: Server Configuration Düzeltmesi
+server/index.ts dosyasını güncelleyin:
+typescriptimport express from 'express';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+
+const app = express();
+
+// 1. Trust proxy - NGINX arkasındaysanız KRİTİK!
+app.set('trust proxy', 1);
+
+// 2. CORS - credentials: true ÖNEMLİ
+app.use(cors({
+  origin: function(origin, callback) {
+    // Development için tüm origin'lere izin ver
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // Production için whitelist
+    const allowedOrigins = [
+      'https://partner.dip.tc',
+      'https://dip.tc',
+      'https://www.dip.tc'
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS blocked'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+}));
+
+// 3. Cookie parser - session'dan ÖNCE
+app.use(cookieParser(process.env.SESSION_SECRET));
+
+// 4. Session configuration
+app.use(session({
+  name: 'dip_session', // Browser'daki cookie adıyla AYNI
+  secret: process.env.SESSION_SECRET || 'dev-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    domain: process.env.NODE_ENV === 'production' ? '.dip.tc' : undefined,
+    path: '/',
+    secure: process.env.NODE_ENV === 'production', // HTTPS only
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 gün
+  }
+}));
+
+// 5. Session recovery middleware - ÖNEMLİ!
+app.use((req: any, res, next) => {
+  // Eğer session yoksa ama dip_session cookie'si varsa
+  if (!req.session && req.cookies?.dip_session) {
+    console.log('Session recovery attempt for:', req.cookies.dip_session);
+    // Session store'dan manual recovery yapabilirsiniz
+  }
+  
+  // Debug log
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Session: ${!!req.session}, User: ${!!req.user}`);
+  }
+  
+  next();
+});
+Adım 3: PM2 Environment Variables
+bash# PM2 config güncelleme
+nano ecosystem.config.js
+javascriptmodule.exports = {
+  apps: [{
+    name: 'dip-partner',
+    script: './dist/server/index.js',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3001,
+      SESSION_SECRET: 'your-strong-secret-key-here',
+      DATABASE_URL: 'postgresql://username:password@localhost:5432/dip_db',
+      COOKIE_DOMAIN: '.dip.tc'
+    },
+    error_file: './logs/err.log',
+    out_file: './logs/out.log',
+    log_file: './logs/combined.log',
+    time: true
+  }]
+};
+Sonra:
+bashpm2 delete all
+pm2 start ecosystem.config.js
+pm2 save
+pm2 logs --lines 50
+Adım 4: NGINX Configuration
+bashnano /etc/nginx/sites-available/partner.dip.tc
+nginxserver {
+    listen 443 ssl http2;
+    server_name partner.dip.tc;
+    
+    # SSL certificates
+    ssl_certificate /path/to/ssl/cert.pem;
+    ssl_certificate_key /path/to/ssl/key.pem;
+    
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        
+        # Headers - ÇOK ÖNEMLİ!
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Cookie/Session için KRİTİK
+        proxy_set_header Cookie $http_cookie;
+        proxy_pass_header Set-Cookie;
+        proxy_cookie_domain localhost .dip.tc;
+        
+        # WebSocket support
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+bashnginx -t
+systemctl reload nginx
+Adım 5: Frontend Fix
+client/lib/queryClient.ts:
+typescriptconst API_BASE = process.env.NODE_ENV === 'production' 
+  ? 'https://partner.dip.tc' 
+  : '';
+
+export async function apiRequest(method: string, endpoint: string, body?: any) {
+  const url = `${API_BASE}${endpoint}`;
+  
+  console.log(`API Request: ${method} ${url}`);
+  
+  const response = await fetch(url, {
+    method,
+    credentials: 'include', // ÇOK ÖNEMLİ!
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  
+  if (!response.ok) {
+    console.error(`API Error: ${response.status} - ${response.statusText}`);
+  }
+  
+  return response;
+}
+🧪 Test Script
+Browser console'da test edin:
+javascript// 1. Debug endpoint test
+fetch('https://partner.dip.tc/api/debug/production', {
+  credentials: 'include'
+}).then(r => r.json()).then(data => {
+  console.log('Debug Info:', data);
+  if (!data.session.exists) {
+    console.error('❌ Session yok!');
+  }
+  if (!data.auth.isAuthenticated) {
+    console.error('❌ Authentication başarısız!');
+  }
+  if (data.cookies.dip_session === 'MISSING') {
+    console.error('❌ dip_session cookie eksik!');
+  }
+});
+
+// 2. Notification test
+fetch('https://partner.dip.tc/api/notifications', {
+  credentials: 'include'
+}).then(r => {
+  console.log('Status:', r.status);
+  return r.json();
+}).then(console.log).catch(console.error);
+🚨 En Olası Sorun ve Hızlı Çözüm
+PHPSESSID cookie'sinin varlığı, başka bir sistemin (muhtemelen PHP) session'ı override ettiğini gösteriyor.
+Hızlı çözüm:
+bash# SSH'da
+pm2 stop all
+NODE_ENV=production SESSION_SECRET=your-secret pm2 start dist/server/index.js --name dip-partner
+pm2 logs dip-partner --lines 100
