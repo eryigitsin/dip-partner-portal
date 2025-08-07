@@ -186,10 +186,16 @@ export function registerRoutes(app: Express): Server {
     const shouldAllowOrigin = allowedOrigins.includes(origin as string) || !origin || isProductionDomain;
     
     if (shouldAllowOrigin) {
-      res.setHeader('Access-Control-Allow-Origin', origin || '*');
-      console.log(`✅ CORS Allowed for origin: ${origin || 'no-origin'}`);
+      // Don't use '*' with credentials - use specific origin or current host
+      const allowedOrigin = origin || `https://${host}` || 'https://partner.dip.tc';
+      res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+      console.log(`✅ CORS Allowed for origin: ${origin || 'no-origin'} -> ${allowedOrigin}`);
     } else {
       console.log(`❌ CORS Rejected for origin: ${origin}`);
+      // Still allow same-origin requests
+      if (!origin) {
+        res.setHeader('Access-Control-Allow-Origin', `https://${host}`);
+      }
     }
     
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -6887,6 +6893,42 @@ export function registerRoutes(app: Express): Server {
       console.error("Error updating SMS template:", error);
       res.status(500).json({ error: "Failed to update SMS template" });
     }
+  });
+
+  // Session conflict resolution endpoint for handling PHP vs Node.js session issues
+  app.post('/api/auth/resolve-session-conflict', (req: any, res) => {
+    const domain = req.get('host') || 'unknown';
+    const hasDipSession = req.headers.cookie?.includes('dip_session');
+    const hasPHPSession = req.headers.cookie?.includes('PHPSESSID');
+    
+    console.log(`🔧 [${domain}] Session conflict resolution - DIP: ${hasDipSession}, PHP: ${hasPHPSession}`);
+    
+    // If both sessions exist, prioritize Node.js session
+    if (hasDipSession && hasPHPSession) {
+      console.log(`⚠️ [${domain}] Both sessions detected - recommending PHP session removal`);
+      return res.json({
+        conflict: true,
+        action: 'clear_php_session',
+        message: 'PHP session conflicts with Node.js session. Please clear PHPSESSID cookie.',
+        instructions: {
+          cookie_to_clear: 'PHPSESSID',
+          domain: '.dip.tc',
+          path: '/'
+        }
+      });
+    }
+    
+    // If only PHP session exists, suggest login
+    if (hasPHPSession && !hasDipSession) {
+      console.log(`🔄 [${domain}] Only PHP session detected - suggesting re-login`);
+      return res.json({
+        conflict: true,
+        action: 'require_login',
+        message: 'Please log in again to establish proper session.'
+      });
+    }
+    
+    return res.json({ conflict: false, message: 'No session conflicts detected' });
   });
 
   // Comprehensive production debug endpoint

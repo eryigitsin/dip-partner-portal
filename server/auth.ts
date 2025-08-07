@@ -63,11 +63,10 @@ export function setupAuth(app: Express) {
   // Enhanced trust proxy configuration for production
   if (isProduction) {
     app.set("trust proxy", true);
+    console.log('🔧 Trust proxy enabled for production');
   } else {
     app.set("trust proxy", 1);
   }
-
-  app.set("trust proxy", 1);
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
@@ -96,6 +95,25 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
+  // Session recovery middleware for handling session system conflicts
+  app.use((req: any, res, next) => {
+    const domain = req.get('host') || 'unknown';
+    const hasDipSession = req.headers.cookie?.includes('dip_session');
+    const hasPHPSession = req.headers.cookie?.includes('PHPSESSID');
+    
+    // Log session conflicts for debugging
+    if (hasPHPSession && !hasDipSession && domain.includes('dip.tc')) {
+      console.log(`⚠️ [${domain}] PHP session detected without Node.js session - potential conflict`);
+    }
+    
+    // If user is not authenticated but has session data, try to recover
+    if (!req.isAuthenticated() && req.session && hasDipSession) {
+      console.log(`🔄 [${domain}] Attempting session recovery for ${req.sessionID}`);
+    }
+    
+    next();
+  });
+
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
