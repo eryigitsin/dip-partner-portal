@@ -328,6 +328,12 @@ export default function UserPanel() {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' }
                                   });
+                                  
+                                  if (!response.ok) {
+                                    const errorText = await response.text();
+                                    throw new Error(`Upload URL alınamadı: ${response.status} - ${errorText}`);
+                                  }
+                                  
                                   const data = await response.json();
                                   
                                   // Upload file
@@ -339,14 +345,23 @@ export default function UserPanel() {
                                   
                                   if (uploadResponse.ok) {
                                     // Update profile image
-                                    const response = await fetch('/api/user/profile-image', {
+                                    const updateResponse = await fetch('/api/user/profile-image', {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ profileImageURL: data.uploadURL })
                                     });
                                     
-                                    if (!response.ok) {
-                                      throw new Error('Failed to update profile image');
+                                    if (!updateResponse.ok) {
+                                      const errorText = await updateResponse.text();
+                                      throw new Error(`Profil fotoğrafı güncellenemedi: ${updateResponse.status} - ${errorText}`);
+                                    }
+                                    
+                                    // Try to parse response if there's content
+                                    try {
+                                      const updateData = await updateResponse.json();
+                                      console.log('Profile updated:', updateData);
+                                    } catch (jsonError) {
+                                      console.log('No JSON response body, but request succeeded');
                                     }
                                     
                                     queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
@@ -354,12 +369,14 @@ export default function UserPanel() {
                                       title: "Başarılı",
                                       description: "Profil fotoğrafınız güncellendi",
                                     });
+                                  } else {
+                                    throw new Error(`Dosya yüklenemedi: ${uploadResponse.status}`);
                                   }
                                 } catch (error) {
-                                  console.error('Error:', error);
+                                  console.error('Avatar upload error:', error);
                                   toast({
                                     title: "Hata",
-                                    description: "Fotoğraf yüklenirken bir hata oluştu",
+                                    description: error.message || "Fotoğraf yüklenirken bir hata oluştu",
                                     variant: "destructive"
                                   });
                                 }
