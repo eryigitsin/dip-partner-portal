@@ -56,7 +56,23 @@ export default function UserPanel() {
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest('PUT', '/api/user/profile', data);
-      return res.json();
+      
+      // Check if response has content before trying to parse JSON
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await res.text();
+        if (text.trim()) {
+          try {
+            return JSON.parse(text);
+          } catch (jsonError) {
+            console.warn('Failed to parse JSON response:', text);
+            return { success: true }; // Fallback for successful requests
+          }
+        }
+      }
+      
+      // Return success object if no JSON content
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
@@ -79,7 +95,23 @@ export default function UserPanel() {
   const updateBillingMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest('PUT', '/api/user/billing', data);
-      return res.json();
+      
+      // Check if response has content before trying to parse JSON
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await res.text();
+        if (text.trim()) {
+          try {
+            return JSON.parse(text);
+          } catch (jsonError) {
+            console.warn('Failed to parse JSON response:', text);
+            return { success: true }; // Fallback for successful requests
+          }
+        }
+      }
+      
+      // Return success object if no JSON content
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/billing'] });
@@ -101,7 +133,23 @@ export default function UserPanel() {
   const unfollowMutation = useMutation({
     mutationFn: async (partnerId: number) => {
       const res = await apiRequest('DELETE', `/api/user/follow/${partnerId}`);
-      return res.json();
+      
+      // Check if response has content before trying to parse JSON
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await res.text();
+        if (text.trim()) {
+          try {
+            return JSON.parse(text);
+          } catch (jsonError) {
+            console.warn('Failed to parse JSON response:', text);
+            return { success: true }; // Fallback for successful requests
+          }
+        }
+      }
+      
+      // Return success object if no JSON content
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/followed-partners'] });
@@ -123,7 +171,23 @@ export default function UserPanel() {
   const updatePasswordMutation = useMutation({
     mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
       const res = await apiRequest('PUT', '/api/user/password', data);
-      return res.json();
+      
+      // Check if response has content before trying to parse JSON
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await res.text();
+        if (text.trim()) {
+          try {
+            return JSON.parse(text);
+          } catch (jsonError) {
+            console.warn('Failed to parse JSON response:', text);
+            return { success: true }; // Fallback for successful requests
+          }
+        }
+      }
+      
+      // Return success object if no JSON content
+      return { success: true };
     },
     onSuccess: () => {
       toast({
@@ -144,7 +208,23 @@ export default function UserPanel() {
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest('DELETE', '/api/user/account');
-      return res.json();
+      
+      // Check if response has content before trying to parse JSON
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await res.text();
+        if (text.trim()) {
+          try {
+            return JSON.parse(text);
+          } catch (jsonError) {
+            console.warn('Failed to parse JSON response:', text);
+            return { success: true }; // Fallback for successful requests
+          }
+        }
+      }
+      
+      // Return success object if no JSON content
+      return { success: true };
     },
     onSuccess: () => {
       toast({
