@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -28,6 +28,8 @@ export default function UserPanel() {
   const [activeTab, setActiveTab] = useState('profile');
   const [partnerApplicationOpen, setPartnerApplicationOpen] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch user profile data
   const { data: userProfile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -166,6 +168,88 @@ export default function UserPanel() {
       });
     },
   });
+
+  // Avatar upload handler
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 5242880) {
+      toast({
+        title: "Dosya çok büyük",
+        description: "Maksimum 5MB boyutunda dosya yükleyebilirsiniz",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsUploadingAvatar(true);
+    
+    try {
+      // Get upload URL
+      const response = await fetch('/api/objects/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload URL alınamadı: ${response.status} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Upload file
+      const uploadResponse = await fetch(data.uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      });
+      
+      if (uploadResponse.ok) {
+        // Update profile image
+        const updateResponse = await fetch('/api/user/profile-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profileImageURL: data.uploadURL })
+        });
+        
+        if (!updateResponse.ok) {
+          const errorText = await updateResponse.text();
+          throw new Error(`Profil fotoğrafı güncellenemedi: ${updateResponse.status} - ${errorText}`);
+        }
+        
+        // Try to parse response if there's content
+        try {
+          const updateData = await updateResponse.json();
+          console.log('Profile updated:', updateData);
+        } catch (jsonError) {
+          console.log('No JSON response body, but request succeeded');
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
+        toast({
+          title: "Başarılı",
+          description: "Profil fotoğrafınız güncellendi",
+        });
+      } else {
+        throw new Error(`Dosya yüklenemedi: ${uploadResponse.status}`);
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      toast({
+        title: "Hata",
+        description: (error as Error).message || "Fotoğraf yüklenirken bir hata oluştu",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+      // Clear the input value to allow uploading the same file again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   // Update password mutation
   const updatePasswordMutation = useMutation({
@@ -384,95 +468,19 @@ export default function UserPanel() {
                       </Avatar>
                       <div className="flex-1">
                         <input 
+                          ref={fileInputRef}
                           type="file" 
                           accept="image/*" 
                           style={{ display: 'none' }}
-                          ref={(input) => {
-                            if (input) {
-                              input.addEventListener('change', async (e) => {
-                                const file = (e.target as HTMLInputElement).files?.[0];
-                                if (!file) return;
-                                
-                                if (file.size > 5242880) {
-                                  toast({
-                                    title: "Dosya çok büyük",
-                                    description: "Maksimum 5MB boyutunda dosya yükleyebilirsiniz",
-                                    variant: "destructive"
-                                  });
-                                  return;
-                                }
-                                
-                                try {
-                                  // Get upload URL
-                                  const response = await fetch('/api/objects/upload', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' }
-                                  });
-                                  
-                                  if (!response.ok) {
-                                    const errorText = await response.text();
-                                    throw new Error(`Upload URL alınamadı: ${response.status} - ${errorText}`);
-                                  }
-                                  
-                                  const data = await response.json();
-                                  
-                                  // Upload file
-                                  const uploadResponse = await fetch(data.uploadURL, {
-                                    method: 'PUT',
-                                    body: file,
-                                    headers: { 'Content-Type': file.type }
-                                  });
-                                  
-                                  if (uploadResponse.ok) {
-                                    // Update profile image
-                                    const updateResponse = await fetch('/api/user/profile-image', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ profileImageURL: data.uploadURL })
-                                    });
-                                    
-                                    if (!updateResponse.ok) {
-                                      const errorText = await updateResponse.text();
-                                      throw new Error(`Profil fotoğrafı güncellenemedi: ${updateResponse.status} - ${errorText}`);
-                                    }
-                                    
-                                    // Try to parse response if there's content
-                                    try {
-                                      const updateData = await updateResponse.json();
-                                      console.log('Profile updated:', updateData);
-                                    } catch (jsonError) {
-                                      console.log('No JSON response body, but request succeeded');
-                                    }
-                                    
-                                    queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
-                                    toast({
-                                      title: "Başarılı",
-                                      description: "Profil fotoğrafınız güncellendi",
-                                    });
-                                  } else {
-                                    throw new Error(`Dosya yüklenemedi: ${uploadResponse.status}`);
-                                  }
-                                } catch (error) {
-                                  console.error('Avatar upload error:', error);
-                                  toast({
-                                    title: "Hata",
-                                    description: error.message || "Fotoğraf yüklenirken bir hata oluştu",
-                                    variant: "destructive"
-                                  });
-                                }
-                              });
-                            }
-                          }}
+                          onChange={handleAvatarUpload}
                         />
                         <Button 
-                          onClick={() => {
-                            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                            fileInput?.click();
-                          }}
+                          onClick={() => fileInputRef.current?.click()}
                           className="w-full"
+                          disabled={isUploadingAvatar}
                         >
                           <Camera className="h-4 w-4 mr-2" />
-                          Fotoğraf Yükle
+                          {isUploadingAvatar ? "Yükleniyor..." : "Fotoğraf Yükle"}
                         </Button>
                         <p className="text-xs text-gray-500 mt-1">Maksimum 5MB. JPG, PNG desteklenir.</p>
                       </div>
