@@ -3025,10 +3025,11 @@ export function registerRoutes(app: Express): Server {
       
       // Enhanced input sanitization for all campaign content
       if (email?.subject) {
-        email.subject = emailSecurity.sanitizeHtml(email.subject);
+        email.subject = emailSecurity.sanitizeText(email.subject);
       }
       if (email?.content) {
-        email.content = emailSecurity.sanitizeHtml(email.content);
+        // For email content, we need to preserve HTML structure for rendering
+        email.content = emailSecurity.sanitizeEmailContent(email.content);
       }
       if (sms?.message) {
         sms.message = emailSecurity.sanitizeText(sms.message);
@@ -3163,7 +3164,6 @@ export function registerRoutes(app: Express): Server {
           const notificationRecipients = targetContacts.filter((c: any) => c.userId);
           if (notificationRecipients.length > 0) {
             // Send actual notifications using notification service
-            const notificationService = storage.getNotificationService();
             for (const recipient of notificationRecipients) {
               try {
                 // Validate user ID
@@ -3175,7 +3175,7 @@ export function registerRoutes(app: Express): Server {
                 
                 // Replace parameters in notification title and content with sanitization
                 let personalizedTitle = notification.title;
-                let personalizedContent = notification.content;
+                let personalizedContent = notification.message || notification.content;
                 
                 // Get user data for parameter replacement
                 const user = await storage.getUser(recipient.userId);
@@ -3201,6 +3201,7 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, '');
                 }
 
+                const notificationService = storage.getNotificationService();
                 await notificationService.createNotification({
                   userId: recipient.userId,
                   type: 'campaign',
@@ -3211,7 +3212,7 @@ export function registerRoutes(app: Express): Server {
                   actionUrl: null,
                   metadata: {
                     campaignType: 'bulk_notification',
-                    templateId: notification.templateId
+                    templateId: notification.templateId || null
                   }
                 });
                 results.notification.sent++;
@@ -3228,7 +3229,7 @@ export function registerRoutes(app: Express): Server {
 
         return res.json({ 
           success: true, 
-          message: `Multi-channel campaign sent successfully`,
+          message: `Kampanya başarıyla gönderildi! ${totalSent} kişiye ulaştı.`,
           sentCount: totalSent,
           results,
           channels: channels,
