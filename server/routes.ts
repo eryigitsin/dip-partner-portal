@@ -181,9 +181,15 @@ export function registerRoutes(app: Express): Server {
     
     console.log(`🌐 CORS Check - Origin: ${origin}, Host: ${host}, Production: ${isProduction}`);
     
-    if (allowedOrigins.includes(origin as string) || !origin) {
+    // Always allow production domains and development
+    const isProductionDomain = origin && (origin.includes('dip.tc') || origin.includes('replit'));
+    const shouldAllowOrigin = allowedOrigins.includes(origin as string) || !origin || isProductionDomain;
+    
+    if (shouldAllowOrigin) {
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
       console.log(`✅ CORS Allowed for origin: ${origin || 'no-origin'}`);
+    } else {
+      console.log(`❌ CORS Rejected for origin: ${origin}`);
     }
     
     res.setHeader('Access-Control-Allow-Credentials', 'true');
