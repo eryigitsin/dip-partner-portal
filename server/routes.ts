@@ -3031,7 +3031,8 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
                   personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, user.firstName || '');
                   personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, user.lastName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, user.companyName || '');
+                  // Note: companyName not available in User table, using empty string
+                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, '');
                 }
 
                 if (netgsm) {
@@ -3059,39 +3060,52 @@ export function registerRoutes(app: Express): Server {
 
         // Process notification campaign
         if (channels.includes('notification') && notification) {
-          const notificationRecipients = targetContacts.filter((c: any) => c.userId);
+          // Filter contacts that have email (we'll find userId from email)
+          const notificationRecipients = targetContacts.filter((c: any) => c.email);
+          
+          console.log(`Processing notification campaign for ${notificationRecipients.length} recipients with email`);
+          
           if (notificationRecipients.length > 0) {
             // Send actual notifications using notification service
             const { NotificationService } = await import('./notification-service');
             const notificationService = new NotificationService();
+            
             for (const recipient of notificationRecipients) {
               try {
+                // Find user by email first to get userId
+                const user = await storage.getUserByEmail(recipient.email);
+                
+                if (!user) {
+                  console.log(`User not found for email: ${recipient.email}, skipping notification`);
+                  results.notification.failed++;
+                  continue;
+                }
+
                 // Replace parameters in notification title and content
                 let personalizedTitle = notification.title;
                 let personalizedContent = notification.content;
                 
-                // Get user data for parameter replacement
-                const user = await storage.getUser(recipient.userId);
-                if (user) {
-                  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
-                  const userName = fullName;
-                  
-                  personalizedTitle = personalizedTitle.replace(/\{\{userName\}\}/g, userName);
-                  personalizedContent = personalizedContent.replace(/\{\{userName\}\}/g, userName);
-                  personalizedTitle = personalizedTitle.replace(/\{\{userEmail\}\}/g, user.email || '');
-                  personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
-                  personalizedTitle = personalizedTitle.replace(/\{\{fullName\}\}/g, fullName);
-                  personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
-                  personalizedTitle = personalizedTitle.replace(/\{\{firstName\}\}/g, user.firstName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, user.firstName || '');
-                  personalizedTitle = personalizedTitle.replace(/\{\{lastName\}\}/g, user.lastName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, user.lastName || '');
-                  personalizedTitle = personalizedTitle.replace(/\{\{companyName\}\}/g, user.companyName || '');
-                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, user.companyName || '');
-                }
+                const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
+                const userName = fullName;
+                
+                personalizedTitle = personalizedTitle.replace(/\{\{userName\}\}/g, userName);
+                personalizedContent = personalizedContent.replace(/\{\{userName\}\}/g, userName);
+                personalizedTitle = personalizedTitle.replace(/\{\{userEmail\}\}/g, user.email || '');
+                personalizedContent = personalizedContent.replace(/\{\{userEmail\}\}/g, user.email || '');
+                personalizedTitle = personalizedTitle.replace(/\{\{fullName\}\}/g, fullName);
+                personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
+                personalizedTitle = personalizedTitle.replace(/\{\{firstName\}\}/g, user.firstName || '');
+                personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, user.firstName || '');
+                personalizedTitle = personalizedTitle.replace(/\{\{lastName\}\}/g, user.lastName || '');
+                personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, user.lastName || '');
+                // Note: companyName not available in User table, using empty string
+                personalizedTitle = personalizedTitle.replace(/\{\{companyName\}\}/g, '');
+                personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, '');
 
+                console.log(`Creating notification for user ${user.id} (${user.email}): ${personalizedTitle}`);
+                
                 await notificationService.createNotification({
-                  userId: recipient.userId,
+                  userId: user.id,
                   type: 'campaign',
                   title: personalizedTitle,
                   message: personalizedContent,
@@ -3103,15 +3117,18 @@ export function registerRoutes(app: Express): Server {
                     templateId: notification.templateId
                   }
                 });
+                
                 results.notification.sent++;
                 totalSent++;
               } catch (error) {
-                console.error(`Failed to send notification to user ${recipient.userId}:`, error);
+                console.error(`Failed to send notification to ${recipient.email}:`, error);
                 results.notification.failed++;
               }
             }
             
-            console.log(`Notification campaign sent to ${results.notification.sent} recipients, ${results.notification.failed} failed`);
+            console.log(`Notification campaign completed: ${results.notification.sent} sent, ${results.notification.failed} failed`);
+          } else {
+            console.log('No notification recipients found with email addresses');
           }
         }
 
