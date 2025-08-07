@@ -19,7 +19,7 @@ import { supabaseAdmin } from "./supabase";
 import { db } from "./db";
 import { quoteResponses, partners, notifications } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { ObjectStorageService } from "./objectStorage";
+import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { promises as fsPromises } from "fs";
 
 // Helper function to parse object path
@@ -2944,7 +2944,7 @@ export function registerRoutes(app: Express): Server {
         for (const searchPath of publicPaths) {
           try {
             const { bucketName, objectName } = parseObjectPath(searchPath);
-            const bucket = objectStorageService.objectStorageClient.bucket(bucketName);
+            const bucket = objectStorageClient.bucket(bucketName);
             const [publicFiles] = await bucket.getFiles({
               prefix: objectName
             });
@@ -2955,12 +2955,12 @@ export function registerRoutes(app: Express): Server {
                 id: `public_${file.name.replace(/\//g, '_')}`,
                 fileName: path.basename(file.name),
                 fileUrl: `/public-objects/${path.basename(file.name)}`,
-                fileSize: parseInt(metadata.size || '0'),
+                fileSize: parseInt(String(metadata.size || '0')),
                 mimeType: metadata.contentType,
                 source: 'object_storage_public',
                 sourceId: 0,
                 uploadedBy: 'User',
-                uploadedAt: metadata.timeCreated,
+                uploadedAt: metadata.timeCreated || new Date(),
                 isPublic: true,
                 objectPath: file.name
               });
@@ -2974,7 +2974,7 @@ export function registerRoutes(app: Express): Server {
         try {
           const privateDir = objectStorageService.getPrivateObjectDir();
           const { bucketName, objectName } = parseObjectPath(privateDir);
-          const bucket = objectStorageService.objectStorageClient.bucket(bucketName);
+          const bucket = objectStorageClient.bucket(bucketName);
           const [privateFiles] = await bucket.getFiles({
             prefix: objectName
           });
@@ -3177,7 +3177,7 @@ export function registerRoutes(app: Express): Server {
             // Parse the actualId to get the object path
             const objectPath = actualId.replace(/_/g, '/');
             const { bucketName, objectName } = parseObjectPath('/' + objectPath);
-            const bucket = objectStorageService.objectStorageClient.bucket(bucketName);
+            const bucket = objectStorageClient.bucket(bucketName);
             const file = bucket.file(objectName);
             await file.delete();
             deleted = true;
@@ -3277,10 +3277,7 @@ export function registerRoutes(app: Express): Server {
       
       try {
         // Upload to Supabase storage
-        const uploadResult = await supabaseStorage.uploadGeneralFile(file, {
-          folder: makePublic ? 'public' : 'admin-uploads',
-          public: makePublic === 'true'
-        });
+        const uploadResult = await supabaseStorage.uploadPartnerDocument(file, 'admin-' + Date.now());
         
         if (uploadResult.success && uploadResult.url) {
           res.json({

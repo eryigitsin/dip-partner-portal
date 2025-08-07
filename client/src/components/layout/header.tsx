@@ -314,8 +314,7 @@ export function Header() {
                           </AvatarFallback>
                         </Avatar>
                         <span className="hidden sm:inline">{user.firstName} {user.lastName}</span>
-                        <span className="inline sm:hidden">{user.firstName}</span>
-                        <ChevronDown className="h-4 w-4" />
+                        <ChevronDown className="h-4 w-4 hidden sm:inline" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
