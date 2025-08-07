@@ -1,5 +1,4 @@
 import { Resend } from 'resend';
-import { emailSecurity } from './security/email-security';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -47,35 +46,11 @@ export class ResendService {
 
   async sendEmail(options: SendEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      // Validate email addresses
-      const recipients = Array.isArray(options.to) ? options.to : [options.to];
-      for (const email of recipients) {
-        const emailValidation = emailSecurity.validateEmailAddress(email);
-        if (!emailValidation.valid) {
-          return { success: false, error: emailValidation.error };
-        }
-
-        // Check rate limiting
-        const rateCheck = emailSecurity.checkRateLimit(email);
-        if (!rateCheck.allowed) {
-          return { success: false, error: rateCheck.error };
-        }
-      }
-
-      // Validate subject
-      const subjectValidation = emailSecurity.validateSubject(options.subject);
-      if (!subjectValidation.valid) {
-        return { success: false, error: subjectValidation.error };
-      }
-
-      // Sanitize HTML content
-      const sanitizedHtml = emailSecurity.sanitizeEmailContent(options.html);
-
       const { data, error } = await resend.emails.send({
         from: options.from || this.fromEmail,
-        to: recipients,
+        to: Array.isArray(options.to) ? options.to : [options.to],
         subject: options.subject,
-        html: sanitizedHtml,
+        html: options.html,
         tags: options.tags,
       });
 
