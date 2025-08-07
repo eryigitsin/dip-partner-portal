@@ -196,12 +196,13 @@ export default function MarketingListPage() {
       let message = '';
       if (data.channels) {
         // Multi-channel response
-        message = `Kampanya başarıyla gönderildi: ${data.sentCount} toplam gönderim`;
+        const totalSent = data.sentCount || 0;
+        message = `Kampanya başarıyla gönderildi: ${totalSent} toplam gönderim`;
         if (data.results) {
           const details = [];
-          if (data.results.email.sent > 0) details.push(`${data.results.email.sent} e-posta`);
-          if (data.results.sms.sent > 0) details.push(`${data.results.sms.sent} SMS`);
-          if (data.results.notification.sent > 0) details.push(`${data.results.notification.sent} bildirim`);
+          if (data.results.email && data.results.email.sent > 0) details.push(`${data.results.email.sent} e-posta`);
+          if (data.results.sms && data.results.sms.sent > 0) details.push(`${data.results.sms.sent} SMS`);
+          if (data.results.notification && data.results.notification.sent > 0) details.push(`${data.results.notification.sent} bildirim`);
           if (details.length > 0) {
             message += ` (${details.join(', ')})`;
           }
@@ -1125,7 +1126,7 @@ export default function MarketingListPage() {
                       <SelectContent>
                         {campaignEmailTemplates && Array.isArray(campaignEmailTemplates) && campaignEmailTemplates.map((template: CampaignEmailTemplate) => (
                           <SelectItem key={template.id} value={template.id.toString()}>
-                            {template.name} - {template.subject}
+                            {`${template.name} - ${template.subject}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1211,7 +1212,7 @@ export default function MarketingListPage() {
                       <SelectContent>
                         {campaignNotificationTemplates && Array.isArray(campaignNotificationTemplates) && campaignNotificationTemplates.map((template: CampaignNotificationTemplate) => (
                           <SelectItem key={template.id} value={template.id.toString()}>
-                            {template.name} - {template.title}
+                            {`${template.name} - ${template.title}`}
                           </SelectItem>
                         ))}
                       </SelectContent>

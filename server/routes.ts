@@ -3015,8 +3015,13 @@ export function registerRoutes(app: Express): Server {
                 // Replace parameters in SMS content
                 let personalizedContent = sms.content;
                 
-                // Get user data for parameter replacement
-                const user = await storage.getUserByEmail(recipient.email);
+                // Get user data for parameter replacement using phone lookup if email not available
+                let user = null;
+                if (recipient.email) {
+                  user = await storage.getUserByEmail(recipient.email);
+                } else if (recipient.phone) {
+                  user = await storage.getUserByPhone(recipient.phone);
+                }
                 if (user) {
                   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Değerli Kullanıcı';
                   const userName = fullName;
@@ -3030,10 +3035,18 @@ export function registerRoutes(app: Express): Server {
                 }
 
                 if (netgsm) {
-                  await netgsm.sendSms(recipient.phone, personalizedContent);
+                  const smsResult = await netgsm.sendSms(recipient.phone, personalizedContent);
+                  if (smsResult.success) {
+                    results.sms.sent++;
+                    totalSent++;
+                  } else {
+                    console.error(`SMS failed for ${recipient.phone}:`, smsResult.message);
+                    results.sms.failed++;
+                  }
+                } else {
+                  console.error('NetGSM service not available');
+                  results.sms.failed++;
                 }
-                results.sms.sent++;
-                totalSent++;
               } catch (error) {
                 console.error(`Failed to send SMS to ${recipient.phone}:`, error);
                 results.sms.failed++;
@@ -3049,7 +3062,8 @@ export function registerRoutes(app: Express): Server {
           const notificationRecipients = targetContacts.filter((c: any) => c.userId);
           if (notificationRecipients.length > 0) {
             // Send actual notifications using notification service
-            const notificationService = storage.getNotificationService();
+            const { NotificationService } = await import('./notification-service');
+            const notificationService = new NotificationService();
             for (const recipient of notificationRecipients) {
               try {
                 // Replace parameters in notification title and content
