@@ -17,14 +17,14 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // unsafe-eval needed for Vite dev
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "ws:", "wss:", "https:"],
-      mediaSrc: ["'self'", "blob:"],
+      mediaSrc: ["'self'", "blob:", "https:"],
       objectSrc: ["'none'"],
-      frameSrc: ["'self'"],
+      frameSrc: ["'self'", "https://www.google.com", "https://maps.google.com"],
     },
   },
   crossOriginEmbedderPolicy: false, // Disable for file uploads

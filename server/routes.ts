@@ -3139,7 +3139,8 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{fullName\}\}/g, fullName);
                   personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, sanitizedFirstName);
                   personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, sanitizedLastName);
-                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, emailSecurity.sanitizeText(user.companyName || ''));
+                  // Note: companyName will be added to user schema - for now use empty string
+                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, '');
                 }
 
                 if (netgsm) {
@@ -3195,8 +3196,9 @@ export function registerRoutes(app: Express): Server {
                   personalizedContent = personalizedContent.replace(/\{\{firstName\}\}/g, sanitizedFirstName);
                   personalizedTitle = personalizedTitle.replace(/\{\{lastName\}\}/g, sanitizedLastName);
                   personalizedContent = personalizedContent.replace(/\{\{lastName\}\}/g, sanitizedLastName);
-                  personalizedTitle = personalizedTitle.replace(/\{\{companyName\}\}/g, emailSecurity.sanitizeText(user.companyName || ''));
-                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, emailSecurity.sanitizeText(user.companyName || ''));
+                  // Note: companyName will be added to user schema - for now use empty string
+                  personalizedTitle = personalizedTitle.replace(/\{\{companyName\}\}/g, '');
+                  personalizedContent = personalizedContent.replace(/\{\{companyName\}\}/g, '');
                 }
 
                 await notificationService.createNotification({

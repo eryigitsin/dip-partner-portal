@@ -209,6 +209,65 @@ export class EmailSecurity {
 
     return { valid: true };
   }
+
+  // Sanitize HTML content (alias for sanitizeEmailContent)
+  sanitizeHtml(html: string): string {
+    return this.sanitizeEmailContent(html);
+  }
+
+  // Sanitize plain text content
+  sanitizeText(text: string): string {
+    if (!text || typeof text !== 'string') {
+      return '';
+    }
+    
+    return sanitizeHtml(text, {
+      allowedTags: [],
+      allowedAttributes: {}
+    });
+  }
+
+  // Validate email address (alias for validateEmailAddress)
+  validateEmail(email: string): { valid: boolean; error?: string } {
+    return this.validateEmailAddress(email);
+  }
+
+  // Validate URL format and safety
+  validateUrl(url: string): { valid: boolean; error?: string } {
+    if (!url || typeof url !== 'string') {
+      return { valid: false, error: 'URL is required' };
+    }
+
+    try {
+      const parsedUrl = new URL(url);
+      
+      // Only allow http and https protocols
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return { valid: false, error: 'Only HTTP and HTTPS URLs are allowed' };
+      }
+
+      // Check for suspicious patterns
+      const suspiciousPatterns = [
+        /javascript:/i,
+        /vbscript:/i,
+        /data:/i,
+        /file:/i,
+        /<script/i,
+        /onclick/i,
+        /onerror/i
+      ];
+
+      for (const pattern of suspiciousPatterns) {
+        if (pattern.test(url)) {
+          return { valid: false, error: 'URL contains suspicious content' };
+        }
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return { valid: false, error: 'Invalid URL format' };
+    }
+  }
 }
 
 // Export singleton instance
