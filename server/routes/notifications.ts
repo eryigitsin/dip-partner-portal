@@ -8,38 +8,94 @@ const router = Router();
 
 // Get user's notifications with pagination
 router.get('/', async (req: any, res) => {
-  if (!req.isAuthenticated()) return res.sendStatus(401);
+  // Enhanced authentication debugging for production
+  const authStatus = req.isAuthenticated();
+  const sessionID = req.sessionID;
+  const userAgent = req.get('User-Agent');
+  const domain = req.get('host') || 'unknown';
+  const cookies = req.headers.cookie;
+  
+  console.log(`🔍 [${domain}] Auth Check - Authenticated: ${authStatus}, SessionID: ${sessionID ? 'exists' : 'missing'}, Cookies: ${cookies ? 'exists' : 'missing'}`);
+  
+  if (!authStatus) {
+    console.log(`❌ [${domain}] Authentication failed - Session details:`, {
+      sessionID,
+      userAgent: userAgent?.substring(0, 50),
+      hasSession: !!req.session,
+      sessionData: req.session ? Object.keys(req.session) : 'no-session'
+    });
+    return res.status(401).json({ 
+      error: 'Authentication required',
+      debug: {
+        domain,
+        hasSession: !!req.session,
+        sessionID: sessionID ? 'exists' : 'missing'
+      }
+    });
+  }
+  
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const userId = req.user.id;
-    const domain = req.get('host') || 'unknown';
 
     console.log(`🔍 [${domain}] Getting notifications for user: ${userId} (${req.user.email || 'no-email'}) [${req.user.userType || 'no-type'}] - page: ${page}, limit: ${limit}`);
-    const result = await notificationService.getUserNotifications(userId, page, limit);
-    console.log(`📋 [${domain}] Notifications result for user ${userId}: ${result.notifications.length} notifications, total: ${result.totalCount}`);
+    
+    // Add timeout wrapper for database operations
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database timeout')), 8000)
+    );
+    
+    const result = await Promise.race([
+      notificationService.getUserNotifications(userId, page, limit),
+      timeoutPromise
+    ]);
+    
+    console.log(`📋 [${domain}] Notifications result for user ${userId}: ${(result as any).notifications.length} notifications, total: ${(result as any).totalCount}`);
     
     res.json(result);
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-    res.status(500).json({ message: 'Bildirimler alınırken hata oluştu' });
+  } catch (error: any) {
+    console.error(`❌ [${domain}] Error fetching notifications:`, error.message);
+    res.status(500).json({ 
+      message: 'Bildirimler alınırken hata oluştu',
+      error: error.message 
+    });
   }
 });
 
 // Get unread notification count
 router.get('/unread-count', async (req: any, res) => {
-  if (!req.isAuthenticated()) return res.sendStatus(401);
+  const domain = req.get('host') || 'unknown';
+  const authStatus = req.isAuthenticated();
+  
+  if (!authStatus) {
+    console.log(`❌ [${domain}] Unread count - Authentication failed`);
+    return res.status(401).json({ 
+      error: 'Authentication required',
+      count: 0,
+      debug: { domain, hasSession: !!req.session }
+    });
+  }
+  
   try {
     const userId = req.user.id;
-    const domain = req.get('host') || 'unknown';
-    const count = await notificationService.getUnreadCount(userId);
+    
+    // Add timeout for unread count as well
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Count timeout')), 3000)
+    );
+    
+    const count = await Promise.race([
+      notificationService.getUnreadCount(userId),
+      timeoutPromise
+    ]);
     
     console.log(`📊 [${domain}] Unread count for user ${userId} (${req.user.email}): ${count}`);
     
     res.json({ count });
-  } catch (error) {
-    console.error('Error fetching unread count:', error);
-    res.status(500).json({ count: 0 });
+  } catch (error: any) {
+    console.error(`❌ [${domain}] Error fetching unread count:`, error.message);
+    res.status(500).json({ count: 0, error: error.message });
   }
 });
 

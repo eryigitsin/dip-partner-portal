@@ -1,0 +1,135 @@
+Production ortamında bildirim sisteminin çalışmaması ile ilgili kodları inceledim. Yazılımcınıza aşağıdaki kontrol noktalarını ve olası çözümleri iletebilirsiniz:
+
+## 🔍 Öncelikli Kontrol Noktaları
+
+### 1. **Authentication/Session Yönetimi**
+```javascript
+// notifications.ts dosyasında
+if (!req.isAuthenticated()) return res.sendStatus(401);
+```
+**Sorun:** Production'da session/cookie ayarları farklı olabilir.
+
+**Kontrol edilmesi gerekenler:**
+- Production'da cookie domain ve secure flag ayarları
+- Session store configuration (Redis, PostgreSQL, vb.)
+- CORS credentials ayarları
+- Cookie sameSite attribute'u
+
+### 2. **API Request Base URL Konfigürasyonu**
+```javascript
+// notifications.tsx dosyasında
+import { apiRequest } from '@/lib/queryClient';
+```
+**Sorun:** `apiRequest` fonksiyonunun production URL'ini doğru almıyor olabilir.
+
+**Çözüm önerileri:**
+```javascript
+// queryClient.ts dosyanızda kontrol edin:
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://partner.dip.tc' 
+  : 'http://localhost:3000';
+```
+
+### 3. **CORS Ayarları**
+Production server'da CORS middleware'inin doğru yapılandırıldığından emin olun:
+
+```javascript
+// server.ts veya app.ts dosyanızda
+app.use(cors({
+  origin: 'https://partner.dip.tc',
+  credentials: true, // Cookie'ler için kritik
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+```
+
+### 4. **Database Connection Pool**
+Production'da database bağlantı limitleri sorun yaratıyor olabilir:
+
+```javascript
+// db.ts dosyanızda
+const pool = new Pool({
+  max: 20, // Production için artırın
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+```
+
+## 🛠️ Debug İçin Adımlar
+
+### 1. **Browser Console Kontrolü**
+Production sitesinde (https://partner.dip.tc):
+- F12 ile Developer Tools açın
+- Network sekmesinde `/api/notifications` isteğini kontrol edin
+- Console'da hata mesajları var mı?
+- Response status kodu nedir? (401, 500, CORS error?)
+
+### 2. **Server Log Kontrolü**
+```javascript
+// notifications.ts'de zaten log var
+console.log(`🔍 [${domain}] Getting notifications for user: ${userId}...`);
+```
+Production server log'larını kontrol edin - bu log'lar görünüyor mu?
+
+### 3. **Hızlı Test Script'i**
+```bash
+# Terminal'den API'yi test edin
+curl -X GET https://partner.dip.tc/api/notifications \
+  -H "Cookie: [production-cookie-değeri]" \
+  -H "Content-Type: application/json" \
+  -v
+```
+
+## ✅ Olası Çözümler
+
+### Çözüm 1: Environment Variables Kontrolü
+`.env.production` dosyanızda:
+```env
+DATABASE_URL=postgresql://...
+SESSION_SECRET=...
+NODE_ENV=production
+API_URL=https://partner.dip.tc
+```
+
+### Çözüm 2: Proxy Konfigürasyonu
+Eğer Nginx/Apache kullanıyorsanız:
+```nginx
+location /api {
+    proxy_pass http://localhost:3001; # Node.js port
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+### Çözüm 3: Database Query Timeout
+```javascript
+// notification-service.ts'de timeout ekleyin
+async getUserNotifications(userId: number, page: number = 1, limit: number = 20) {
+  try {
+    const offset = (page - 1) * limit;
+    
+    // Timeout ekleyin
+    const queryConfig = {
+      statement_timeout: 5000, // 5 saniye
+    };
+    
+    // Query'leri optimize edin
+```
+
+## 🚨 En Muhtemel Sorun
+
+Kodlarda `req.isAuthenticated()` kullanımı göz önüne alındığında, **production'da session/authentication mekanizmasının düzgün çalışmıyor olması** en muhtemel sorun. 
+
+**Hemen kontrol edilmesi gerekenler:**
+1. Production'da session cookie set ediliyor mu?
+2. Cookie domain'i doğru mu? (`.dip.tc` olmalı)
+3. HTTPS kullanıldığı için `secure: true` flag'i var mı?
+4. Frontend ve backend aynı domain'de mi yoksa subdomain'de mi?
+
+Bu kontrolleri yaptıktan sonra hala sorun devam ediyorsa, browser'dan gelen network request'lerinin detaylarını (headers, response, status code) paylaşırsanız daha spesifik yardımcı olabilirim.

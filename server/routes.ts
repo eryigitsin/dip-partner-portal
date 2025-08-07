@@ -158,6 +158,44 @@ const uploadDocuments = multer({
 });
 
 export function registerRoutes(app: Express): Server {
+  // Enhanced CORS configuration for production compatibility
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const host = req.get('host') || '';
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Extended allowed origins for cross-domain compatibility
+    const allowedOrigins = [
+      'http://localhost:5000',
+      'https://partner.dip.tc',
+      'https://dip.tc',
+      'http://localhost:3000',
+      'http://127.0.0.1:5000'
+    ];
+    
+    // Add current host to allowed origins
+    if (host.includes('replit.dev') || host.includes('dip.tc')) {
+      allowedOrigins.push(`https://${host}`, `http://${host}`);
+    }
+    
+    console.log(`🌐 CORS Check - Origin: ${origin}, Host: ${host}, Production: ${isProduction}`);
+    
+    if (allowedOrigins.includes(origin as string) || !origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+      console.log(`✅ CORS Allowed for origin: ${origin || 'no-origin'}`);
+    }
+    
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
+    
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  });
+
   setupAuth(app);
   
   // Account type switching endpoint
@@ -6773,6 +6811,53 @@ export function registerRoutes(app: Express): Server {
       console.error("Error updating SMS template:", error);
       res.status(500).json({ error: "Failed to update SMS template" });
     }
+  });
+
+  // Authentication debug endpoint for production troubleshooting
+  app.get('/api/auth/debug', (req: any, res) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const domain = req.get('host') || 'unknown';
+    const authStatus = req.isAuthenticated();
+    const sessionID = req.sessionID;
+    const cookies = req.headers.cookie;
+    const userAgent = req.get('User-Agent');
+    const origin = req.headers.origin;
+    
+    const debugInfo = {
+      environment: {
+        NODE_ENV: process.env.NODE_ENV || 'MISSING',
+        isProduction,
+        domain,
+        timestamp: new Date().toISOString()
+      },
+      authentication: {
+        isAuthenticated: authStatus,
+        sessionID: sessionID ? 'exists' : 'missing',
+        hasSession: !!req.session,
+        sessionKeys: req.session ? Object.keys(req.session) : [],
+        user: authStatus ? {
+          id: req.user?.id,
+          email: req.user?.email,
+          userType: req.user?.userType
+        } : null
+      },
+      request: {
+        origin,
+        userAgent: userAgent?.substring(0, 100),
+        hasCookies: !!cookies,
+        cookieCount: cookies ? cookies.split(';').length : 0
+      },
+      sessionConfig: {
+        cookieDomain: isProduction ? '.dip.tc' : 'undefined',
+        cookieSecure: isProduction,
+        cookieSameSite: isProduction ? 'none' : 'lax',
+        trustProxy: isProduction ? 'true' : '1'
+      }
+    };
+    
+    console.log(`🔍 [${domain}] Auth Debug Request - User: ${req.user?.email || 'not-authenticated'}, Production: ${isProduction}`);
+    
+    res.json(debugInfo);
   });
 
   return httpServer;

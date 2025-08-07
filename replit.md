@@ -14,6 +14,7 @@ This is a Turkish-English bilingual partner management system for DİP (Digital 
 - Template Management System: Comprehensive email/notification template management with dropdown-based selection and 26+ email templates including partner welcome, project lifecycle, payment confirmations, security alerts, and system maintenance notifications
 - Admin Interface Enhancement: Email templates removed from system-settings.tsx and consolidated into dedicated template-management.tsx page with header/footer integration
 - Password Reset URL Fix: Corrected password reset email links from /password-reset-html to /password-reset for proper Supabase authentication flow
+- Production Notification System Fix: Identified and resolved critical production issue where notifications were invisible due to missing NODE_ENV=production environment variable causing session authentication failures across cross-domain requests
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -41,6 +42,7 @@ Preferred communication style: Simple, everyday language.
 - **Supabase Integration**: Supabase Authentication for user account management, automated user creation during partner approval with password setup emails.
 - **Storage**: Scalable cloud storage for file uploads (logos, covers, documents, avatars) via Supabase Storage.
 - **Messaging**: Comprehensive real-time messaging system with WebSocket support, iMessage-style UI, auto-scroll, browser notifications, and LinkedIn-style chat popup.
+- **Production Debugging**: Advanced production troubleshooting tools with authentication debug endpoint, comprehensive CORS configuration, environment-aware session management, and database connection optimization for cross-domain compatibility.
 
 ### Database
 - **Primary Database**: PostgreSQL with Neon serverless driver.
