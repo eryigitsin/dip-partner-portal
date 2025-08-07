@@ -4986,7 +4986,7 @@ export function registerRoutes(app: Express): Server {
 
   // Register notification API routes
   (async () => {
-    const notificationModule = await import('./routes/notifications.js');
+    const notificationModule = await import('./routes/notifications');
     const notificationRoutes = notificationModule.default;
     app.use("/api/notifications", notificationRoutes);
   })();
