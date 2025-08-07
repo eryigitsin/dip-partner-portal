@@ -164,11 +164,12 @@ export function registerRoutes(app: Express): Server {
     const host = req.get('host') || '';
     const isProduction = process.env.NODE_ENV === 'production';
     
-    // Extended allowed origins for cross-domain compatibility
+    // Extended allowed origins for cross-domain compatibility (from attachment recommendation)
     const allowedOrigins = [
       'http://localhost:5000',
       'https://partner.dip.tc',
       'https://dip.tc',
+      'https://www.dip.tc',
       'http://localhost:3000',
       'http://127.0.0.1:5000'
     ];
@@ -188,6 +189,8 @@ export function registerRoutes(app: Express): Server {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
+    res.setHeader('Access-Control-Expose-Headers', 'set-cookie'); // For cookie visibility (from attachment)
+    res.setHeader('Vary', 'Origin');
     
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
@@ -197,6 +200,73 @@ export function registerRoutes(app: Express): Server {
   });
 
   setupAuth(app);
+
+  // Enhanced Authentication Middleware with better debugging
+  const isAuthenticatedWithDebug = (req: any, res: any, next: any) => {
+    const domain = req.get('host') || 'unknown';
+    const sessionExists = !!req.session;
+    const sessionID = req.sessionID;
+    const isAuth = req.isAuthenticated();
+    const cookies = req.cookies;
+    const user = req.user;
+    
+    console.log(`🔍 [${domain}] Auth Check - Authenticated: ${isAuth}, SessionID: ${sessionID ? 'exists' : 'missing'}, Cookies: ${cookies ? 'exists' : 'missing'}`);
+    
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      return next();
+    }
+    
+    // Fallback: Check manual session
+    if (req.session && req.session.passport && req.session.passport.user) {
+      console.log(`🔄 [${domain}] Fallback session auth successful`);
+      return next();
+    }
+    
+    // Debug info for failed authentication
+    console.log(`❌ [${domain}] Auth failed - Session: ${sessionExists}, Cookie keys: ${Object.keys(cookies || {})}`);
+    return res.status(401).json({ message: 'Unauthorized' });
+  };
+
+  // Debug endpoint for troubleshooting authentication (from attachment recommendation)
+  app.get('/api/debug/auth', (req: any, res) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const sessionData = {
+      environment: {
+        NODE_ENV: process.env.NODE_ENV || 'MISSING',
+        isProduction,
+        domain: req.get('host')
+      },
+      sessionConfig: {
+        cookieDomain: isProduction ? '.dip.tc' : 'undefined',
+        cookieSecure: isProduction,
+        cookieSameSite: isProduction ? 'none' : 'lax'
+      },
+      session: {
+        sessionExists: !!req.session,
+        sessionID: req.sessionID,
+        sessionCookie: req.session?.cookie,
+        passportSession: req.session?.passport
+      },
+      authentication: {
+        isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+        hasSession: !!req.session,
+        userId: req.session?.passport?.user || req.user?.id
+      },
+      cookies: {
+        cookieKeys: Object.keys(req.cookies || {}),
+        dipSession: req.cookies?.dip_session ? 'exists' : 'missing',
+        totalCookies: Object.keys(req.cookies || {}).length
+      },
+      user: req.user ? { 
+        id: req.user.id, 
+        email: req.user.email,
+        userType: req.user.userType 
+      } : null
+    };
+    
+    console.log('🐛 Debug Auth Request:', sessionData);
+    res.json(sessionData);
+  });
   
   // Account type switching endpoint
   app.post("/api/auth/switch-account-type", async (req, res) => {

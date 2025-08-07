@@ -1,0 +1,163 @@
+Ana Sorun
+Backend'inizde Express session cookie name ile browser'daki cookie name uyuşmuyor.
+📋 Çözüm Adımları
+1. Server Session Configuration Kontrolü
+server/index.ts veya server/app.ts dosyanızda şunu kontrol edin:
+typescript// server/index.ts
+import session from 'express-session';
+import { PrismaSessionStore } from '@quixo3/prisma-session-store';
+// veya PostgreSQL/Redis store kullanıyorsanız
+
+app.use(session({
+  name: 'dip_session', // ⚠️ KRİTİK - Browser'daki cookie adıyla aynı olmalı
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    domain: process.env.NODE_ENV === 'production' ? '.dip.tc' : undefined,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 gün
+  },
+  store: // your session store
+}));
+2. Authentication Middleware Düzeltmesi
+server/routes/notifications.ts dosyanızda:
+typescript// isAuthenticated fonksiyonunu kontrol edin
+const isAuthenticated = (req: any, res: Response, next: NextFunction) => {
+  console.log('Session:', req.session);
+  console.log('User:', req.user);
+  console.log('SessionID:', req.sessionID);
+  console.log('Cookies:', req.cookies);
+  
+  // Passport kullanıyorsanız
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  
+  // Manuel session kontrolü
+  if (req.session && req.session.userId) {
+    return next();
+  }
+  
+  // Cookie'den kontrol
+  if (req.cookies && req.cookies.dip_session) {
+    // Session store'dan manual lookup
+    // ...
+  }
+  
+  return res.status(401).json({ message: 'Unauthorized' });
+};
+3. Passport Deserialization Fix
+Eğer Passport.js kullanıyorsanız:
+typescript// server/auth/passport.ts veya benzer dosya
+passport.serializeUser((user: any, done) => {
+  console.log('Serializing user:', user.id);
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id: number, done) => {
+  try {
+    console.log('Deserializing user ID:', id);
+    const user = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    
+    if (user.length > 0) {
+      console.log('User found:', user[0].email);
+      done(null, user[0]);
+    } else {
+      console.log('User not found');
+      done(null, false);
+    }
+  } catch (error) {
+    console.error('Deserialization error:', error);
+    done(error, null);
+  }
+});
+4. CORS Configuration Update
+typescript// server/index.ts
+app.use(cors({
+  origin: [
+    'https://partner.dip.tc',
+    'https://dip.tc',
+    'https://www.dip.tc'
+  ],
+  credentials: true, // Cookie'ler için kritik
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  exposedHeaders: ['set-cookie']
+}));
+
+// Trust proxy - Nginx/CloudFlare arkasındaysanız
+app.set('trust proxy', 1);
+5. Frontend API Request Fix
+client/lib/queryClient.ts dosyanızda:
+typescriptexport async function apiRequest(method: string, url: string, body?: any) {
+  const response = await fetch(url, {
+    method,
+    credentials: 'include', // ⚠️ Cookie'leri gönder
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  
+  return response;
+}
+🔧 Hızlı Test Script
+Server'a bu debug endpoint'ini ekleyin:
+typescript// server/routes/debug.ts
+router.get('/api/debug/auth', (req: any, res) => {
+  const sessionData = {
+    sessionExists: !!req.session,
+    sessionID: req.sessionID,
+    sessionCookie: req.session?.cookie,
+    userId: req.session?.userId || req.user?.id,
+    isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+    cookies: Object.keys(req.cookies || {}),
+    dipSession: req.cookies?.dip_session ? 'exists' : 'missing',
+    user: req.user ? { id: req.user.id, email: req.user.email } : null
+  };
+  
+  console.log('Debug Auth:', sessionData);
+  res.json(sessionData);
+});
+🚀 Deployment Checklist
+
+Environment Variables (.env.production):
+
+envNODE_ENV=production
+SESSION_SECRET=strong-secret-key
+DATABASE_URL=postgresql://...
+COOKIE_DOMAIN=.dip.tc
+
+PM2 Config (ecosystem.config.js):
+
+javascriptmodule.exports = {
+  apps: [{
+    name: 'dip-partner-portal',
+    script: './dist/server/index.js',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3001
+    }
+  }]
+};
+
+Build & Deploy:
+
+bashnpm run build
+pm2 restart ecosystem.config.js --update-env
+pm2 logs dip-partner-portal --lines 100
+🎯 En Olası Sorun
+Browser'da dip_session cookie'si görünüyor ama backend bunu tanımıyor. Bu durumda:
+
+Session store (PostgreSQL/Redis) bağlantısını kontrol edin
+Session cookie name'ini dip_session olarak set edin
+Cookie parser middleware'ini doğru sırada ekleyin
+
+Test için browser console'da:
+javascriptfetch('https://partner.dip.tc/api/debug/auth', {
+  credentials: 'include'
+}).then(r => r.json()).then(console.log)
+Bu debug bilgisini paylaşırsanız kesin çözüme ulaşabiliriz!
