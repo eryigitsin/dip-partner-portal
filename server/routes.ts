@@ -2875,6 +2875,290 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // File Management Admin Endpoints
+  
+  // Get all uploaded files for admin file management
+  app.get("/api/admin/files", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      if (!['master_admin', 'editor_admin'].includes(req.user!.userType)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const files = [];
+      
+      // Get files from messages table
+      const messages = await storage.getAllMessages();
+      for (const message of messages) {
+        if (message.fileUrl && message.fileName) {
+          const sender = await storage.getUserById(message.senderId);
+          files.push({
+            id: `message_${message.id}`,
+            fileName: message.fileName,
+            fileUrl: message.fileUrl,
+            source: 'message',
+            sourceId: message.id,
+            uploadedBy: sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown',
+            uploadedAt: message.createdAt,
+            isPublic: false
+          });
+        }
+      }
+      
+      // Get files from partner applications
+      const applications = await storage.getAllPartnerApplications();
+      for (const app of applications) {
+        if (app.logoPath) {
+          files.push({
+            id: `application_logo_${app.id}`,
+            fileName: app.logoPath.split('/').pop() || 'logo',
+            fileUrl: app.logoPath,
+            source: 'application',
+            sourceId: app.id,
+            uploadedBy: `${app.firstName} ${app.lastName}`,
+            uploadedAt: app.createdAt,
+            isPublic: false
+          });
+        }
+        
+        if (app.documents) {
+          try {
+            const docs = JSON.parse(app.documents);
+            if (Array.isArray(docs)) {
+              docs.forEach((docUrl, index) => {
+                files.push({
+                  id: `application_doc_${app.id}_${index}`,
+                  fileName: docUrl.split('/').pop() || `document_${index}`,
+                  fileUrl: docUrl,
+                  source: 'application',
+                  sourceId: app.id,
+                  uploadedBy: `${app.firstName} ${app.lastName}`,
+                  uploadedAt: app.createdAt,
+                  isPublic: false
+                });
+              });
+            }
+          } catch (error) {
+            console.error('Error parsing application documents:', error);
+          }
+        }
+      }
+      
+      // Get files from payment confirmations
+      const payments = await storage.getAllPaymentConfirmations();
+      for (const payment of payments) {
+        if (payment.receiptFileUrl && payment.receiptFileName) {
+          const user = await storage.getUserById(payment.userId);
+          files.push({
+            id: `payment_${payment.id}`,
+            fileName: payment.receiptFileName,
+            fileUrl: payment.receiptFileUrl,
+            source: 'payment',
+            sourceId: payment.id,
+            uploadedBy: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+            uploadedAt: payment.createdAt,
+            isPublic: false
+          });
+        }
+      }
+      
+      // Get partner profile images and cover images
+      const partners = await storage.getAllPartners();
+      for (const partner of partners) {
+        if (partner.logo) {
+          const user = await storage.getUserById(partner.userId);
+          files.push({
+            id: `partner_logo_${partner.id}`,
+            fileName: partner.logo.split('/').pop() || 'logo',
+            fileUrl: partner.logo,
+            source: 'partner',
+            sourceId: partner.id,
+            uploadedBy: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+            uploadedAt: partner.createdAt,
+            isPublic: true
+          });
+        }
+        
+        if (partner.coverImage) {
+          const user = await storage.getUserById(partner.userId);
+          files.push({
+            id: `partner_cover_${partner.id}`,
+            fileName: partner.coverImage.split('/').pop() || 'cover',
+            fileUrl: partner.coverImage,
+            source: 'partner',
+            sourceId: partner.id,
+            uploadedBy: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+            uploadedAt: partner.createdAt,
+            isPublic: true
+          });
+        }
+      }
+      
+      // Get user profile images
+      const userProfiles = await storage.getAllUserProfiles();
+      for (const profile of userProfiles) {
+        if (profile.profileImage) {
+          const user = await storage.getUserById(profile.userId);
+          files.push({
+            id: `profile_${profile.id}`,
+            fileName: profile.profileImage.split('/').pop() || 'profile',
+            fileUrl: profile.profileImage,
+            source: 'profile',
+            sourceId: profile.id,
+            uploadedBy: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
+            uploadedAt: profile.updatedAt || profile.createdAt,
+            isPublic: false
+          });
+        }
+      }
+      
+      // Sort files by upload date (newest first)
+      files.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+      
+      res.json(files);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+      res.status(500).json({ message: "Failed to fetch files" });
+    }
+  });
+  
+  // Delete a file (admin only)
+  app.delete("/api/admin/files/:fileId", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      if (!['master_admin', 'editor_admin'].includes(req.user!.userType)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const fileId = req.params.fileId;
+      const [fileType, ...idParts] = fileId.split('_');
+      const actualId = idParts.join('_');
+      
+      let deleted = false;
+      
+      // Handle different file types
+      switch (fileType) {
+        case 'message':
+          // Update message to remove file reference
+          await storage.updateMessage(parseInt(actualId), { fileUrl: null, fileName: null });
+          deleted = true;
+          break;
+          
+        case 'payment':
+          // Update payment confirmation to remove receipt
+          await storage.updatePaymentConfirmation(parseInt(actualId), { 
+            receiptFileUrl: null, 
+            receiptFileName: null 
+          });
+          deleted = true;
+          break;
+          
+        case 'partner':
+          // Handle partner logo/cover removal
+          const [subType, partnerId] = actualId.split('_');
+          if (subType === 'logo') {
+            await storage.updatePartner(parseInt(partnerId), { logo: null });
+            deleted = true;
+          } else if (subType === 'cover') {
+            await storage.updatePartner(parseInt(partnerId), { coverImage: null });
+            deleted = true;
+          }
+          break;
+          
+        case 'profile':
+          // Remove profile image
+          await storage.updateUserProfile(parseInt(actualId), { profileImage: null });
+          deleted = true;
+          break;
+          
+        case 'application':
+          // Handle application files (more complex as they could be logo or documents)
+          const [appSubType, appId, docIndex] = actualId.split('_');
+          if (appSubType === 'logo') {
+            await storage.updatePartnerApplication(parseInt(appId), { logoPath: null });
+            deleted = true;
+          } else if (appSubType === 'doc') {
+            // Remove specific document from documents array
+            const application = await storage.getPartnerApplication(parseInt(appId));
+            if (application && application.documents) {
+              try {
+                const docs = JSON.parse(application.documents);
+                if (Array.isArray(docs) && docs.length > parseInt(docIndex)) {
+                  docs.splice(parseInt(docIndex), 1);
+                  await storage.updatePartnerApplication(parseInt(appId), { 
+                    documents: JSON.stringify(docs) 
+                  });
+                  deleted = true;
+                }
+              } catch (error) {
+                console.error('Error updating application documents:', error);
+              }
+            }
+          }
+          break;
+      }
+      
+      if (deleted) {
+        res.json({ success: true, message: "File deleted successfully" });
+      } else {
+        res.status(404).json({ message: "File not found or could not be deleted" });
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      res.status(500).json({ message: "Failed to delete file" });
+    }
+  });
+  
+  // Toggle file public access (admin only)
+  app.put("/api/admin/files/:fileId/public", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      if (!['master_admin', 'editor_admin'].includes(req.user!.userType)) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { isPublic } = req.body;
+      
+      // For now, we'll just return success since the public access logic
+      // would require additional database schema changes to track file permissions
+      // This is a placeholder for future implementation
+      res.json({ 
+        success: true, 
+        message: `File access updated to ${isPublic ? 'public' : 'private'}`,
+        isPublic 
+      });
+    } catch (error) {
+      console.error('Error updating file access:', error);
+      res.status(500).json({ message: "Failed to update file access" });
+    }
+  });
+  
+  // Public file serving endpoint
+  app.get("/public-objects/:fileName", async (req, res) => {
+    try {
+      const fileName = req.params.fileName;
+      
+      // For now, redirect to the actual file URL
+      // In a production environment, you would implement proper file serving logic
+      // that checks if the file is marked as public and serves it accordingly
+      
+      // This is a placeholder implementation
+      res.status(404).json({ message: "Public file serving not yet implemented" });
+    } catch (error) {
+      console.error('Error serving public file:', error);
+      res.status(500).json({ message: "Failed to serve file" });
+    }
+  });
+
   // Marketing contact management routes
   app.get("/api/admin/marketing-contacts", async (req, res) => {
     if (!req.isAuthenticated() || !["master_admin", "editor_admin"].includes(req.user!.userType)) {

@@ -389,6 +389,18 @@ export interface IStorage {
 
   // Notification methods
   createNotification(notification: InsertNotification): Promise<Notification>;
+
+  // File Management methods
+  getAllMessages(): Promise<Message[]>;
+  getAllPartnerApplications(): Promise<PartnerApplication[]>;
+  getAllPaymentConfirmations(): Promise<PaymentConfirmation[]>;
+  getAllPartners(): Promise<Partner[]>;
+  getAllUserProfiles(): Promise<UserProfile[]>;
+  updateMessage(id: number, updates: Partial<InsertMessage>): Promise<Message | undefined>;
+  updatePaymentConfirmation(id: number, updates: Partial<InsertPaymentConfirmation>): Promise<PaymentConfirmation | undefined>;
+  updateUserProfile(id: number, updates: Partial<InsertUserProfile>): Promise<UserProfile | undefined>;
+  getPartnerApplication(id: number): Promise<PartnerApplication | undefined>;
+  updatePartnerApplication(id: number, updates: Partial<InsertPartnerApplication>): Promise<PartnerApplication | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2928,6 +2940,36 @@ export class DatabaseStorage implements IStorage {
       .values(notification)
       .returning();
     return created;
+  }
+
+  // File Management methods (only the unique ones not already existing)
+  async getAllMessages(): Promise<Message[]> {
+    return await db.select().from(messages);
+  }
+
+  async getAllPartnerApplications(): Promise<PartnerApplication[]> {
+    return await db.select().from(partnerApplications);
+  }
+
+  async getAllPaymentConfirmations(): Promise<PaymentConfirmation[]> {
+    return await db.select().from(paymentConfirmations);
+  }
+
+  async getAllPartners(): Promise<Partner[]> {
+    return await db.select().from(partners);
+  }
+
+  async getAllUserProfiles(): Promise<UserProfile[]> {
+    return await db.select().from(userProfiles);
+  }
+
+  async updateMessage(id: number, updates: Partial<InsertMessage>): Promise<Message | undefined> {
+    const [updated] = await db
+      .update(messages)
+      .set(updates)
+      .where(eq(messages.id, id))
+      .returning();
+    return updated;
   }
 
   // Get notification service instance

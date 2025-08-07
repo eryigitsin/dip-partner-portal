@@ -29,6 +29,7 @@ import Statistics from "@/pages/statistics";
 import SystemStatus from "@/pages/system-status";
 import SystemSettings from "@/pages/system-settings";
 import TemplateManagement from "@/pages/template-management";
+import FileManagement from "@/pages/file-management";
 import EmailPreferences from "@/pages/email-preferences";
 import EmailSubscribers from "@/pages/admin/email-subscribers";
 import PartnerProfile from "@/pages/partner-profile";
@@ -109,6 +110,7 @@ function Router() {
       <ProtectedRoute path="/system-status" component={SystemStatus} />
       <ProtectedRoute path="/system-settings" component={SystemSettings} />
       <AdminProtectedRoute path="/template-management" component={TemplateManagement} />
+      <AdminProtectedRoute path="/file-management" component={FileManagement} />
       <ProtectedRoute path="/email-preferences" component={EmailPreferences} />
       <ProtectedRoute path="/email-subscribers" component={EmailSubscribers} />
       <AdminProtectedRoute path="/marketing-list" component={MarketingListPage} />

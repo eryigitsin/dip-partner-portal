@@ -368,6 +368,12 @@ export function Header() {
                           <span>Şablon Yönetimi</span>
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/file-management" className="flex items-center">
+                          <FileText className="mr-2 h-4 w-4" />
+                          <span>Dosya Yönetimi</span>
+                        </Link>
+                      </DropdownMenuItem>
                       
                       {showAccountTypeSwitching && (
                         <>
