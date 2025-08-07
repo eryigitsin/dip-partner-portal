@@ -145,7 +145,7 @@ export function ChatPopup() {
     const conversationId = `${Math.min(user.id, selectedConversation.partnerId)}-${Math.max(user.id, selectedConversation.partnerId)}`;
     
     sendMessage.mutate({
-      message: newMessage.trim() || (selectedFile ? 'Dosya gönderildi' : ''),
+      message: newMessage.trim() || '',
       conversationId: conversationId,
       recipientId: selectedConversation.partnerId,
       fileUrl: selectedFile?.fileUrl,
@@ -384,24 +384,49 @@ export function ChatPopup() {
                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
                                 } shadow-sm`}
                               >
-                                <p className="text-sm">{message.message}</p>
+                                {message.message && (
+                                  <p className="text-sm">{message.message}</p>
+                                )}
                                 
                                 {/* File attachment */}
                                 {message.fileUrl && message.fileName && (
-                                  <div className="mt-2 p-2 bg-white bg-opacity-20 rounded-md">
-                                    <div className="flex items-center gap-2">
-                                      <File className="w-4 h-4" />
-                                      <a 
-                                        href={message.fileUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-sm hover:underline flex-1 truncate"
-                                        data-testid="link-file-attachment"
-                                      >
-                                        {message.fileName}
-                                      </a>
-                                      <Download className="w-4 h-4" />
-                                    </div>
+                                  <div className="mt-2">
+                                    {(() => {
+                                      const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(message.fileName);
+                                      
+                                      if (isImage) {
+                                        return (
+                                          <div className="space-y-2">
+                                            <img 
+                                              src={message.fileUrl}
+                                              alt={message.fileName}
+                                              className="max-w-full max-h-48 rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                                              onClick={() => window.open(message.fileUrl, '_blank')}
+                                              data-testid="img-message-attachment"
+                                            />
+                                            <p className="text-xs opacity-75">{message.fileName}</p>
+                                          </div>
+                                        );
+                                      } else {
+                                        return (
+                                          <div className="p-2 bg-white bg-opacity-20 rounded-md">
+                                            <div className="flex items-center gap-2">
+                                              <File className="w-4 h-4" />
+                                              <a 
+                                                href={message.fileUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-sm hover:underline flex-1 truncate"
+                                                data-testid="link-file-attachment"
+                                              >
+                                                {message.fileName}
+                                              </a>
+                                              <Download className="w-4 h-4" />
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+                                    })()}
                                   </div>
                                 )}
                                 
