@@ -16,6 +16,7 @@ import { Partner } from '@shared/schema';
 import { AccountTypeSelector } from '@/components/account-type-selector';
 import { t } from '@/lib/i18n';
 import { Menu, X, User, Settings, MessageCircle, MessageSquare, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2, Bell } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
 import dipDarkLogo from '@assets/dip ince_1753361664425.png';
 import { NotificationsDropdown } from './NotificationsDropdown';
@@ -54,6 +55,12 @@ export function Header() {
     queryKey: ['/api/messages/unread-count'],
     enabled: !!user,
     refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Get user profile data for avatar
+  const { data: userProfile } = useQuery<any>({
+    queryKey: ['/api/user/profile'],
+    enabled: !!user,
   });
 
   // Check if user has multiple account types available - include current type + available types
@@ -174,6 +181,12 @@ export function Header() {
                         size="sm" 
                         className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
                       >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={userProfile?.profileImage || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {user.firstName.charAt(0).toUpperCase()}{user.lastName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <span className="hidden sm:inline">{user.firstName} {user.lastName}</span>
                         <span className="inline sm:hidden">{user.firstName}</span>
                         <ChevronDown className="h-4 w-4" />
@@ -231,6 +244,12 @@ export function Header() {
                         size="sm" 
                         className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
                       >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={userProfile?.profileImage || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {user.firstName.charAt(0).toUpperCase()}{user.lastName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <span className="hidden sm:inline">{user.firstName} {user.lastName}</span>
                         <span className="inline sm:hidden">{user.firstName}</span>
                         <ChevronDown className="h-4 w-4" />
@@ -288,6 +307,12 @@ export function Header() {
                         size="sm" 
                         className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
                       >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={userProfile?.profileImage || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {user.firstName.charAt(0).toUpperCase()}{user.lastName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         <span className="hidden sm:inline">{user.firstName} {user.lastName}</span>
                         <span className="inline sm:hidden">{user.firstName}</span>
                         <ChevronDown className="h-4 w-4" />
