@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { t } from '@/lib/i18n';
 import { MapPin, Mail, Phone } from 'lucide-react';
 import { FaLinkedin, FaInstagram, FaYoutube, FaTwitter } from 'react-icons/fa';
-import dipLogo from '@assets/dip-partner-logo_1754613891917.png';
+import dipLogo from '@assets/dip-beyaz-yan_1753976421318.png';
 
 export function Footer() {
   const { language, setLanguage } = useLanguage();
