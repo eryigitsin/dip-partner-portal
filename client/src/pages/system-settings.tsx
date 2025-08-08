@@ -204,6 +204,17 @@ export default function SystemSettings() {
       
       setMediaSettings({
         heroVideoUrl: systemConfig.heroVideoUrl || '',
+        heroBackgroundImage: systemConfig.seoSettings?.ogImage || '',
+        logoUrl: systemConfig.seoSettings?.ogImage || '',
+        faviconUrl: '',
+        logoWhiteUrl: '',
+        ogImageUrl: systemConfig.seoSettings?.ogImage || '',
+        twitterImageUrl: systemConfig.seoSettings?.twitterImage || '',
+        partnerLogosUrl: '',
+        sponsorLogosUrl: '',
+        defaultAvatarUrl: '',
+        defaultPartnerCoverUrl: '',
+        noImagePlaceholderUrl: '',
       });
     }
   }, [systemConfig]);
@@ -420,7 +431,15 @@ export default function SystemSettings() {
       const response = await fetch('/api/admin/system-config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ heroVideoUrl: mediaSettings.heroVideoUrl }),
+        body: JSON.stringify({
+          heroVideoUrl: mediaSettings.heroVideoUrl,
+          seoSettings: {
+            ...systemConfig?.seoSettings,
+            ogImage: mediaSettings.ogImageUrl,
+            twitterImage: mediaSettings.twitterImageUrl,
+          },
+          mediaSettings: mediaSettings,
+        }),
       });
       if (!response.ok) throw new Error('Failed to update media settings');
       return response.json();

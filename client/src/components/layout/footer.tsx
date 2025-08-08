@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { t } from '@/lib/i18n';
 import { MapPin, Mail, Phone } from 'lucide-react';
 import { FaLinkedin, FaInstagram, FaYoutube, FaTwitter } from 'react-icons/fa';
-import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
+import dipLogo from '@assets/dip-partner-logo_1754613891917.png';
 
 export function Footer() {
   const { language, setLanguage } = useLanguage();
@@ -24,7 +24,7 @@ export function Footer() {
           <div>
             <Link href="/" className="flex items-center mb-4">
               <img 
-                src={dipLightLogo} 
+                src={dipLogo} 
                 alt="DİP - Dijital İhracat Platformu" 
                 className="h-12 w-auto"
               />

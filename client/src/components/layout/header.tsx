@@ -17,8 +17,7 @@ import { AccountTypeSelector } from '@/components/account-type-selector';
 import { t } from '@/lib/i18n';
 import { Menu, X, User, Settings, MessageCircle, MessageSquare, FileText, LogOut, ChevronDown, MapPin, Mail, Phone, Shield, Users, BarChart3, Activity, Database, ArrowLeftRight, Building2, Bell } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import dipLightLogo from '@assets/dip-beyaz-yan_1753361664424.png';
-import dipDarkLogo from '@assets/dip ince_1753361664425.png';
+import dipLogo from '@assets/dip-partner-logo_1754613891917.png';
 import { NotificationsDropdown } from './NotificationsDropdown';
 
 export function Header() {
@@ -126,7 +125,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <img 
-              src={dipDarkLogo} 
+              src={dipLogo} 
               alt="DİP - Dijital İhracat Platformu" 
               className="h-12 w-auto"
             />
