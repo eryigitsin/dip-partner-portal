@@ -160,11 +160,23 @@ export const partnerPosts = pgTable("partner_posts", {
   imageUrl: text("image_url"),
   videoUrl: text("video_url"),
   isPublished: boolean("is_published").default(true),
-  likesCount: integer("likes_count").default(0),
+  upvotes: integer("upvotes").default(0),
+  downvotes: integer("downvotes").default(0),
+  likesCount: integer("likes_count").default(0), // Keep for backward compatibility
   commentsCount: integer("comments_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Post votes for Reddit-like upvote/downvote functionality
+export const postVotes = pgTable("post_votes", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").references(() => partnerPosts.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  vote: integer("vote").notNull(), // 1 for upvote, -1 for downvote
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [unique().on(table.postId, table.userId)]);
 
 // Service categories
 export const serviceCategories = pgTable("service_categories", {
@@ -1068,6 +1080,11 @@ export type ApplicationDocument = typeof applicationDocuments.$inferSelect;
 export type InsertApplicationDocument = z.infer<typeof insertApplicationDocumentSchema>;
 export type PartnerPost = typeof partnerPosts.$inferSelect;
 export type InsertPartnerPost = z.infer<typeof insertPartnerPostSchema>;
+
+// Post votes schema
+export const insertPostVoteSchema = createInsertSchema(postVotes).omit({ id: true, createdAt: true, updatedAt: true });
+export type PostVote = typeof postVotes.$inferSelect;
+export type InsertPostVote = z.infer<typeof insertPostVoteSchema>;
 export type EmailSubscriber = typeof emailSubscribers.$inferSelect;
 export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
 export type UserEmailPreferences = typeof userEmailPreferences.$inferSelect;

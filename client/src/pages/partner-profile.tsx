@@ -17,6 +17,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { QuoteRequestModal } from '@/components/modals/quote-request-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PostCreationDialog } from '@/components/post-creation-dialog';
+import { CompactPostCard } from '@/components/compact-post-card';
+import { StandalonePostCard } from '@/components/standalone-post-card';
 import { 
   MapPin, 
   Users, 
@@ -115,6 +118,7 @@ export default function PartnerProfile() {
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
+  const [isNewPostDialogOpen, setIsNewPostDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [postContent, setPostContent] = useState('');
   
