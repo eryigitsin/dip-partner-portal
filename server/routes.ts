@@ -1612,12 +1612,28 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Serve uploaded files
+  // Serve uploaded files (supports both public and private access)
   app.get("/objects/:objectPath(*)", async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      objectStorageService.downloadObject(objectFile, res);
+      
+      // Check if file is public by looking at metadata
+      const [metadata] = await objectFile.getMetadata();
+      const isPublic = metadata.metadata?.isPublic === 'true';
+      
+      // If file is public, serve it without authentication
+      if (isPublic) {
+        await objectStorageService.downloadObject(objectFile, res);
+        return;
+      }
+      
+      // For private files, require authentication
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required for private files" });
+      }
+      
+      await objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
       console.error("Error serving file:", error);
       return res.status(404).json({ error: "File not found" });
@@ -3150,112 +3166,57 @@ export function registerRoutes(app: Express): Server {
       }
 
       const fileId = req.params.fileId;
-      const [fileType, ...idParts] = fileId.split('_');
-      const actualId = idParts.join('_');
+      console.log('🗑️ Attempting to delete file with ID:', fileId);
       
       let deleted = false;
       
-      // Handle different file types
-      switch (fileType) {
-        case 'attached':
-          // Delete file from attached_assets folder
-          try {
-            const attachedAssetsPath = path.join(process.cwd(), 'attached_assets');
-            const filePath = path.join(attachedAssetsPath, actualId);
-            await fsPromises.unlink(filePath);
-            deleted = true;
-          } catch (error) {
-            console.error('Error deleting attached file:', error);
-          }
-          break;
-        
-        case 'public':
-        case 'private':
-          // Delete file from object storage
-          try {
-            const objectStorageService = new ObjectStorageService();
-            // For object storage files, the actualId contains the full object name with underscores
-            // Convert underscores back to slashes to get the original object path
-            const objectPath = actualId.replace(/_/g, '/');
-            
-            // Parse the full object path correctly
-            const { bucketName, objectName } = parseObjectPath(objectPath);
-            const bucket = objectStorageClient.bucket(bucketName);
-            const file = bucket.file(objectName);
-            await file.delete();
-            deleted = true;
-          } catch (error) {
-            console.error('Error deleting object storage file:', error);
-          }
-          break;
-          
-        case 'message':
-          // Update message to remove file reference
-          await storage.updateMessage(parseInt(actualId), { fileUrl: null, fileName: null });
+      // Parse file ID more carefully
+      if (fileId.startsWith('attached_')) {
+        // Handle attached files
+        const fileName = fileId.replace('attached_', '');
+        try {
+          const attachedAssetsPath = path.join(process.cwd(), 'attached_assets');
+          const filePath = path.join(attachedAssetsPath, fileName);
+          await fsPromises.unlink(filePath);
           deleted = true;
-          break;
+          console.log('✅ Deleted attached file:', fileName);
+        } catch (error) {
+          console.error('❌ Error deleting attached file:', error);
+        }
+      } else if (fileId.startsWith('public_') || fileId.startsWith('private_')) {
+        // Handle object storage files
+        try {
+          const objectStorageService = new ObjectStorageService();
+          // Extract the object name part after the prefix
+          const objectNameWithUnderscores = fileId.replace(/^(public|private)_/, '');
+          // Convert underscores back to slashes to get the original object path
+          const objectPath = '/' + objectNameWithUnderscores.replace(/_/g, '/');
           
-        case 'payment':
-          // Update payment confirmation to remove receipt
-          await storage.updatePaymentConfirmation(parseInt(actualId), { 
-            receiptFileUrl: null, 
-            receiptFileName: null 
-          });
+          console.log('🔍 Parsed object path:', objectPath);
+          
+          // Parse the full object path correctly
+          const { bucketName, objectName } = parseObjectPath(objectPath);
+          console.log('🪣 Bucket:', bucketName, 'Object:', objectName);
+          
+          const bucket = objectStorageClient.bucket(bucketName);
+          const file = bucket.file(objectName);
+          await file.delete();
           deleted = true;
-          break;
-          
-        case 'partner':
-          // Handle partner logo/cover removal
-          const [subType, partnerId] = actualId.split('_');
-          if (subType === 'logo') {
-            await storage.updatePartner(parseInt(partnerId), { logo: null });
-            deleted = true;
-          } else if (subType === 'cover') {
-            await storage.updatePartner(parseInt(partnerId), { coverImage: null });
-            deleted = true;
-          }
-          break;
-          
-        case 'profile':
-          // Remove profile image
-          await storage.updateUserProfile(parseInt(actualId), { profileImage: null });
-          deleted = true;
-          break;
-          
-        case 'application':
-          // Handle application files (more complex as they could be logo or documents)
-          const [appSubType, appId, docIndex] = actualId.split('_');
-          if (appSubType === 'logo') {
-            await storage.updatePartnerApplication(parseInt(appId), { logoPath: null });
-            deleted = true;
-          } else if (appSubType === 'doc') {
-            // Remove specific document from documents array
-            const application = await storage.getPartnerApplication(parseInt(appId));
-            if (application && application.documents) {
-              try {
-                const docs = JSON.parse(application.documents);
-                if (Array.isArray(docs) && docs.length > parseInt(docIndex)) {
-                  docs.splice(parseInt(docIndex), 1);
-                  await storage.updatePartnerApplication(parseInt(appId), { 
-                    documents: JSON.stringify(docs) 
-                  });
-                  deleted = true;
-                }
-              } catch (error) {
-                console.error('Error updating application documents:', error);
-              }
-            }
-          }
-          break;
+          console.log('✅ Deleted object storage file:', objectName);
+        } catch (error) {
+          console.error('❌ Error deleting object storage file:', error);
+        }
+      } else {
+        console.error('❌ Unknown file ID format:', fileId);
       }
       
       if (deleted) {
-        res.json({ success: true, message: "File deleted successfully" });
+        res.json({ message: "File deleted successfully" });
       } else {
-        res.status(404).json({ message: "File not found or could not be deleted" });
+        res.status(404).json({ error: "File not found or could not be deleted" });
       }
     } catch (error) {
-      console.error('Error deleting file:', error);
+      console.error("Error deleting file:", error);
       res.status(500).json({ message: "Failed to delete file" });
     }
   });
@@ -3295,12 +3256,52 @@ export function registerRoutes(app: Express): Server {
         });
         
         if (uploadResponse.ok) {
+          // Get the object path from the upload URL and set metadata
+          const url = new URL(uploadURL);
+          const bucketName = url.pathname.split('/')[1];
+          const objectName = url.pathname.split('/').slice(2).join('/');
+          
+          // Set metadata including public status and permissions
+          try {
+            const bucket = objectStorageClient.bucket(bucketName);
+            const fileObject = bucket.file(objectName);
+            
+            // Set isPublic metadata
+            await fileObject.setMetadata({
+              metadata: {
+                isPublic: (makePublic === 'true').toString(),
+                uploadedBy: req.user?.email || 'Admin',
+                uploadedAt: new Date().toISOString()
+              }
+            });
+            
+            // Set file permissions to 755 equivalent (public read if public, private if not)
+            if (makePublic === 'true') {
+              try {
+                await fileObject.makePublic();
+                console.log('✅ Set file as public with 755-like permissions');
+              } catch (permError) {
+                console.error('⚠️ Could not set public permissions:', permError);
+              }
+            } else {
+              try {
+                await fileObject.makePrivate();
+                console.log('✅ Set file as private');
+              } catch (permError) {
+                console.error('⚠️ Could not set private permissions:', permError);
+              }
+            }
+            
+          } catch (metadataError) {
+            console.error('Error setting file metadata:', metadataError);
+          }
+          
           // Get normalized object path from upload URL
           const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
           
           res.json({
             success: true,
-            message: "File uploaded successfully",
+            message: "File uploaded successfully with proper permissions",
             file: {
               url: objectPath,
               fileName: file.originalname,
@@ -3338,23 +3339,51 @@ export function registerRoutes(app: Express): Server {
 
       const { isPublic } = req.body;
       const fileId = req.params.fileId;
-      const [fileType] = fileId.split('_');
       
-      // Only handle object storage files for now
-      if (fileType === 'public' || fileType === 'private') {
+      console.log('🔄 Toggling public status for file:', fileId, 'to:', isPublic);
+      
+      // Handle different file types based on prefix
+      if (fileId.startsWith('private_')) {
         try {
-          const objectStorageService = new ObjectStorageService();
-          // For object storage files, we would need to move them between buckets
-          // or update ACL policies. This is a simplified implementation.
-          res.json({ 
-            success: true, 
-            message: `File access updated to ${isPublic ? 'public' : 'private'}`,
-            isPublic,
-            note: "ACL update functionality requires additional implementation" 
+          // For object storage files
+          const objectNameWithUnderscores = fileId.replace('private_', '');
+          const objectPath = '/' + objectNameWithUnderscores.replace(/_/g, '/');
+          
+          console.log('🔍 Parsed object path for metadata update:', objectPath);
+          
+          const { bucketName, objectName } = parseObjectPath(objectPath);
+          const bucket = objectStorageClient.bucket(bucketName);
+          const file = bucket.file(objectName);
+          
+          // Set isPublic metadata and file permissions
+          await file.setMetadata({
+            metadata: {
+              isPublic: isPublic.toString()
+            }
           });
+          
+          // Set file permissions to 755 equivalent (public read if public, private if not)
+          if (isPublic) {
+            try {
+              await file.makePublic();
+              console.log('✅ Made file public with 755-like permissions');
+            } catch (permError) {
+              console.error('⚠️ Could not set public permissions:', permError);
+            }
+          } else {
+            try {
+              await file.makePrivate();
+              console.log('✅ Made file private');
+            } catch (permError) {
+              console.error('⚠️ Could not set private permissions:', permError);
+            }
+          }
+          
+          console.log('✅ Updated file metadata and permissions');
+          res.json({ success: true, isPublic });
         } catch (error) {
-          console.error('Error updating object storage ACL:', error);
-          res.status(500).json({ message: "Failed to update file access" });
+          console.error('❌ Error toggling file public status:', error);
+          res.status(500).json({ error: 'Failed to update file access' });
         }
       } else {
         // For database-referenced files, just return success as they don't have ACL
