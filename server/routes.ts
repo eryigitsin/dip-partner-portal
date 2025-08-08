@@ -2986,12 +2986,12 @@ export function registerRoutes(app: Express): Server {
               id: `private_${file.name.replace(/\//g, '_')}`,
               fileName: path.basename(file.name),
               fileUrl: `/objects/${relativePath}`,
-              fileSize: parseInt(metadata.size || '0'),
+              fileSize: parseInt(metadata.size?.toString() || '0', 10),
               mimeType: metadata.contentType,
               source: 'object_storage_private',
               sourceId: 0,
               uploadedBy: 'User',
-              uploadedAt: metadata.timeCreated,
+              uploadedAt: metadata.timeCreated || new Date().toISOString(),
               isPublic: false,
               objectPath: file.name
             });
@@ -3129,7 +3129,7 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Sort files by upload date (newest first)
-      files.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+      files.sort((a, b) => new Date(b.uploadedAt || 0).getTime() - new Date(a.uploadedAt || 0).getTime());
       
       res.json(files);
     } catch (error) {
@@ -3174,9 +3174,12 @@ export function registerRoutes(app: Express): Server {
           // Delete file from object storage
           try {
             const objectStorageService = new ObjectStorageService();
-            // Parse the actualId to get the object path
+            // For object storage files, the actualId contains the full object name with underscores
+            // Convert underscores back to slashes to get the original object path
             const objectPath = actualId.replace(/_/g, '/');
-            const { bucketName, objectName } = parseObjectPath('/' + objectPath);
+            
+            // Parse the full object path correctly
+            const { bucketName, objectName } = parseObjectPath(objectPath);
             const bucket = objectStorageClient.bucket(bucketName);
             const file = bucket.file(objectName);
             await file.delete();
@@ -3276,15 +3279,30 @@ export function registerRoutes(app: Express): Server {
       const { makePublic } = req.body;
       
       try {
-        // Upload to Supabase storage
-        const uploadResult = await supabaseStorage.uploadPartnerDocument(file, 'admin-' + Date.now());
+        // Upload to Object Storage instead of Supabase
+        const objectStorageService = new ObjectStorageService();
         
-        if (uploadResult.success && uploadResult.url) {
+        // Generate upload URL
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        
+        // Upload file to object storage
+        const uploadResponse = await fetch(uploadURL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.mimetype,
+          },
+          body: file.buffer,
+        });
+        
+        if (uploadResponse.ok) {
+          // Get normalized object path from upload URL
+          const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+          
           res.json({
             success: true,
             message: "File uploaded successfully",
             file: {
-              url: uploadResult.url,
+              url: objectPath,
               fileName: file.originalname,
               size: file.size,
               mimeType: file.mimetype,
@@ -3294,7 +3312,7 @@ export function registerRoutes(app: Express): Server {
         } else {
           res.status(500).json({ 
             message: "Upload failed", 
-            error: uploadResult.error 
+            error: `Upload returned status ${uploadResponse.status}` 
           });
         }
       } catch (uploadError) {
