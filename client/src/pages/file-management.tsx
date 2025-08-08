@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
   FileText, 
@@ -52,6 +53,8 @@ export default function FileManagement() {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [makePublic, setMakePublic] = useState(false);
+  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch all uploaded files
@@ -148,9 +151,53 @@ export default function FileManagement() {
   }) || [];
 
   const getFileIcon = (mimeType?: string) => {
-    if (mimeType?.startsWith('image/')) return <Image className="h-4 w-4" />;
-    if (mimeType?.startsWith('video/')) return <Video className="h-4 w-4" />;
-    return <FileText className="h-4 w-4" />;
+    if (mimeType?.startsWith('image/')) return <Image className="h-3 w-3" />;
+    if (mimeType?.startsWith('video/')) return <Video className="h-3 w-3" />;
+    return <FileText className="h-3 w-3" />;
+  };
+
+  const openPreview = (file: UploadedFile) => {
+    setPreviewFile(file);
+    setShowPreviewDialog(true);
+  };
+
+  const renderFilePreview = (file: UploadedFile, isHover = false) => {
+    const maxSize = isHover ? 'max-w-64 max-h-48' : 'max-w-2xl max-h-96';
+    
+    if (file.mimeType?.startsWith('image/')) {
+      return (
+        <img 
+          src={file.fileUrl} 
+          alt={file.fileName}
+          className={`${maxSize} object-contain rounded`}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      );
+    }
+    
+    if (file.mimeType?.startsWith('video/')) {
+      return (
+        <video 
+          src={file.fileUrl}
+          controls={!isHover}
+          muted
+          className={`${maxSize} rounded`}
+          style={{ maxHeight: isHover ? '120px' : '300px' }}
+        />
+      );
+    }
+    
+    // For other file types, show basic info
+    return (
+      <div className={`${maxSize} p-4 bg-gray-50 rounded-lg flex flex-col items-center justify-center text-center`}>
+        {getFileIcon(file.mimeType)}
+        <p className="text-sm font-medium mt-2">{file.fileName}</p>
+        <p className="text-xs text-gray-500">{formatFileSize(file.fileSize)}</p>
+        <p className="text-xs text-gray-400 mt-1">{getSourceLabel(file.source)}</p>
+      </div>
+    );
   };
 
   const formatFileSize = (bytes?: number) => {
@@ -250,19 +297,19 @@ export default function FileManagement() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between text-lg">
                 <span>Yüklenmiş Dosyalar ({filteredFiles.length})</span>
                 <Button
                   onClick={() => refetch()}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 h-8 text-sm"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="h-3 w-3" />
                   Yenile
                 </Button>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Tüm dosya yüklemeleri ve dosya paylaşım URL'leri
               </CardDescription>
             </CardHeader>
@@ -270,23 +317,23 @@ export default function FileManagement() {
               {/* Upload and Filters */}
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="flex-1">
-                  <Label htmlFor="search">Dosya Ara</Label>
+                  <Label htmlFor="search" className="text-sm">Dosya Ara</Label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-2.5 h-3 w-3 text-gray-400" />
                     <Input
                       id="search"
                       type="text"
                       placeholder="Dosya adı ara..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-9 h-8 text-sm"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="fileType">Dosya Türü</Label>
+                  <Label htmlFor="fileType" className="text-sm">Dosya Türü</Label>
                   <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-[130px] h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -298,9 +345,9 @@ export default function FileManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="source">Kaynak</Label>
+                  <Label htmlFor="source" className="text-sm">Kaynak</Label>
                   <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-[130px] h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -316,8 +363,8 @@ export default function FileManagement() {
                 <div className="self-end">
                   <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
                     <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
+                      <Button className="flex items-center gap-2 h-8 text-sm">
+                        <Upload className="h-3 w-3" />
                         Dosya Yükle
                       </Button>
                     </DialogTrigger>
@@ -382,19 +429,19 @@ export default function FileManagement() {
               <div className="border rounded-lg">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Dosya</TableHead>
-                      <TableHead>Boyut</TableHead>
-                      <TableHead>Kaynak</TableHead>
-                      <TableHead>Yükleme Tarihi</TableHead>
-                      <TableHead>Erişim</TableHead>
-                      <TableHead>İşlemler</TableHead>
+                    <TableRow className="h-10">
+                      <TableHead className="text-xs font-semibold">Dosya</TableHead>
+                      <TableHead className="text-xs font-semibold">Boyut</TableHead>
+                      <TableHead className="text-xs font-semibold">Kaynak</TableHead>
+                      <TableHead className="text-xs font-semibold">Yükleme Tarihi</TableHead>
+                      <TableHead className="text-xs font-semibold">Erişim</TableHead>
+                      <TableHead className="text-xs font-semibold">İşlemler</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredFiles.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={6} className="text-center py-6 text-gray-500 text-sm">
                           {searchTerm || fileTypeFilter !== 'all' || sourceFilter !== 'all' 
                             ? 'Filtrelere uygun dosya bulunamadı.' 
                             : 'Henüz dosya yüklenmemiş.'}
@@ -402,27 +449,36 @@ export default function FileManagement() {
                       </TableRow>
                     ) : (
                       filteredFiles.map((file) => (
-                        <TableRow key={file.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
+                        <TableRow key={file.id} className="h-12">
+                          <TableCell className="py-2">
+                            <div className="flex items-center gap-2">
                               {getFileIcon(file.mimeType)}
                               <div>
-                                <div className="font-medium">{file.fileName}</div>
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <div className="font-medium text-sm cursor-pointer hover:text-blue-600 transition-colors">
+                                      {file.fileName}
+                                    </div>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-auto p-2">
+                                    {renderFilePreview(file, true)}
+                                  </HoverCardContent>
+                                </HoverCard>
                                 {file.uploadedBy && (
-                                  <div className="text-sm text-gray-500">
+                                  <div className="text-xs text-gray-500">
                                     Yükleyen: {file.uploadedBy}
                                   </div>
                                 )}
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>{formatFileSize(file.fileSize)}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
+                          <TableCell className="py-2 text-sm">{formatFileSize(file.fileSize)}</TableCell>
+                          <TableCell className="py-2">
+                            <Badge variant="outline" className="text-xs">
                               {getSourceLabel(file.source)}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-2 text-sm">
                             {new Date(file.uploadedAt).toLocaleDateString('tr-TR', {
                               year: 'numeric',
                               month: 'short',
@@ -431,9 +487,9 @@ export default function FileManagement() {
                               minute: '2-digit'
                             })}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-2">
                             <div className="flex items-center gap-2">
-                              <Badge variant={file.isPublic ? 'default' : 'secondary'}>
+                              <Badge variant={file.isPublic ? 'default' : 'secondary'} className="text-xs">
                                 {file.isPublic ? 'Herkese Açık' : 'Gizli'}
                               </Badge>
                               <Button
@@ -443,21 +499,23 @@ export default function FileManagement() {
                                 })}
                                 variant="ghost"
                                 size="sm"
+                                className="h-7 text-xs px-2"
                                 disabled={togglePublicMutation.isPending}
                               >
                                 {file.isPublic ? 'Gizle' : 'Herkese Aç'}
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+                          <TableCell className="py-2">
+                            <div className="flex items-center gap-1">
                               <Button
-                                onClick={() => window.open(file.fileUrl, '_blank')}
+                                onClick={() => openPreview(file)}
                                 variant="ghost"
                                 size="sm"
+                                className="h-7 w-7 p-0"
                                 data-testid={`button-view-${file.id}`}
                               >
-                                <Eye className="h-4 w-4" />
+                                <Eye className="h-3 w-3" />
                               </Button>
                               <Button
                                 onClick={() => {
@@ -470,27 +528,28 @@ export default function FileManagement() {
                                 }}
                                 variant="ghost"
                                 size="sm"
+                                className="h-7 w-7 p-0"
                                 data-testid={`button-copy-${file.id}`}
                               >
-                                <Copy className="h-4 w-4" />
+                                <Copy className="h-3 w-3" />
                               </Button>
                               <a
                                 href={file.fileUrl}
                                 download={file.fileName}
-                                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9"
+                                className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-7 w-7"
                                 data-testid={`button-download-${file.id}`}
                               >
-                                <Download className="h-4 w-4" />
+                                <Download className="h-3 w-3" />
                               </a>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-red-600 hover:text-red-700"
+                                    className="text-red-600 hover:text-red-700 h-7 w-7 p-0"
                                     data-testid={`button-delete-${file.id}`}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
@@ -525,6 +584,56 @@ export default function FileManagement() {
           </Card>
         </div>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {previewFile && getFileIcon(previewFile.mimeType)}
+              <span>{previewFile?.fileName}</span>
+            </DialogTitle>
+            <DialogDescription>
+              {previewFile && (
+                <div className="flex gap-4 text-sm">
+                  <span>Boyut: {formatFileSize(previewFile.fileSize)}</span>
+                  <span>Kaynak: {getSourceLabel(previewFile.source)}</span>
+                  <span>Erişim: {previewFile.isPublic ? 'Herkese Açık' : 'Gizli'}</span>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center items-center min-h-64">
+            {previewFile && renderFilePreview(previewFile)}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => previewFile && window.open(previewFile.fileUrl, '_blank')}
+            >
+              Yeni Sekmede Aç
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (previewFile) {
+                  const url = generateShareableUrl(previewFile);
+                  navigator.clipboard.writeText(url);
+                  toast({
+                    title: 'Kopyalandı',
+                    description: 'Dosya URL\'si panoya kopyalandı.',
+                  });
+                }
+              }}
+            >
+              URL Kopyala
+            </Button>
+            <Button onClick={() => setShowPreviewDialog(false)}>
+              Kapat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
