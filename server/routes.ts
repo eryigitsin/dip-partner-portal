@@ -3899,7 +3899,7 @@ export function registerRoutes(app: Express): Server {
                 console.log(`Creating notification for user ${user.id} (${user.email}): ${personalizedTitle}`);
                 
                 await notificationService.createNotification({
-                  userId: user.id,
+                  userId: user.id.toString(),
                   type: 'campaign',
                   title: personalizedTitle,
                   message: personalizedContent,
@@ -4358,7 +4358,7 @@ export function registerRoutes(app: Express): Server {
 
         // Create a test notification for the current user
         await storage.createNotification({
-          userId: user!.id,
+          userId: user!.id.toString(),
           title: `[TEST] ${testTitle}`,
           message: testContent,
           type: 'test',
