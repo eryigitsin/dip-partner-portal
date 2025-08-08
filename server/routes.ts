@@ -19,7 +19,8 @@ import { supabaseAdmin } from "./supabase";
 import { db } from "./db";
 import { quoteResponses, partners, notifications } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { ObjectStorageService, objectStorageClient } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
+import { ObjectPermission } from "./objectAcl";
 import { promises as fsPromises } from "fs";
 
 // Helper function to parse object path
@@ -1599,44 +1600,73 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Objects upload route for profile photos
-  app.post("/api/objects/upload", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+  // The endpoint for getting the upload URL for an object entity.
+  app.post("/api/objects/upload", isAuthenticatedWithDebug, async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+    res.json({ uploadURL });
+  });
+
+  // Example endpoint for setting ACL policy after file upload (profile image example)
+  app.put("/api/objects/set-acl", isAuthenticatedWithDebug, async (req: any, res) => {
+    if (!req.body.objectURL) {
+      return res.status(400).json({ error: "objectURL is required" });
+    }
+
+    // Gets the authenticated user id.
+    const userId = req.user?.id;
+
     try {
       const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.objectURL,
+        {
+          owner: userId,
+          // Visibility should be determined by the actual use case.
+          // - public: the uploaded object belongs to the user but accessible by everyone.
+          //   example: user profile image, company logo.
+          // - private: the uploaded object is strictly protected and can only be accessed by the users
+          //   with the ACL rule group. Example: user's personal documents, private files.
+          visibility: req.body.visibility || "public",
+          // Specify ACL rules if any.
+          aclRules: req.body.aclRules || [],
+        },
+      );
+
+      res.status(200).json({
+        objectPath: objectPath,
+        message: "ACL policy set successfully"
+      });
     } catch (error) {
-      console.error("Error getting upload URL:", error);
-      res.status(500).json({ error: "Failed to get upload URL" });
+      console.error("Error setting ACL policy:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  // Serve uploaded files (supports both public and private access)
-  app.get("/objects/:objectPath(*)", async (req, res) => {
+  // Serve private objects with proper ACL checks
+  app.get("/objects/:objectPath(*)", isAuthenticatedWithDebug, async (req: any, res) => {
+    // Gets the authenticated user id.
+    const userId = req.user?.id;
+    const objectStorageService = new ObjectStorageService();
     try {
-      const objectStorageService = new ObjectStorageService();
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      
-      // Check if file is public by looking at metadata
-      const [metadata] = await objectFile.getMetadata();
-      const isPublic = metadata.metadata?.isPublic === 'true';
-      
-      // If file is public, serve it without authentication
-      if (isPublic) {
-        await objectStorageService.downloadObject(objectFile, res);
-        return;
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      const canAccess = await objectStorageService.canAccessObjectEntity({
+        objectFile,
+        userId: userId,
+        requestedPermission: ObjectPermission.READ,
+      });
+      if (!canAccess) {
+        return res.sendStatus(401);
       }
-      
-      // For private files, require authentication
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required for private files" });
-      }
-      
-      await objectStorageService.downloadObject(objectFile, res);
+      objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
-      console.error("Error serving file:", error);
-      return res.status(404).json({ error: "File not found" });
+      console.error("Error checking object access:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
@@ -3158,17 +3188,26 @@ export function registerRoutes(app: Express): Server {
   app.delete("/api/admin/files/:fileId", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
+        console.log('❌ File deletion failed: User not authenticated');
+        return res.status(401).json({ 
+          message: "Authentication required",
+          details: "You must be logged in to delete files"
+        });
       }
       
       if (!['master_admin', 'editor_admin'].includes(req.user!.userType)) {
-        return res.status(403).json({ message: "Admin access required" });
+        console.log(`❌ File deletion failed: User ${req.user?.email} is not admin (type: ${req.user?.userType})`);
+        return res.status(403).json({ 
+          message: "Admin access required",
+          details: "Only admin users can delete files"
+        });
       }
 
       const fileId = req.params.fileId;
-      console.log('🗑️ Attempting to delete file with ID:', fileId);
+      console.log(`🗑️ [${req.user?.email}] Attempting to delete file with ID: ${fileId}`);
       
       let deleted = false;
+      let errorDetails = '';
       
       // Parse file ID more carefully
       if (fileId.startsWith('attached_')) {
@@ -3177,11 +3216,19 @@ export function registerRoutes(app: Express): Server {
         try {
           const attachedAssetsPath = path.join(process.cwd(), 'attached_assets');
           const filePath = path.join(attachedAssetsPath, fileName);
-          await fsPromises.unlink(filePath);
-          deleted = true;
-          console.log('✅ Deleted attached file:', fileName);
-        } catch (error) {
-          console.error('❌ Error deleting attached file:', error);
+          
+          // Check if file exists first
+          const stats = await fsPromises.stat(filePath);
+          if (!stats.isFile()) {
+            errorDetails = `Path exists but is not a file: ${fileName}`;
+          } else {
+            await fsPromises.unlink(filePath);
+            deleted = true;
+            console.log(`✅ [${req.user?.email}] Deleted attached file: ${fileName}`);
+          }
+        } catch (error: any) {
+          console.error(`❌ [${req.user?.email}] Error deleting attached file:`, error);
+          errorDetails = `Attached file error: ${error.message}`;
         }
       } else if (fileId.startsWith('public_') || fileId.startsWith('private_')) {
         // Handle object storage files
@@ -3192,28 +3239,44 @@ export function registerRoutes(app: Express): Server {
           // Convert underscores back to slashes to get the original object path
           const objectPath = '/' + objectNameWithUnderscores.replace(/_/g, '/');
           
-          console.log('🔍 Parsed object path:', objectPath);
+          console.log(`🔍 [${req.user?.email}] Parsed object path: ${objectPath}`);
           
           // Parse the full object path correctly
           const { bucketName, objectName } = parseObjectPath(objectPath);
-          console.log('🪣 Bucket:', bucketName, 'Object:', objectName);
+          console.log(`🪣 [${req.user?.email}] Bucket: ${bucketName}, Object: ${objectName}`);
           
           const bucket = objectStorageClient.bucket(bucketName);
           const file = bucket.file(objectName);
-          await file.delete();
-          deleted = true;
-          console.log('✅ Deleted object storage file:', objectName);
-        } catch (error) {
-          console.error('❌ Error deleting object storage file:', error);
+          
+          // Check if file exists first
+          const [exists] = await file.exists();
+          if (!exists) {
+            errorDetails = `Object storage file does not exist: ${objectName}`;
+          } else {
+            await file.delete();
+            deleted = true;
+            console.log(`✅ [${req.user?.email}] Deleted object storage file: ${objectName}`);
+          }
+        } catch (error: any) {
+          console.error(`❌ [${req.user?.email}] Error deleting object storage file:`, error);
+          errorDetails = `Object storage error: ${error.message}`;
         }
       } else {
-        console.error('❌ Unknown file ID format:', fileId);
+        console.error(`❌ [${req.user?.email}] Unknown file ID format: ${fileId}`);
+        errorDetails = `Unknown file ID format. Expected: attached_*, public_*, or private_*, got: ${fileId}`;
       }
       
       if (deleted) {
-        res.json({ message: "File deleted successfully" });
+        res.json({ 
+          message: "File deleted successfully",
+          fileId: fileId
+        });
       } else {
-        res.status(404).json({ error: "File not found or could not be deleted" });
+        res.status(404).json({ 
+          error: "File not found or could not be deleted",
+          details: errorDetails,
+          fileId: fileId
+        });
       }
     } catch (error) {
       console.error("Error deleting file:", error);
@@ -3399,11 +3462,35 @@ export function registerRoutes(app: Express): Server {
     }
   });
   
-  // Public file serving endpoint
-  app.get("/public-objects/:fileName", async (req, res) => {
+  // This endpoint is used to serve public assets.
+  app.get("/public-objects/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error searching for public object:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Fallback for attached assets (backward compatibility)
+  app.get("/public-objects-fallback/:fileName", async (req, res) => {
     try {
       const fileName = req.params.fileName;
       const objectStorageService = new ObjectStorageService();
+      
+      // Set public headers (NO AUTH REQUIRED)
+      res.set({
+        'Cache-Control': 'public, max-age=31536000', // 1 year cache
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      });
       
       // Try to find the file in public object storage buckets
       const file = await objectStorageService.searchPublicObject(fileName);
@@ -3419,11 +3506,34 @@ export function registerRoutes(app: Express): Server {
           const stats = await fsPromises.stat(filePath);
           
           if (stats.isFile()) {
+            // Determine content type based on file extension
+            const ext = path.extname(fileName).toLowerCase();
+            const contentTypes: { [key: string]: string } = {
+              '.jpg': 'image/jpeg',
+              '.jpeg': 'image/jpeg', 
+              '.png': 'image/png',
+              '.gif': 'image/gif',
+              '.svg': 'image/svg+xml',
+              '.pdf': 'application/pdf',
+              '.txt': 'text/plain',
+              '.html': 'text/html',
+              '.css': 'text/css',
+              '.js': 'application/javascript',
+              '.json': 'application/json',
+              '.mp4': 'video/mp4',
+              '.mov': 'video/quicktime',
+              '.webm': 'video/webm'
+            };
+            
+            const contentType = contentTypes[ext] || 'application/octet-stream';
+            res.set('Content-Type', contentType);
+            
             res.sendFile(filePath);
             return;
           }
         } catch (attachedError) {
           // File not found in attached_assets either
+          console.log(`📁 File not found in attached_assets: ${fileName}`);
         }
         
         res.status(404).json({ message: "File not found" });
