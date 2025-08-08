@@ -61,8 +61,9 @@ export default function FileManagement() {
   const { data: files = [], isLoading } = useQuery<AttachedFile[]>({
     queryKey: ['/api/admin/files'],
     queryFn: async () => {
-      const response = await apiRequest('/api/admin/files', 'GET');
-      return response as unknown as AttachedFile[];
+      const response = await apiRequest('GET', '/api/admin/files');
+      const data = await response.json();
+      return data as AttachedFile[];
     }
   });
 
@@ -77,7 +78,7 @@ export default function FileManagement() {
 
   const deleteFileMutation = useMutation({
     mutationFn: async (fileId: string) => {
-      return apiRequest(`/api/admin/files/${fileId}`, 'DELETE');
+      return apiRequest('DELETE', `/api/admin/files/${fileId}`);
     },
     onSuccess: () => {
       toast({
