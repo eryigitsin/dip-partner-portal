@@ -1291,7 +1291,8 @@ function PartnerMarketsDisplay({ partnerId }: { partnerId: number }) {
   const { data: partnerMarkets = [] } = useQuery({
     queryKey: ['/api/partners', partnerId, 'markets'],
     queryFn: async () => {
-      return await apiRequest('GET', `/api/partners/${partnerId}/markets`);
+      const response = await apiRequest('GET', `/api/partners/${partnerId}/markets`);
+      return response.json();
     }
   }) as { data: Array<{ id: number; name: string; nameEn?: string; region?: string }> };
 
