@@ -42,7 +42,10 @@ import {
   Facebook,
   User,
   Share2,
-  Trash2
+  Trash2,
+  Upload,
+  Link2,
+  Copy
 } from 'lucide-react';
 // import experienceIcon from "@assets/Tecrübe İkonu_1753558515148.png";
 import { Header } from '@/components/layout/header';
@@ -114,6 +117,12 @@ export default function PartnerProfile() {
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [postContent, setPostContent] = useState('');
+  
+  // Post enhancement states
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [isPostPopupOpen, setIsPostPopupOpen] = useState(false);
+  const [copiedPostId, setCopiedPostId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("about");
   const [editData, setEditData] = useState({
     logo: '',
     coverImage: '',
@@ -346,6 +355,57 @@ export default function PartnerProfile() {
       deletePostMutation.mutate(postId);
     }
   };
+
+  // Post URL and popup functions
+  const generatePostUrl = (postId: number) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/partner/${partner?.username || partner?.id}/post/${postId}`;
+  };
+
+  const copyPostUrl = async (postId: number) => {
+    try {
+      const url = generatePostUrl(postId);
+      await navigator.clipboard.writeText(url);
+      setCopiedPostId(postId);
+      toast({
+        title: 'Başarılı',
+        description: 'Post linki kopyalandı',
+      });
+      setTimeout(() => setCopiedPostId(null), 2000);
+    } catch (error) {
+      toast({
+        title: 'Hata',
+        description: 'Link kopyalanamadı',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openPostPopup = (postId: number) => {
+    setSelectedPostId(postId);
+    setIsPostPopupOpen(true);
+    setActiveTab("posts"); // Ensure posts tab is active
+  };
+
+  const selectedPost = selectedPostId ? posts.find(p => p.id === selectedPostId) : null;
+
+  // Handle URL changes to detect direct post links
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    const postMatch = currentPath.match(/\/partner\/[^/]+\/post\/(\d+)/);
+    
+    if (postMatch) {
+      const postId = parseInt(postMatch[1]);
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        setSelectedPostId(postId);
+        setIsPostPopupOpen(true);
+        setActiveTab("posts");
+        // Update URL without the post ID to keep clean URLs
+        window.history.replaceState({}, '', `/partner/${partner?.username || partner?.id}`);
+      }
+    }
+  }, [posts, partner]);
 
   // Image loading for crop
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -854,7 +914,7 @@ export default function PartnerProfile() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <Tabs defaultValue="about" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="about">Hakkında</TabsTrigger>
                 <TabsTrigger value="posts">Paylaşımlar</TabsTrigger>
@@ -1034,14 +1094,32 @@ export default function PartnerProfile() {
                           <Image className="h-5 w-5 mr-2" />
                           Fotoğraf/Video
                         </Button>
-                        <Button variant="ghost" size="sm" className="flex-1 justify-center">
-                          <MessageCircle className="h-5 w-5 mr-2" />
-                          Etkinlik
-                        </Button>
-                        <Button variant="ghost" size="sm" className="flex-1 justify-center">
-                          <Plus className="h-5 w-5 mr-2" />
-                          Daha fazla
-                        </Button>
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" className="flex-1 justify-center">
+                                <MessageCircle className="h-5 w-5 mr-2" />
+                                Etkinlik
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Bu özellik çok yakında eklenecektir.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" className="flex-1 justify-center">
+                                <Plus className="h-5 w-5 mr-2" />
+                                Daha fazla
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Bu özellik çok yakında eklenecektir.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </CardContent>
                   </Card>
@@ -1062,7 +1140,7 @@ export default function PartnerProfile() {
                   </Card>
                 ) : (
                   posts.map(post => (
-                    <Card key={post.id}>
+                    <Card key={post.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openPostPopup(post.id)}>
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
@@ -1083,19 +1161,42 @@ export default function PartnerProfile() {
                               </p>
                             </div>
                           </div>
-                          {canEdit && (
+                          
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            {/* Copy Link Button */}
                             <Button
-                              variant="ghost"
                               size="sm"
-                              onClick={() => handleDeletePost(post.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              variant="ghost"
+                              onClick={() => copyPostUrl(post.id)}
+                              className="text-blue-500 hover:text-blue-700"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {copiedPostId === post.id ? (
+                                <span className="text-xs">Kopyalandı!</span>
+                              ) : (
+                                <>
+                                  <Link2 className="h-4 w-4 mr-1" />
+                                  <span className="text-xs">Link</span>
+                                </>
+                              )}
                             </Button>
-                          )}
+                            
+                            {canEdit && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePost(post.id);
+                                }}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent onClick={(e) => e.stopPropagation()}>
                         <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
                         {post.imageUrl && (
                           <img 
@@ -1104,7 +1205,14 @@ export default function PartnerProfile() {
                             className="w-full h-auto rounded-lg mb-4"
                           />
                         )}
-                        <div className="flex items-center justify-between pt-4 border-t">
+                        {post.videoUrl && (
+                          <video 
+                            src={post.videoUrl} 
+                            className="w-full h-auto rounded-lg mb-4"
+                            controls
+                          />
+                        )}
+                        <div className="flex items-center justify-between pt-4 border-t" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-6">
                             <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
                               <Heart className="h-5 w-5 mr-2" />
@@ -1114,7 +1222,7 @@ export default function PartnerProfile() {
                               <MessageCircle className="h-5 w-5 mr-2" />
                               {post.commentsCount || 0}
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-green-600">
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-green-600" onClick={() => copyPostUrl(post.id)}>
                               <Share2 className="h-5 w-5 mr-2" />
                               Paylaş
                             </Button>
@@ -1124,6 +1232,97 @@ export default function PartnerProfile() {
                     </Card>
                   ))
                 )}
+                
+                {/* Post Popup Dialog */}
+                <Dialog open={isPostPopupOpen} onOpenChange={setIsPostPopupOpen}>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <div className="flex items-center justify-between">
+                        <DialogTitle className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={partner?.logo} alt={partner?.companyName} />
+                            <AvatarFallback>{partner?.companyName?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          {partner?.companyName}
+                        </DialogTitle>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => selectedPost && copyPostUrl(selectedPost.id)}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          {copiedPostId === selectedPost?.id ? (
+                            <span className="text-xs">Kopyalandı!</span>
+                          ) : (
+                            <>
+                              <Link2 className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Linki Kopyala</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <DialogDescription>
+                        {selectedPost && new Date(selectedPost.createdAt).toLocaleDateString('tr-TR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedPost && (
+                      <div className="space-y-4">
+                        <p className="text-gray-700 leading-relaxed text-lg">{selectedPost.content}</p>
+                        
+                        {/* Media display in popup */}
+                        {selectedPost.imageUrl && (
+                          <div>
+                            <img
+                              src={selectedPost.imageUrl}
+                              alt="Post image"
+                              className="w-full max-h-[60vh] object-contain rounded-lg"
+                            />
+                          </div>
+                        )}
+                        
+                        {selectedPost.videoUrl && (
+                          <div>
+                            <video
+                              src={selectedPost.videoUrl}
+                              className="w-full max-h-[60vh] object-contain rounded-lg"
+                              controls
+                              autoPlay={false}
+                            />
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between pt-4 border-t">
+                          <div className="flex items-center space-x-6 text-gray-600">
+                            <button className="flex items-center space-x-2 hover:text-red-600 transition-colors">
+                              <Heart className="h-5 w-5" />
+                              <span>{selectedPost.likesCount || 0} beğeni</span>
+                            </button>
+                            <button className="flex items-center space-x-2 hover:text-blue-600 transition-colors">
+                              <MessageCircle className="h-5 w-5" />
+                              <span>{selectedPost.commentsCount || 0} yorum</span>
+                            </button>
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            onClick={() => copyPostUrl(selectedPost.id)}
+                            className="flex items-center gap-2"
+                          >
+                            <Share2 className="h-4 w-4" />
+                            Paylaş
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
               
               <TabsContent value="services" className="space-y-6">
