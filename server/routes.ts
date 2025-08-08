@@ -3234,16 +3234,41 @@ export function registerRoutes(app: Express): Server {
         // Handle object storage files
         try {
           const objectStorageService = new ObjectStorageService();
-          // Extract the object name part after the prefix
-          const objectNameWithUnderscores = fileId.replace(/^(public|private)_/, '');
-          // Convert underscores back to slashes to get the original object path
-          const objectPath = '/' + objectNameWithUnderscores.replace(/_/g, '/');
           
-          console.log(`🔍 [${req.user?.email}] Parsed object path: ${objectPath}`);
+          // Extract the actual file path from the fileId
+          // fileId format: "private_.private_uploads_filename" or "public_public_uploads_filename"
+          let actualObjectPath;
+          let bucketName;
+          let objectName;
           
-          // Parse the full object path correctly
-          const { bucketName, objectName } = parseObjectPath(objectPath);
-          console.log(`🪣 [${req.user?.email}] Bucket: ${bucketName}, Object: ${objectName}`);
+          if (fileId.startsWith('private_')) {
+            // For private files, get the private directory path
+            const privateDir = objectStorageService.getPrivateObjectDir();
+            const { bucketName: privateBucketName, objectName: privateBasePath } = parseObjectPath(privateDir);
+            bucketName = privateBucketName;
+            
+            // Extract filename from fileId (everything after first underscore)
+            const fileNamePart = fileId.substring(fileId.indexOf('_') + 1);
+            // Convert back to proper path format
+            const fileName = fileNamePart.replace(/_/g, '/');
+            objectName = `${privateBasePath}/${fileName}`;
+          } else {
+            // For public files, use public search paths
+            const publicPaths = objectStorageService.getPublicObjectSearchPaths();
+            if (publicPaths.length > 0) {
+              const { bucketName: publicBucketName, objectName: publicBasePath } = parseObjectPath(publicPaths[0]);
+              bucketName = publicBucketName;
+              
+              // Extract filename from fileId
+              const fileNamePart = fileId.substring(fileId.indexOf('_') + 1);
+              const fileName = fileNamePart.replace(/_/g, '/');
+              objectName = `${publicBasePath}/${fileName}`;
+            } else {
+              throw new Error('No public paths configured');
+            }
+          }
+          
+          console.log(`🔍 [${req.user?.email}] Parsed bucket: ${bucketName}, object: ${objectName}`);
           
           const bucket = objectStorageClient.bucket(bucketName);
           const file = bucket.file(objectName);

@@ -57,45 +57,22 @@ export default function FileManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Mock data - replace with actual API call
-  const mockFiles: AttachedFile[] = [
-    {
-      id: '1',
-      name: 'company-logo.png',
-      path: '/uploads/company-logo.png',
-      size: 156789,
-      type: 'image/png',
-      uploadedAt: '2025-08-06T10:30:00Z',
-      category: 'image'
-    },
-    {
-      id: '2', 
-      name: 'user-manual.pdf',
-      path: '/uploads/user-manual.pdf',
-      size: 2456789,
-      type: 'application/pdf',
-      uploadedAt: '2025-08-05T15:45:00Z',
-      category: 'document'
-    },
-    {
-      id: '3',
-      name: 'intro-video.mp4',
-      path: '/uploads/intro-video.mp4', 
-      size: 15678900,
-      type: 'video/mp4',
-      uploadedAt: '2025-08-04T09:15:00Z',
-      category: 'video'
-    }
-  ];
+  // Fetch files from API
+  const { data: filesResponse = [], isLoading } = useQuery<AttachedFile[]>({
+    queryKey: ['/api/admin/files'],
+    queryFn: () => apiRequest('/api/admin/files', 'GET')
+  });
 
-  const filteredFiles = mockFiles.filter(file => {
+  const files: AttachedFile[] = Array.isArray(filesResponse) ? filesResponse : [];
+
+  const filteredFiles = files.filter((file: AttachedFile) => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || file.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const totalStorageUsed = mockFiles.reduce((total, file) => total + file.size, 0);
-  const totalFiles = mockFiles.length;
+  const totalStorageUsed = files.reduce((total: number, file: AttachedFile) => total + file.size, 0);
+  const totalFiles = files.length;
 
   const deleteFileMutation = useMutation({
     mutationFn: async (fileId: string) => {
@@ -235,12 +212,17 @@ export default function FileManagement() {
           <CardHeader>
             <CardTitle>Dosya Listesi</CardTitle>
             <CardDescription>
-              {filteredFiles.length} dosya listeleniyor
+              {isLoading ? 'Dosyalar yükleniyor...' : `${filteredFiles.length} dosya listeleniyor`}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p>Dosyalar yükleniyor...</p>
+              </div>
+            ) : (
             <div className="space-y-4">
-              {filteredFiles.map((file) => (
+              {filteredFiles.map((file: AttachedFile) => (
                 <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-gray-100 rounded-lg">
@@ -295,6 +277,7 @@ export default function FileManagement() {
                 </div>
               )}
             </div>
+            )}
           </CardContent>
         </Card>
 
