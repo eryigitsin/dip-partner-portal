@@ -1,7 +1,6 @@
 import { db } from './db';
 import { notifications, users, type InsertNotification } from '@shared/schema';
-import { eq, desc, and, count } from 'drizzle-orm';
-import { supabaseAdmin, supabase } from './lib/supabase';
+import { eq, desc, and, count, sql } from 'drizzle-orm';
 
 export interface NotificationTemplates {
   quote_request: {
@@ -45,15 +44,7 @@ export class NotificationService {
   // Create notification for specific user
   async createNotification(notification: InsertNotification): Promise<void> {
     try {
-      // Service role client kullan (RLS bypass)
-      const { error } = await supabaseAdmin
-        .from('notifications')
-        .insert(notification);
-      
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
+      await db.insert(notifications).values(notification);
     } catch (error) {
       console.error('Error creating notification:', error);
     }
@@ -63,15 +54,7 @@ export class NotificationService {
   async createBulkNotifications(notificationsList: InsertNotification[]): Promise<void> {
     try {
       if (notificationsList.length > 0) {
-        // Service role client kullan (RLS bypass)
-        const { error } = await supabaseAdmin
-          .from('notifications')
-          .insert(notificationsList);
-        
-        if (error) {
-          console.error('Supabase error:', error);
-          throw error;
-        }
+        await db.insert(notifications).values(notificationsList);
       }
     } catch (error) {
       console.error('Error creating bulk notifications:', error);
@@ -79,27 +62,29 @@ export class NotificationService {
   }
 
   // Get user's notifications with pagination
-  async getUserNotifications(userId: number, page: number = 1, limit: number = 20) {
+  async getUserNotifications(userId: string, page: number = 1, limit: number = 20) {
     try {
       const offset = (page - 1) * limit;
       
-      // User client kullan (RLS aktif)
-      const { data, error, count: totalCount } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact' })
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+      // Get notifications with pagination
+      const notificationsList = await db.select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
       
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
+      // Get total count
+      const [totalResult] = await db.select({ count: count() })
+        .from(notifications)
+        .where(eq(notifications.userId, userId));
+      
+      const totalCount = totalResult?.count || 0;
 
       return {
-        notifications: data || [],
-        totalCount: totalCount || 0,
-        hasMore: (offset + limit) < (totalCount || 0)
+        notifications: notificationsList || [],
+        totalCount,
+        hasMore: (offset + limit) < totalCount
       };
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -108,21 +93,16 @@ export class NotificationService {
   }
 
   // Get unread notification count for user
-  async getUnreadCount(userId: number): Promise<number> {
+  async getUnreadCount(userId: string): Promise<number> {
     try {
-      // User client kullan (RLS aktif)
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('is_read', false);
+      const [result] = await db.select({ count: count() })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        ));
       
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-      
-      return count || 0;
+      return result?.count || 0;
     } catch (error) {
       console.error('Error fetching unread count:', error);
       return 0;
@@ -130,22 +110,17 @@ export class NotificationService {
   }
 
   // Mark notification as read
-  async markAsRead(notificationId: number, userId: number): Promise<void> {
+  async markAsRead(notificationId: number, userId: string): Promise<void> {
     try {
-      // User client kullan (RLS aktif)
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString()
+      await db.update(notifications)
+        .set({ 
+          isRead: true, 
+          readAt: new Date()
         })
-        .eq('id', notificationId)
-        .eq('user_id', userId);
-      
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
+        .where(and(
+          eq(notifications.id, notificationId),
+          eq(notifications.userId, userId)
+        ));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -179,7 +154,7 @@ export class NotificationService {
         };
         await db.insert(notifications).values(processedNotification);
       } else {
-        await this.createNotification(notification);
+        await db.insert(notifications).values(notification);
       }
     } catch (error) {
       console.error('Error creating notification with parameters:', error);
@@ -212,35 +187,31 @@ export class NotificationService {
   }
 
   // Mark all notifications as read for user
-  async markAllAsRead(userId: number): Promise<void> {
+  async markAllAsRead(userId: string): Promise<void> {
     try {
-      // User client kullan (RLS aktif)
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString()
+      await db.update(notifications)
+        .set({ 
+          isRead: true, 
+          readAt: new Date()
         })
-        .eq('user_id', userId)
-        .eq('is_read', false);
-      
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        ));
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
   }
 
-  // Get all admin users for admin notifications
-  async getAdminUsers(): Promise<number[]> {
+  // Get all admin users for admin notifications  
+  async getAdminUsers(): Promise<string[]> {
     try {
-      const adminUsers = await db.select({ id: users.id })
+      const adminUsers = await db.select({ id: users.id, supabaseId: users.supabaseId })
         .from(users)
-        .where(eq(users.userType, 'admin'));
+        .where(eq(users.userType, 'master_admin'));
       
-      return adminUsers.map(user => user.id);
+      // Return supabaseId if available, otherwise convert id to string
+      return adminUsers.map(user => user.supabaseId || user.id.toString());
     } catch (error) {
       console.error('Error fetching admin users:', error);
       return [];
@@ -250,7 +221,7 @@ export class NotificationService {
   // Create quote request notification
   async createQuoteRequestNotification(data: {
     quoteRequestId: number;
-    userId: number;
+    userId: string;
     partnerId: number;
     partnerName: string;
     userName: string;
@@ -270,14 +241,15 @@ export class NotificationService {
       isEmailSent: false
     });
 
-    // Notification for partner
-    const partnerUser = await db.select({ id: users.id })
+    // Notification for partner - get partner's supabaseId
+    const partnerUser = await db.select({ id: users.id, supabaseId: users.supabaseId })
       .from(users)
       .where(eq(users.id, data.partnerId));
     
     if (partnerUser.length > 0) {
+      const partnerUserId = partnerUser[0].supabaseId || partnerUser[0].id.toString();
       notifications.push({
-        userId: partnerUser[0].id,
+        userId: partnerUserId,
         type: 'quote_request',
         title: 'Yeni Teklif Talebi',
         message: `${data.userName} kullanıcısından ${data.serviceNeeded} hizmeti için yeni bir teklif talebi aldınız.`,
@@ -310,7 +282,7 @@ export class NotificationService {
   async createQuoteResponseNotification(data: {
     quoteResponseId: number;
     quoteRequestId: number;
-    userId: number;
+    userId: string;
     partnerId: number;
     partnerName: string;
     userName: string;
@@ -376,18 +348,19 @@ export class NotificationService {
 
   // Create follower notification
   async createFollowerNotification(data: {
-    followerId: number;
+    followerId: string;
     partnerId: number;
     followerName: string;
     partnerName: string;
   }): Promise<void> {
-    const partnerUser = await db.select({ id: users.id })
+    const partnerUser = await db.select({ id: users.id, supabaseId: users.supabaseId })
       .from(users)
       .where(eq(users.id, data.partnerId));
     
     if (partnerUser.length > 0) {
+      const partnerUserId = partnerUser[0].supabaseId || partnerUser[0].id.toString();
       await this.createNotification({
-        userId: partnerUser[0].id,
+        userId: partnerUserId,
         type: 'follower',
         title: 'Yeni Takipçi',
         message: `${data.followerName} sizin firma profilinizi takip etmeye başladı.`,
@@ -406,9 +379,9 @@ export class NotificationService {
     actionUrl?: string;
   }): Promise<void> {
     try {
-      const allUsers = await db.select({ id: users.id }).from(users);
+      const allUsers = await db.select({ id: users.id, supabaseId: users.supabaseId }).from(users);
       const notifications: InsertNotification[] = allUsers.map(user => ({
-        userId: user.id,
+        userId: user.supabaseId || user.id.toString(),
         type: 'system_status',
         title: data.title,
         message: data.message,

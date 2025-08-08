@@ -26,7 +26,7 @@ export function Footer() {
               <img 
                 src={dipLogo} 
                 alt="DİP - Dijital İhracat Platformu" 
-                className="h-12 w-auto"
+                className="h-8 sm:h-10 md:h-12 w-auto max-w-[120px] sm:max-w-[140px] md:max-w-[160px] object-contain"
               />
             </Link>
             <p className="text-gray-300 mb-4 leading-relaxed">

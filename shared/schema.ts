@@ -480,6 +480,7 @@ export const paymentConfirmations = pgTable("payment_confirmations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+
 // Application documents for file uploads
 export const applicationDocuments = pgTable("application_documents", {
   id: serial("id").primaryKey(),
@@ -893,10 +894,10 @@ export const campaignNotificationTemplates = pgTable("campaign_notification_temp
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Notifications table - LinkedIn style notification system
+// Notifications table - LinkedIn style notification system with Supabase RLS support
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: text("user_id").notNull(), // String to match Supabase auth.uid()
   type: text("type").notNull(), // quote_request, quote_response, partner_application, follower, project_update, feedback, newsletter_subscriber, system_status, partner_post, campaign
   title: text("title").notNull(),
   message: text("message").notNull(),
@@ -910,12 +911,7 @@ export const notifications = pgTable("notifications", {
   readAt: timestamp("read_at"),
 });
 
-export const notificationsRelations = relations(notifications, ({ one }) => ({
-  user: one(users, {
-    fields: [notifications.userId],
-    references: [users.id],
-  }),
-}));
+// Note: Relations with users table removed since notifications.userId is now a Supabase auth.uid() string
 
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({
   id: true,

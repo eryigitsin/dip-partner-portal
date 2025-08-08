@@ -37,7 +37,10 @@ router.get('/', async (req: any, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
-    const userId = req.user.id;
+    
+    // Convert user ID to string format for notifications
+    // Use supabaseId if available, otherwise convert integer ID to string
+    const userId = req.user.supabaseId || req.user.id.toString();
 
     console.log(`🔍 [${domain}] Getting notifications for user: ${userId} (${req.user.email || 'no-email'}) [${req.user.userType || 'no-type'}] - page: ${page}, limit: ${limit}`);
     
@@ -78,7 +81,8 @@ router.get('/unread-count', async (req: any, res) => {
   }
   
   try {
-    const userId = req.user.id;
+    // Convert user ID to string format for notifications
+    const userId = req.user.supabaseId || req.user.id.toString();
     
     // Add timeout for unread count as well
     const timeoutPromise = new Promise((_, reject) => 
@@ -104,7 +108,8 @@ router.patch('/:id/read', async (req: any, res) => {
   if (!req.isAuthenticated()) return res.sendStatus(401);
   try {
     const notificationId = parseInt(req.params.id);
-    const userId = req.user.id;
+    // Convert user ID to string format for notifications
+    const userId = req.user.supabaseId || req.user.id.toString();
 
     await notificationService.markAsRead(notificationId, userId);
     
@@ -119,7 +124,8 @@ router.patch('/:id/read', async (req: any, res) => {
 router.patch('/mark-all-read', async (req: any, res) => {
   if (!req.isAuthenticated()) return res.sendStatus(401);
   try {
-    const userId = req.user.id;
+    // Convert user ID to string format for notifications
+    const userId = req.user.supabaseId || req.user.id.toString();
 
     await notificationService.markAllAsRead(userId);
     
@@ -135,7 +141,7 @@ router.post('/system-status', async (req: any, res) => {
   if (!req.isAuthenticated()) return res.sendStatus(401);
   try {
     // Check if user is admin
-    if (req.user.userType !== 'admin') {
+    if (!['master_admin', 'editor_admin'].includes(req.user.userType)) {
       return res.status(403).json({ message: 'Bu işlem için admin yetkisi gerekli' });
     }
 
