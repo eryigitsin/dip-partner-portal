@@ -95,6 +95,10 @@ interface PartnerPost {
   title: string;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
+  type?: string;
+  upvotes?: number;
+  downvotes?: number;
   likesCount: number;
   commentsCount: number;
   createdAt: string;
@@ -1035,61 +1039,13 @@ export default function PartnerProfile() {
                           <AvatarFallback>{partner.companyName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                          <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="w-full justify-start text-left bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 h-auto"
-                              >
-                                Ne düşünüyorsun, {partner.companyName}?
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-lg">
-                              <DialogHeader>
-                                <DialogTitle>Paylaşım Oluştur</DialogTitle>
-                                <DialogDescription>
-                                  Sosyal medya benzeri paylaşımınızı oluşturun ve takipçilerinizle paylaşın.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                  <Avatar className="w-10 h-10">
-                                    <AvatarImage src={partner.logo} alt={partner.companyName} />
-                                    <AvatarFallback>{partner.companyName.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <p className="font-semibold">{partner.companyName}</p>
-                                    <p className="text-sm text-gray-500">Herkese açık</p>
-                                  </div>
-                                </div>
-                                <Textarea
-                                  value={postContent}
-                                  onChange={(e) => setPostContent(e.target.value)}
-                                  placeholder="Ne paylaşmak istiyorsun?"
-                                  className="min-h-[120px] border-none resize-none text-lg"
-                                />
-                                <div className="flex items-center justify-between border-t pt-3">
-                                  <div className="flex items-center gap-4">
-                                    <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700">
-                                      <Image className="h-5 w-5 mr-2" />
-                                      Fotoğraf
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                                      <Video className="h-5 w-5 mr-2" />
-                                      Video
-                                    </Button>
-                                  </div>
-                                  <Button
-                                    onClick={handleCreatePost}
-                                    disabled={!postContent.trim() || createPostMutation.isPending}
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                  >
-                                    {createPostMutation.isPending ? 'Paylaşılıyor...' : 'Paylaş'}
-                                  </Button>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                          <Button
+                            onClick={() => setIsNewPostDialogOpen(true)}
+                            variant="outline"
+                            className="w-full justify-start text-left bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 h-auto"
+                          >
+                            Ne düşünüyorsun, {partner.companyName}?
+                          </Button>
                         </div>
                       </div>
 
@@ -1129,7 +1085,7 @@ export default function PartnerProfile() {
                   </Card>
                 )}
 
-                {/* Posts Feed */}
+                {/* Posts Feed - Compact Format */}
                 {postsLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
@@ -1143,100 +1099,47 @@ export default function PartnerProfile() {
                     </CardContent>
                   </Card>
                 ) : (
-                  posts.map(post => (
-                    <Card key={post.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openPostPopup(post.id)}>
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-10 h-10">
-                              <AvatarImage src={partner.logo} alt={partner.companyName} />
-                              <AvatarFallback>{partner.companyName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-semibold">{partner.companyName}</p>
-                              <p className="text-sm text-gray-500">
-                                {new Date(post.createdAt).toLocaleDateString('tr-TR', {
-                                  day: 'numeric',
-                                  month: 'long',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            {/* Copy Link Button */}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => copyPostUrl(post.id)}
-                              className="text-blue-500 hover:text-blue-700"
-                            >
-                              {copiedPostId === post.id ? (
-                                <span className="text-xs">Kopyalandı!</span>
-                              ) : (
-                                <>
-                                  <Link2 className="h-4 w-4 mr-1" />
-                                  <span className="text-xs">Link</span>
-                                </>
-                              )}
-                            </Button>
-                            
-                            {canEdit && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeletePost(post.id);
-                                }}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent onClick={(e) => e.stopPropagation()}>
-                        <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
-                        {post.imageUrl && (
-                          <img 
-                            src={post.imageUrl} 
-                            alt="Paylaşım görseli"
-                            className="w-full h-auto rounded-lg mb-4"
-                          />
-                        )}
-                        {post.videoUrl && (
-                          <video 
-                            src={post.videoUrl} 
-                            className="w-full h-auto rounded-lg mb-4"
-                            controls
-                          />
-                        )}
-                        <div className="flex items-center justify-between pt-4 border-t" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center gap-6">
-                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-red-600">
-                              <Heart className="h-5 w-5 mr-2" />
-                              {post.likesCount || 0}
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-600">
-                              <MessageCircle className="h-5 w-5 mr-2" />
-                              {post.commentsCount || 0}
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-green-600" onClick={() => copyPostUrl(post.id)}>
-                              <Share2 className="h-5 w-5 mr-2" />
-                              Paylaş
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                  <Card>
+                    <CardContent className="p-0">
+                      {posts.map(post => (
+                        <CompactPostCard
+                          key={post.id}
+                          post={{
+                            id: post.id,
+                            partnerId: post.partnerId,
+                            title: post.title,
+                            content: post.content,
+                            type: post.imageUrl ? 'image' : post.videoUrl ? 'video' : 'text',
+                            imageUrl: post.imageUrl,
+                            videoUrl: post.videoUrl,
+                            upvotes: 0,
+                            downvotes: 0,
+                            createdAt: post.createdAt,
+                          }}
+                          partner={{
+                            id: partner.id,
+                            companyName: partner.companyName,
+                            logo: partner.logo,
+                            username: partner.username,
+                          }}
+                          userVote={undefined}
+                          canEdit={canEdit || false}
+                          onEdit={() => {}}
+                          onDelete={() => handleDeletePost(post.id)}
+                          onOpenFullView={() => openPostPopup(post.id)}
+                        />
+                      ))}
+                    </CardContent>
+                  </Card>
                 )}
                 
+                {/* New Post Creation Dialog */}
+                <PostCreationDialog
+                  isOpen={isNewPostDialogOpen}
+                  onOpenChange={setIsNewPostDialogOpen}
+                  partnerId={partner.id}
+                />
+
                 {/* Post Popup Dialog */}
                 <Dialog open={isPostPopupOpen} onOpenChange={setIsPostPopupOpen}>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
