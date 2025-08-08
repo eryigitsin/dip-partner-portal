@@ -154,7 +154,7 @@ export const partnerSelectedMarkets = pgTable("partner_selected_markets", {
 export const partnerPosts = pgTable("partner_posts", {
   id: serial("id").primaryKey(),
   partnerId: integer("partner_id").references(() => partners.id).notNull(),
-  title: text("title"),
+  title: text("title").default(null), // Optional title, auto-generated from content
   content: text("content").notNull(),
   type: text("type").default("text"), // text, image, video
   imageUrl: text("image_url"),

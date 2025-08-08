@@ -2193,8 +2193,13 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "You can only create posts for your own partner profile" });
       }
 
+      // Auto-generate title from content (first 50 characters)
+      const content = req.body.content || '';
+      const title = content.length > 50 ? content.substring(0, 50) + '...' : content || null;
+      
       const postData = {
         partnerId,
+        title,
         ...req.body
       };
       
