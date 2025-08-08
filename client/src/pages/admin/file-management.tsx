@@ -58,12 +58,13 @@ export default function FileManagement() {
   const queryClient = useQueryClient();
 
   // Fetch files from API
-  const { data: filesResponse = [], isLoading } = useQuery<AttachedFile[]>({
+  const { data: files = [], isLoading } = useQuery<AttachedFile[]>({
     queryKey: ['/api/admin/files'],
-    queryFn: () => apiRequest('/api/admin/files', 'GET')
+    queryFn: async () => {
+      const response = await apiRequest('/api/admin/files', 'GET');
+      return response as unknown as AttachedFile[];
+    }
   });
-
-  const files: AttachedFile[] = Array.isArray(filesResponse) ? filesResponse : [];
 
   const filteredFiles = files.filter((file: AttachedFile) => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -240,20 +241,25 @@ export default function FileManagement() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    {file.category === 'image' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handlePreview(file)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Önizle
-                      </Button>
-                    )}
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => window.open(file.path, '_blank')}
+                      onClick={() => handlePreview(file)}
+                      data-testid="button-preview-file"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Önizle
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const downloadUrl = file.path.startsWith('/objects') 
+                          ? file.path 
+                          : `/objects/${file.path.replace(/^\/+/, '')}`;
+                        window.open(downloadUrl, '_blank');
+                      }}
+                      data-testid="button-download-file"
                     >
                       <Download className="h-4 w-4 mr-2" />
                       İndir
@@ -291,13 +297,51 @@ export default function FileManagement() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              {previewFile?.category === 'image' && (
+              {previewFile && (
                 <div className="flex justify-center">
-                  <img 
-                    src={previewFile.path} 
-                    alt={previewFile.name}
-                    className="max-w-full max-h-96 object-contain rounded-lg border"
-                  />
+                  {previewFile.category === 'image' ? (
+                    <img 
+                      src={previewFile.path.startsWith('/objects') ? previewFile.path : `/objects/${previewFile.path.replace(/^\/+/, '')}`}
+                      alt={previewFile.name}
+                      className="max-w-full max-h-96 object-contain rounded-lg border"
+                      onError={(e) => {
+                        console.error('Image load error for:', previewFile.path);
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : previewFile.category === 'document' ? (
+                    <div className="text-center p-8 border rounded-lg">
+                      <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <p>Bu dosya türü için önizleme mevcut değil</p>
+                      <Button 
+                        onClick={() => {
+                          const downloadUrl = previewFile.path.startsWith('/objects') 
+                            ? previewFile.path 
+                            : `/objects/${previewFile.path.replace(/^\/+/, '')}`;
+                          window.open(downloadUrl, '_blank');
+                        }}
+                        className="mt-4"
+                      >
+                        Dosyayı Aç
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center p-8 border rounded-lg">
+                      <File className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <p>Bu dosya türü için önizleme mevcut değil</p>
+                      <Button 
+                        onClick={() => {
+                          const downloadUrl = previewFile.path.startsWith('/objects') 
+                            ? previewFile.path 
+                            : `/objects/${previewFile.path.replace(/^\/+/, '')}`;
+                          window.open(downloadUrl, '_blank');
+                        }}
+                        className="mt-4"
+                      >
+                        Dosyayı Aç
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="text-sm text-muted-foreground space-y-1">

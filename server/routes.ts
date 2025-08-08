@@ -3242,30 +3242,25 @@ export function registerRoutes(app: Express): Server {
           let objectName;
           
           if (fileId.startsWith('private_')) {
-            // For private files, get the private directory path
-            const privateDir = objectStorageService.getPrivateObjectDir();
-            const { bucketName: privateBucketName, objectName: privateBasePath } = parseObjectPath(privateDir);
-            bucketName = privateBucketName;
+            // For private files: "private_.private_uploads_filename"
+            // Remove "private_" prefix and replace underscores with slashes
+            const pathWithoutPrefix = fileId.substring(8); // Remove "private_"
+            const fullObjectPath = '/' + pathWithoutPrefix.replace(/_/g, '/');
             
-            // Extract filename from fileId (everything after first underscore)
-            const fileNamePart = fileId.substring(fileId.indexOf('_') + 1);
-            // Convert back to proper path format
-            const fileName = fileNamePart.replace(/_/g, '/');
-            objectName = `${privateBasePath}/${fileName}`;
+            console.log(`🔍 [${req.user?.email}] Full object path for private file: ${fullObjectPath}`);
+            const parsed = parseObjectPath(fullObjectPath);
+            bucketName = parsed.bucketName;
+            objectName = parsed.objectName;
           } else {
-            // For public files, use public search paths
-            const publicPaths = objectStorageService.getPublicObjectSearchPaths();
-            if (publicPaths.length > 0) {
-              const { bucketName: publicBucketName, objectName: publicBasePath } = parseObjectPath(publicPaths[0]);
-              bucketName = publicBucketName;
-              
-              // Extract filename from fileId
-              const fileNamePart = fileId.substring(fileId.indexOf('_') + 1);
-              const fileName = fileNamePart.replace(/_/g, '/');
-              objectName = `${publicBasePath}/${fileName}`;
-            } else {
-              throw new Error('No public paths configured');
-            }
+            // For public files: "public_public_uploads_filename"
+            // Remove "public_" prefix and replace underscores with slashes
+            const pathWithoutPrefix = fileId.substring(7); // Remove "public_"
+            const fullObjectPath = '/' + pathWithoutPrefix.replace(/_/g, '/');
+            
+            console.log(`🔍 [${req.user?.email}] Full object path for public file: ${fullObjectPath}`);
+            const parsed = parseObjectPath(fullObjectPath);
+            bucketName = parsed.bucketName;
+            objectName = parsed.objectName;
           }
           
           console.log(`🔍 [${req.user?.email}] Parsed bucket: ${bucketName}, object: ${objectName}`);
